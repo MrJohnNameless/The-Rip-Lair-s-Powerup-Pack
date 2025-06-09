@@ -1,0 +1,19 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needacloudflower
+* imcloudnine
+
+
+The powerup also has some configs you can apply. Simple open the file "cloudFlower.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+katesWindID - What is the current id of the SMB1-LL Wind NPC? (797 by default) (requires KateBulka's Wind NPC: https://www.smbxgame.com/forums/viewtopic.php?t=27266) 
+initialLimit - The limit on how many clouds can be out at a time
+slowFall - Should the player be able to fall slowly when using the cloud flower? (true by default)
+autoReplenish - Should the player be able to replenish clouds automatically without needing to pick up another cloud flower? (false by default)
+replenishAnywhere - Should the player be able to replenish clouds anywhere, regardles if they're airborne or not? (false by default)
+
+
+In the file "npc-852", the following config can be changed.
+
+lifetime - Changes how long the cloud stays before disappearing

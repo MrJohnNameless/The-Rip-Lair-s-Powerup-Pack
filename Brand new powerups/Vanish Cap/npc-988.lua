@@ -1,0 +1,230 @@
+local npcManager = require("npcManager")
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag"))
+local template = {}
+local npcID = NPC_ID
+
+local templateSettings = {
+	id = npcID,
+	gfxheight = 16,
+	gfxwidth = 32,
+	gfxoffsety = 2,
+	width = 32,
+	height = 16,
+	frames = 1,
+	framestyle = 0,
+	framespeed = 8,
+	speed = 0,
+	score = SCORE_1000,
+	
+	npcblock = false,
+	npcblocktop = false,
+	playerblock = false,
+	playerblocktop = false,
+	powerup = true,
+	nohurt=true,
+	nogravity = false,
+	noblockcollision = false,
+	nofireball = true,
+	noiceball = true,
+	noyoshi= false,
+	nowaterphysics = false,
+
+	jumphurt = true,
+	spinjumpsafe = false,
+	harmlessgrab = true,
+	harmlessthrown = true,
+
+	isinteractable = true,
+	ignorethrownnpcs = true,
+	notcointransformable = true,
+	
+	intangibleBlocks = {115, 687, 1283, 1284, 1285, 1286, 1287, 1288, 1289, 1290, 1291, npcID --[[The custom Grate Block]]},
+}
+
+npcManager.setNpcSettings(templateSettings)
+npcManager.registerHarmTypes(npcID,
+	{
+		HARM_TYPE_FROMBELOW,
+		HARM_TYPE_LAVA,
+		HARM_TYPE_TAIL,
+		--HARM_TYPE_OFFSCREEN,
+	}, 
+	{
+		[HARM_TYPE_LAVA]={id=13, xoffset=0.5, xoffsetBack = 0, yoffset=1, yoffsetBack = 1.5},
+		--[HARM_TYPE_OFFSCREEN]=10,
+	}
+);
+
+local sm64_star = Misc.resolveFile("sm64_star.wav")
+
+function template.onInitAPI()
+	registerEvent(template, "onTick")
+	registerEvent(template, "onDraw")
+	registerEvent(template, "onNPCHarm")
+	registerEvent(template, "onNPCCollect")
+	registerEvent(template, "onExit")
+	registerEvent(template, "onPlayerKill")
+	Cheats.register("needavanishcap",{
+		isCheat = true,
+		activateSFX = 12,
+		aliases = {"underthemoat", "imshy"},
+		onActivate = (function() 
+			for i,p in ipairs(Player.get()) do
+				p.reservePowerup = npcID
+			end
+		end)
+	})
+end
+
+function template.onPlayerKill(e,p)
+	if not p.data.vanishcapPowerupcapTimer then return end
+	Audio.resetMciSections()
+	p.data.vanishcapPowerupcapTimer = nil
+	p.data.vanishcapPowerupstartMusic = nil
+	p.data.vanishcapisvanishcap = nil
+	Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = true
+end
+
+function template.onExit()
+	for i,p in ipairs(Player.get()) do
+		p.data.vanishcapPowerupcapTimer = nil
+		p.data.vanishcapPowerupstartMusic = nil
+		p.data.vanishcapisvanishcap = nil
+		Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = true
+	end
+end
+
+local restrictMovement = false
+
+function template.onTick(p)
+	
+	for i,p in ipairs(Player.get()) do
+		
+		if not p.data.vanishcapPowerupcapTimer then return end
+
+		local data = p.data
+		
+		if data.vanishcapPowerupcapTimer == 0 and data.vanishcapPowerupstartMusic then
+			Audio.SeizeStream(-1)
+			Audio.MusicStopFadeOut(300)
+			data.vanishcapPowerupstartMusic = false
+		elseif data.vanishcapPowerupcapTimer == 30 then
+			Audio.MusicOpen("powerfulMario.ogg")
+			Audio.MusicPlay()
+		elseif data.vanishcapPowerupcapTimer == 1150 then
+			Audio.MusicStopFadeOut(1000)
+		elseif data.vanishcapPowerupcapTimer == 1344 then
+			Audio.resetMciSections()
+			p.data.vanishcapisvanishcap = nil
+			p.data.vanishcapPowerupcapTimer = nil
+			p.data.vanishcapPowerupstartMusic = nil
+			Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = true
+			return
+		end
+		
+		if p.powerup == 1 then p.powerup = 2 end
+		
+		data.vanishcapPowerupcapTimer = data.vanishcapPowerupcapTimer + 1
+		
+		--Invincibility code taken from MegaDood's Invincibility Leaf
+		p:mem(0x140, FIELD_WORD, 1)
+		p:mem(0x142, FIELD_BOOL, true)
+	end
+	
+	if restrictMovement then
+		player.keys.up = nil
+		player.keys.left = nil
+		player.keys.right = nil
+		player.keys.down = nil
+		player.keys.run = nil
+		player.keys.jump = nil
+		player.keys.altRun = nil
+		player.keys.altJump = nil
+	end
+	
+end
+
+function template.onNPCHarm(token,v,harm,c)
+	if v.id ~= npcID then return end
+	
+	if harm ~= HARM_TYPE_TAIL and harm ~= HARM_TYPE_FROMBELOW then return end
+	v.speedY = -6
+	SFX.play(9)
+	token.cancelled = true
+end
+
+function template.onNPCCollect(eventObj, v, p)
+	if npcID ~= v.id or v.isGenerator then return end
+	
+	SFX.play(sm64_star)
+	
+	Misc.givePoints(NPC.config[v.id].score, {x = v.x, y = v.y}, true)
+	
+	--Reset the metal cap timer if already in that state, otherwise start the whole metal cap event
+	if p.data.vanishcapPowerupcapTimer and p.data.vanishcapPowerupcapTimer > 0 then
+		p.data.vanishcapPowerupcapTimer = 0
+	else
+		p.data.vanishcapPowerupcapTimer = 0
+		p.data.vanishcapPowerupstartMusic = true
+		p.collisionGroup = "vanishPlayer"
+		for _,block in ipairs(Block.get(templateSettings.intangibleBlocks)) do
+		block.collisionGroup = "vanishBlock"
+		Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = false
+	end
+	end
+	
+end
+
+function template.onDraw(p)
+	for i,p in ipairs(Player.get()) do
+		local enabled = 0
+		local speed = 0
+		if not p.data.vanishcapPowerupcapTimer then return end
+		
+		if p.data.vanishcapPowerupcapTimer < 60 then speed = 8 else speed = 4 end
+		
+		if (p.data.vanishcapPowerupcapTimer < 60 and not p.data.vanishcapisvanishcap) or p.data.vanishcapPowerupcapTimer >= 1248 then
+			enabled = math.floor(lunatime.tick() / speed) % 2
+		else
+			enabled = 1
+			p.data.vanishcapisvanishcap = true
+		end
+		
+		--Stop the player's movement like they're transforming
+		if not p.data.vanishcapisvanishcap then
+			if speed == 8 then
+				restrictMovement = true
+				p.speedX = 0
+			end
+		end
+		
+		if p.data.vanishcapPowerupcapTimer == 61 then restrictMovement = false end
+		
+		if p.frame ~= -50 then p.data.vanishcapFrame = p.frame end
+		
+		if enabled == 1 then
+			p:render{
+			frame = p.data.vanishcapFrame,
+			direction = p.direction,
+			powerup = p.powerup,
+			mount = p.mount,
+			character = p.character,
+			x = p.x,
+			y = p.y,
+			color = Color.white .. 0.5,
+			drawplayer = true,
+			ignorestate = false,
+			sceneCoords = true,
+			priority = -50,
+			shader = vanishShader,
+			uniforms = {
+				enabled = enabled,
+			},
+			}
+			p.frame = -50
+		end
+	end
+end
+
+return template

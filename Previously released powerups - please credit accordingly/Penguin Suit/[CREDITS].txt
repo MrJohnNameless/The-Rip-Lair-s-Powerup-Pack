@@ -1,0 +1,8 @@
+NPC by Cpt. Monochrome
+Converted to customPowerups by MegaDood
+Sprite credits can be found at the top of the "ap_penguinsuit.lua" lua file.
+SMAS SMB3 Mario and Luigi sprites edited by SleepyVA
+SMAS SMB3 Styled Penguin sprites by Jr.Master
+SMAS SMB3 Toad sprites by legend tony980, imported by MarioBrigade
+
+The SMM2 Playables be found here: https://www.smbxgame.com/forums/viewtopic.php?t=27615

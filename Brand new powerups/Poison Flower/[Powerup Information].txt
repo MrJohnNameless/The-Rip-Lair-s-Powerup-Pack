@@ -1,0 +1,13 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needapoisonflower
+* foodpoisoning
+* atleastthisdoesntkillyou
+* imsorrymariobutyouhave7monthstolive
+* wearenumberone
+* wiiuera
+
+You can also open the file "npc-865" with something like notepad++ or visual studio code, and change the following config.
+
+lifetime - Change how long before the bubble disappears

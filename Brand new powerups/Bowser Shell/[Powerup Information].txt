@@ -1,0 +1,13 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needabowsershell
+* bowserShell
+
+The powerup also has some configs you can apply. Simple open the file "bowserShell.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+enableSwimAccel
+swimAcceleration - When underwater, how much extra speed does the player get when swimming forward? (0.075 by default)
+shellComboTime - When in the shell, how much time does the player have to hit a NPC before their shell combo resets? (130 by default)
+shellPeachFloat - When in the shell, should peach be able to float? (true by defauk) 
+inputsNeeded - What are the inputs needed to change into a shell? (p.keys.run/altRun by default)

@@ -1,0 +1,22 @@
+This powerup has some configs you can apply. Simple open the file "rockMushroom.lua", using something like notepad++ or visual studio code.
+
+setSpeed - If true, the player will accelerate towards a set speed and gradually slow down to reach that speed again when faster
+rollSpeed - The speed the player is rolling at by default
+rollAccel - How quickly the rock accelerates
+rollDeccel - How quickly the rock deccelerates if it's faster than rollSpeed
+rollAnimDelay - Amount of frames between each animation frame (of the startup)
+rockWidth - Width of the player hitbox when in a rock
+rockHeight - Height of the player hitbox when in a rock
+cooldown - How many frames the player has to wait until they can start rollin' again
+canCancel - If 0, you can't cancel anything. If 1, you can cancel the startup animation by holding down. If 2, you can cancel the rolling as well
+isInvulnerable - If true, the player will not take damage in rock formation but just leave it and get a few I-frames
+
+
+This powerup also has some cheats you can use!
+These are:
+
+* needarockmushroom
+* rocknroll
+* theyseemerolling
+* wewillrockyou
+* ontherocks

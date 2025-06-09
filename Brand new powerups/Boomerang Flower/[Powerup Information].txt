@@ -1,0 +1,15 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needaboomerang
+
+
+You can also check the file "npc-760.lua" using something like notepad++ or visual studio code, and add or remove various settings there.
+
+stopBoomerangNPCs - These will cause the boomerang to return while harming the NPC
+
+nontransformedNPCIDs - Must have the table entries in the same place, these transform these guys
+transformedNPCIDs
+
+pushBackIDs - Don't hurt the npc, but make it get pushed back and return the boomerang
+noHarmNPCs - Do nothing to this npc

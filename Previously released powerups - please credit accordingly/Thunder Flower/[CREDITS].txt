@@ -1,0 +1,4 @@
+Sprites + powerup by AlanLive
+Converted to customPowerups.lua by DisasterMaster
+Also made by MegaDood
+Powerup sprites by deltom

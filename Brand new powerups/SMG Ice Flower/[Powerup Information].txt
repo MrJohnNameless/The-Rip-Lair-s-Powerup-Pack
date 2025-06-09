@@ -1,0 +1,15 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needaniceflower
+* needacoolflower
+* icebody
+* needaiceflower
+
+
+The powerup also has some configs you can apply. Simple open the file "iceFlower.lua" in the "AI" folder, using something like notepad++ or visual studio code.
+
+frames
+framespeed
+priority
+lifetime

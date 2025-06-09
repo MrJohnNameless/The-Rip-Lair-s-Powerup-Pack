@@ -1,0 +1,17 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needagoldflower
+
+
+The powerup also has some configs you can apply. Simple open the file "goldFireBall.lua" in the "AI" folder, using something like notepad++ or visual studio code.
+
+explosionTexture - The image to use when exploding
+explosionRadius - The radius of the gold flower fire ball explosion
+explosionLife - Lifetime of the explosion, in ticks
+explosionSound
+explosionPriority
+
+in "goldFlower.lua", you can set the following setting
+
+transformOnLevelEnd - If true, the powerup will transform into your original powerup upon exiting a level

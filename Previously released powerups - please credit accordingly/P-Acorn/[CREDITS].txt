@@ -1,0 +1,8 @@
+NPC by Cpt. Monochrome
+Edited by MegaDood
+Converted to customPowerups by MegaDood
+Sprite credits can be found at the top of the "ap_penguinsuit.lua" lua file.
+SMAS SMB3 player sprites edited by mariobrigade2018
+Powerup sprites by DeviousQuacks23
+
+The SMM2 Playables be found here: https://www.smbxgame.com/forums/viewtopic.php?t=27615

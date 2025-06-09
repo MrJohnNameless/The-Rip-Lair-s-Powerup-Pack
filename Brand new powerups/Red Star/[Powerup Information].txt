@@ -1,0 +1,8 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needaredstar
+
+The powerup also has some configs you can apply. Simple open the file "flyingStar.lua", using something like notepad++ or visual studio code.
+
+flyDuration - How long the player can fly for before falling. Set to 0 for infinite flight.

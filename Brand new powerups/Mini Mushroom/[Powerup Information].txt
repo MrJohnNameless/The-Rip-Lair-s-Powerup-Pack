@@ -1,0 +1,24 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needaminimushroom
+* weelad
+* littlebabyman
+* yomamasoshort
+* honeyishrunktheplumbers
+* howstheweatherdownthere
+* andtheysaiditwasimpossible
+
+The powerup also has some configs you can apply. Simple open the file "miniMushroom.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+allowWallRun - Should the player be allowed to run up walls while mini? (true by default)
+allowSpinjumpHarm - Should the player still be able to harm NPCs by spinjumping while mini? (true by default)
+allowPeachSpinjump - Should be peach be given the ability to spinjump while mini? (true by default)
+allowWaterRun - Should the player be allowed to run on water while mini? (true by default)
+requiredWaterSpeed - How much horizontal speed must the player reach to be able to walk on water (1 by default)
+whitelistedNPCs - Which npc IDs can you harm no matter what when you're mini?
+
+
+
+On top of this, you can set certain warps to only be enterable if you're mini!
+Simply open the file titled "luna.lua" and add or remove warps.

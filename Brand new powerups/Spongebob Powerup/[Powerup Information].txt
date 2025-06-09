@@ -1,0 +1,16 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needaspongebob
+* needakrabbypatty
+* needaspingebill
+* imspongebob
+* imready
+* itsthebestdayever
+* youaskedforit
+* 62cents
+
+The powerup also has some configs you can apply. Simple open the file "SPONGEBOB.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+maxCharge - How much is the player able to charge their abilities (400 by default)
+fishbowlSpeedcap - What is the maximum speed the player can reach? (9 by default)

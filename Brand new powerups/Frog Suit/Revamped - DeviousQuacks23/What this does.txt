@@ -1,0 +1,5 @@
+Uses the new method of handling jumping
+You can now swim when holding an item, like in SMM2
+Frames for running over water
+All local variables are now data variables
+Hopping animation is smoother

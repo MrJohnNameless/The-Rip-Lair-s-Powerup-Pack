@@ -1,0 +1,11 @@
+Powerup by John Nameless/MrNameless
+
+Capt.Monochrome - made the original Penguin Suit powerup script which was occasionally referenced for this (https://www.smbxgame.com/forums/viewtopic.php?t=27675)
+				- also made the behavior for the powerup NPC of the penguin suit used here.
+				
+Shikaternia - made the sprites for Penguin Mario (https://mfgg.net/index.php?act=resdb&param=02&c=1&id=23949)
+			- made the sprites for Penguin Luigi
+			
+Gatete - featured Penguin Luigi sprites for Gatete Mario Engine 9 which were used here (https://github.com/GateteVerde/Gatete-Mario-Engine-9/releases)
+
+Legend-Tony980 - made the sprites for Penguin Toad (https://www.deviantart.com/legend-tony980/art/SMBX-Toad-s-sprites-Fourth-Update-724628909)

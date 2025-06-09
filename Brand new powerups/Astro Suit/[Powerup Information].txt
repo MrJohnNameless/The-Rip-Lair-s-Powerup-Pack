@@ -1,0 +1,20 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needanastrosuit
+* immoonwalking
+* houstonwehaveaproblem
+* onestepforplumberkind
+* spacecadet
+* tickettothemoon
+* rogerramjet
+
+The powerup also has some configs you can apply. Simple open the file "astroSuit.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+projectileSpeed - How fast should the projectile move horizontally? (8 by default)
+projectileLifetime - How long should the projectile last before automatically being destroyed? (80 by default)
+projectileCap - How many projectiles can the player shoot at a time? Setting it to -1 will allow infinite shooting (3 by default)
+projectileHarmType - What's the harm type afflicted onto the npc that got hit by the projectile? (-1 (Player Fireball) by default)
+allowSlowfall - Does the player fall much slower than usual? (true by default)
+allowFastfall - Is the player allowed to fall much faster when holding down? (true by default) 
+firingSFX - The sound to play when firing the laser

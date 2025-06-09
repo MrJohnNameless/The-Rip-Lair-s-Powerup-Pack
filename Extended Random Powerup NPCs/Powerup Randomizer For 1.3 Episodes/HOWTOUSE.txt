@@ -1,0 +1,3 @@
+Just simply place this luna.lua file in the episode folder of your choice, (most preferably a 1.3/Classic episode)
+alongside the Random Powerup NPCs + the custom powerups of your choice & every powerup NPC & every block that contains them
+will transform into a Random Powerup NPC!

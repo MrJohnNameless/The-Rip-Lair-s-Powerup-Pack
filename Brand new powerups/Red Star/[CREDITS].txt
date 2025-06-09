@@ -1,0 +1,4 @@
+Powerup made by MegaDood
+Afterimages shader by Emral
+Sprites by SleepyVA
+Some bugs and improvements by MarioBrigade

@@ -1,0 +1,3 @@
+Sprites + powerups by AlanLive
+Converted to customPowerups.lua by DisasterMaster
+Slightly improved by MegaDood

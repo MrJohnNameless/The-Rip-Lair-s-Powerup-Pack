@@ -1,0 +1,17 @@
+
+[Layer1]
+import = AI_ARC
+xAlign = CENTER
+yAlign = CENTER
+spawnBindX = CENTER
+spawnBindY = CENTER
+
+
+frames = 1
+framestyle = 0
+framespeed = 8
+xScale = 1
+yScale = 1
+speedY = -6
+
+gravity = 0.4

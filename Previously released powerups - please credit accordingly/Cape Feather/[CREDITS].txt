@@ -1,0 +1,3 @@
+NPC by MrDoubleA
+Converted to customPowerups.lua by DisasterMaster
+Beta Cape Mario sprites by SoratobuTamashī, imported by SleepyVA

@@ -1,0 +1,2 @@
+Powerup + Sprites made by MrNameless
+Rest of the credits can be found in powerups/SPONGEBOB.lua

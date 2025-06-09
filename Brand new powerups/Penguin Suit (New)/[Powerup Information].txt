@@ -1,0 +1,11 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needapenguinsuit
+* pingu
+* flightlessbird
+* slipandslide
+* linux
+* dropthebabypenguin
+
+The powerup also has some configs you can apply. Simply open the file "penguinSuit.lua", using something like notepad++ or visual studio code.

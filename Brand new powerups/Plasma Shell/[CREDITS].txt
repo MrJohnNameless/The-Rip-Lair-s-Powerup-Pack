@@ -1,0 +1,2 @@
+Plasma Shell made by "Master" of Disaster
+Some parts of the projectile code and the explosion sfx were taken from Emral's Gold Fireballs

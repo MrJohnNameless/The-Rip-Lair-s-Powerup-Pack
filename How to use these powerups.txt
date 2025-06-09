@@ -1,0 +1,36 @@
+It's easy to add these to your level.
+
+All you need to do is copy the two lua files present in this folder, and paste them into your level/episode folder.
+
+Then, go into one of the other folders (example: Bee Mushroom), and copy the contents of that folder tpp, as you see them laid out. if there's a folder within the bee mushroom one, don't extract it, copy that entire folder along with whatever else is inside.
+
+
+-- NEW & EASIER METHOD FOR VERSIONS 2.0.0 & LATER --
+Simply place the files of the powerup you're using in your level/episode folder & the .lua file of the respective powerup's powerup npc should automatically register itself!
+
+Do note that some powerups still need a luna.lua file for special cases, so copy the contents of that to your clipboard, then paste it your own luna.lua file of your level.
+You can open it with notepad++ or visual studio code, along with other programs.
+----------------------------------------------------
+
+
+
+-- OLD METHOD FOR 1.0.1 OR OLDER VERSIONS OF THE PACK --
+If you want to use multiple powerups, you'll need to do a bit of your own work.
+Go into the "luna.lua" file present in each powerup folder and copy the contents of that to your clipboard. Then, in the "luna.lua" file in your level, paste those at the top of the file. You can open it with notepad++ or visual studio code, along with other programs.
+--------------------------------------------------------
+
+
+On top of all this, you can adjust various settings if you need to. Simply open up their ai file (usually located in a folder called "powerups" and change what you need.
+
+For example:
+* Changing the projectile to be thrown
+* Changing the id of the powerup
+* Changing the sound or effect to play, useful if you change the ids from what they are normally
+
+************************************************************************************************************************************************************************
+If something doesn't work, for example an image not loading or an incorrect sound being played, it's important to check these AI files as they most likely can help you.
+************************************************************************************************************************************************************************
+
+
+The "Previously released powerups - please credit accordingly" folder contains powerups from other people, revamped and reworked to work with customPowerups.lua
+The "Brand new powerups" folder on the other hand includes stuff never seen before!

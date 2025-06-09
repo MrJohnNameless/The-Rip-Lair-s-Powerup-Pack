@@ -1,0 +1,2 @@
+LangtonLion64 - Original Jetpack powerup & made all the original Jetpack assets (Powerup sprite,Jetpack SFX,Player sprites, etc.)
+MrNameless - Coded the powerup and provided some sprites

@@ -1,0 +1,4 @@
+Sprites + NPC by MegaDood
+lazy recolors and edits to code by sleepyva
+
+P-Wing made multiplayer compatible by DeviousQuacks23

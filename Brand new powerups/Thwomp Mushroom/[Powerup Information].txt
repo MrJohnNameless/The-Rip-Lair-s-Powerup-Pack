@@ -1,0 +1,10 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needathwompshroom
+* ourgh
+
+The powerup also has some configs you can apply. Simple open the file "thwompMushroom.lua" in the "AI" folder, using something like notepad++ or visual studio code.
+
+directionControl - If the player can use the ability in any direction by using the respective direction keys (true by default)
+canInfinitelySlam - If the player can use the ability multiple times at once mid-air (false by default)

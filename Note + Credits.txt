@@ -1,0 +1,14 @@
+This is a massive collaboration project by many members of "The Rip Lair", a discord server that primarily works on the Online GFX Pack.
+
+Please credit accordingly! As everyone made something different, it's important to do so.
+
+You can check each folder to see who made what powerup.
+
+These all use Marioman2007's powerup script called "customPowerups.lua".
+Big thanks to him!
+
+Thanks to Emral as well, for without his original powerup script this would not have been possible!
+
+Thanks to DisasterMaster for converting and organising so many of the powerups in this pack from older packs!
+
+Also, a special thanks to SleepyVA, as he made most of the sprites to the player spritesheets. So please check the folders to see who sprited what.

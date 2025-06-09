@@ -1,0 +1,8 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needaswoopersuit
+
+The powerup also has some configs you can apply. Simple open the file "builderSuit.lua" in the "AI" folder, using something like notepad++ or visual studio code.
+
+flightTime - The time you can fly for before falling back down

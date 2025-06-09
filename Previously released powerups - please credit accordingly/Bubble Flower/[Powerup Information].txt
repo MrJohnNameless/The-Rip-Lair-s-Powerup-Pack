@@ -1,0 +1,19 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needabubbleflower
+* wonderfullybubbly
+
+
+The powerup also has some configs you can apply. Simple open the file "smbw_bubble.lua" in the "AI" folder, using something like notepad++ or visual studio code.
+
+
+On line 16 and 17, you can blacklist npcs to be affected by the bubble.
+
+
+In npc-752.lua, there are also some configs.
+
+thrownSpeed - The speed in which the bubble is thrown.
+lifetime - How long until the bubble should be destroyed, in ticks.
+flashSpeed - The rate in which the bubble flashes when close to death
+warningFrames - Similar to flashSpeed

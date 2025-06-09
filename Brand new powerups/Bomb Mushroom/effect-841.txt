@@ -1,0 +1,7 @@
+[first]
+import=AI_SINGLE
+framespeed=6
+frames=4
+lifetime=240
+xOffset=-64
+yOffset=-72

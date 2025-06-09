@@ -1,0 +1,7 @@
+Original Concept by Nintendo
+
+Powerup Concept, Sprites by Sleepy
+Specific Link Sprites by Sara/DeltomX3
+Programming by MrNameless
+
+Detailed credits can be found at the top of the "chickenSuit.lua" lua file.

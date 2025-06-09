@@ -1,0 +1,9 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needavanishcap
+* underthemoat
+* imshy
+
+You can also change the block IDs that you can passthrough!
+Simply open "npc-988.lua" and add or change IDs where it mentions "intangibleBlocks" in the config section.

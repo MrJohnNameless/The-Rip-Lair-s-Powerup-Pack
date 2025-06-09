@@ -1,0 +1,5 @@
+gfxheight = 22
+gfxwidth = 24
+gfxoffsety = 2
+width = 24
+height = 22

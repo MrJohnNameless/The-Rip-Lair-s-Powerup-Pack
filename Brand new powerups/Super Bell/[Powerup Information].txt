@@ -1,0 +1,22 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needasuperbell
+* needacatsuit
+* herekittykitty
+* ohheytacobell
+* thecatsmeow
+* garfieldyoufatcat
+* yarnaddiction
+* micetastenice
+* hairball
+* valorantplayers
+* sorrymdaandstarshi
+
+The powerup also has some configs you can apply. Simple open the file "catSuit.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+swipeSFX - What is the SFX played when attacking/swiping with the cat suit?
+canDive - Is the player able to dive while using the cat suit? (true by default)
+canSlide - Is the player able to slide while using the cat suit? (true by default)
+canWallClimb - Is the player allowed to wall-climb while using the cat suit? (true by default)
+wallClimbLength - How many ticks/frames is the player able to wall-climb for? (260 by default)

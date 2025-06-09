@@ -1,0 +1,15 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needawartsuit
+* ribbit
+* youcanstopaskingforitnow
+* longtimecoming
+* kissme
+
+The powerup also has some configs you can apply. Simple open the file "flyingStar.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+allowWaterRun - Should the player be able to run on water, while holding an item?
+waterAccelerationConstant
+waterDecelerationConstant
+playSwimSFX

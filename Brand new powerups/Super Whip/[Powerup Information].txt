@@ -1,0 +1,14 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needanotherbelmont
+* ghostridesthewhip
+* diemonster
+* whatisaman
+* johnnytest
+* whipitgood
+
+
+The powerup also has some configs you can apply. Simple open the file "superWhip.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+loseSpeed - If the player loses all of their speed when attacking

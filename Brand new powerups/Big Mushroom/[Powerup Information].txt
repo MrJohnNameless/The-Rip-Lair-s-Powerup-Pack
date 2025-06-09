@@ -1,0 +1,17 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needabigmushroom
+* thebiggerthebetter
+* supersizedmariobros
+* gobigorgohome
+* notquitemega
+* thiccgyatt
+* nibblemythumb
+* marioinharlem
+* soretro
+* doyouhatethe4x4pixels
+
+The powerup also has some configs you can apply. Simple open the file "bigMushroom.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+breakBlocksHorizontally - If this option is enabled, you will be able to break blocks by running into them, like in the original SMM

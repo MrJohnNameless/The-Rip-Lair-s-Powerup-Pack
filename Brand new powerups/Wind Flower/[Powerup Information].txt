@@ -1,0 +1,15 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needawindflower
+* needsomewind
+* breezy
+* pacifist
+* pacifistmode
+* trickytrials
+* hurricane
+* woosh
+* rslashwoosh
+* foo
+* playablebreeze
+* fooexhaledotogg

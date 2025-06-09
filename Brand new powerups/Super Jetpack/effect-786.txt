@@ -1,0 +1,21 @@
+[Layer1]
+import = AI_SINGLE
+
+xOffset = -16:16
+yOffset = -8:4
+xAlign = CENTER
+yAlign = TOP
+spawnBindX = CENTER
+spawnBindY = TOP
+
+frames = 4 
+framestyle = 0 
+framespeed = 16
+variants = 1
+variant = 1
+
+gravity = 0
+speedX = 0
+speedY = 2
+maxSpeedX=-1
+maxSpeedY=-1

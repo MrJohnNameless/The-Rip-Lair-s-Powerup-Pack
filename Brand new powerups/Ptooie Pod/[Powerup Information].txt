@@ -1,0 +1,21 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needaptooie
+* hawktuah
+* pograhna
+* plantneutralspecial
+* spititout
+* peashooter
+* middleground
+* cloudywithachanceofspikeballs
+* balancingact
+
+
+The powerup also has some configs you can apply. Simple open the file "ptooieSuit.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+blowheights - What are the blowheights that the player's projectile alternate in reaching? ({72,72} by default)
+spitSpeedX - What is the minimum speed will the player's projectile be sent horizontally? (3 by default)
+spitSpeedY - What is the minimum speed will the player's projectile be sent vertically? (-Defines.npc_grav by default)
+bounceOnHit - Should the player's projectile bounce upward by a speed of -4 upon hitting any npc? (false by default)
+standstillRequirement - Does the player need to be completely still in order to use their projectile, accurate to the Mario Takes a Three? (false by default)

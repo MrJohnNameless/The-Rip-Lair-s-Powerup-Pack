@@ -1,0 +1,20 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needasuperjetpack
+* needajetpack
+* gottablast
+* youreonblast
+* barrysteakfries
+* jetpackjoyride
+* noiwillnotaddrocketboots
+
+The powerup also has some configs you can apply. Simple open the file "superJetpack.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+showMeter - Can the jetpack's fuel meter be shown? (true by default)
+miniMeter - Should a smaller version of the jetpack's fuel meter be shown instead? (false by default)
+accelMultiplier - What's the speed multiplier for acclerating upwards with the jetpack? (2.25 by default)
+upwardSpeedcap - What is the maximum upwards speed the jetpack can fly up to? (Defines.jumpspeed/-5.7 by default)
+depletionRate - From 1 to 0, how much fuel is lost between those numbers per tick/frame when using the jetpack? (0.0085 by default)
+recoveryRate - From 0 to 1, how much fuel is recovered between those numbers per tick/frame? (0.01 by default)
+recoveryOnStomp - From 0 to 1, how much fuel is recovered between those numbers upon stomping on a NPC? (0.2 by default)

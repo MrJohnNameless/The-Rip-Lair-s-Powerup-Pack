@@ -1,0 +1,20 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needanaquaflower
+* needaaquaflower
+* itshiptobeesquare
+* firefighter
+* remembertohydrateyourself
+* eightsglassesaday
+* slipperywhenwet
+
+The powerup also has some configs you can apply. Simple open the file "aquaFlower.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+enableSwimAccel - Will you get a speed boost while underwater? (true by default)
+swimAcceleration - When underwater, how much extra speed does the player get when swimming forward? (0.075 by default)
+
+You can also check the file "npc-962.lua" using something like notepad++ or visual studio code, and add or remove various settings there.
+
+smallProjectile - the NPC ID of the small projectile (the ID of the npc + 1 by default)
+SPAmount - the number of small projectiles it splits into when hitting something (4 by default)

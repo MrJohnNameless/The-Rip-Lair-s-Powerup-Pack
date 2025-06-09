@@ -1,0 +1,3 @@
+gfx-width = 32
+gfx-height = 32
+frames = 3

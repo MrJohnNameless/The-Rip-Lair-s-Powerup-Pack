@@ -1,0 +1,4 @@
+Emral - Explosion sound effect taken from anotherPowerup's demo + Mario's spritesheet
+Shikaternia - Goldball sprites
+Recoloured sprites for Peach by P-Tux7 (Luigi was recolored by Marioman2007)
+Powerup made by Marioman2007

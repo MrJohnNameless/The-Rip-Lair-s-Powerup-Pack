@@ -1,0 +1,10 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needabooshroom
+* mariothefriendlyghost
+* ghostbusters
+
+The powerup also has some configs you can apply. Simple open the file "booMushroom.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+blackListedBlocks - Add and remove blocks to make certain blocks able to be passed through

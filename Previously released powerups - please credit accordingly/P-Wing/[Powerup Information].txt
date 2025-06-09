@@ -1,0 +1,12 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needapwing
+* strangeandwonderfulthing
+* flightmode
+* redbull
+
+You can also open the file "npc-866.lua" in notepad++ or visual studio code, to change the following setting:
+
+
+dogroundsparkleeffect - If true, then the sparkle effect is set at all times, even while on the ground

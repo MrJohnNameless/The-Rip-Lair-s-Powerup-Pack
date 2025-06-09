@@ -1,0 +1,3 @@
+NPC by MegaDood
+Uses anotherWallJump by Emral
+Sprites by Hello Fangaming

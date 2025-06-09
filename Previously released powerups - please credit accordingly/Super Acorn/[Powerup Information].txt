@@ -1,0 +1,23 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needanacorn
+* needaacorn
+* stockupforwinter
+
+
+The powerup also has some configs you can apply. Simple open the file "ap_acorn.lua", using something like notepad++ or visual studio code.
+
+There are a ton of configs you can change.
+
+glideConstant = - A constant used to determine how quickly you fall while moving at your maximum speed. The higher it is, the faster your descent will be.
+glideRounding - A constant used to determine how quickly you slow down while gliding. The higher it is, the quicker you'll snap to your gliding speed.
+glideFloor - Used to determine the fastest speed that you can fall at, which is equal to your terminal velocity (Defines.gravity) divided by this number. The higher it is, the slower you'll drop.
+spinJumpConstant = 16, --A constant used to determine how much higher spin jumps go. The higher it is, the higher you'll jump!
+glideCurveX
+glideCurveY
+boostDuration
+hoverConstant
+
+This powerup also has support with Cpt. Monochrome's SMM2 playables! You can find them here:
+https://www.smbxgame.com/forums/viewtopic.php?t=27615

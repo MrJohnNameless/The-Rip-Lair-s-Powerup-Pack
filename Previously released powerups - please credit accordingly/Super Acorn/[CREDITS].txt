@@ -1,0 +1,7 @@
+NPC by Cpt. Monochrome
+Converted to customPowerups by MegaDood
+Sprite credits can be found at the top of the "ap_acorn.lua" lua file.
+SMAS SMB3 player sprites edited by SleepyVA
+SMAS SMB3 Styled acorn sprited by DeviousQuacks23
+
+The SMM2 Playables be found here: https://www.smbxgame.com/forums/viewtopic.php?t=27615

@@ -1,0 +1,28 @@
+[first]
+onTick=TICK_ARC
+gravity=0.6
+speedY=-5:-7
+speedX=-2:-4
+framespeed=3
+frames=1
+xAlign = CENTER
+yAlign = CENTER
+variants = 2
+variant = 1
+lifetime=500
+maxSpeedY=10
+rotation = -10:-12
+
+
+[2]
+template=first
+speedX=2:4
+img=760
+variant = 2
+rotation = 10:12
+
+[3]
+img = 132
+import=AI_SINGLE
+framespeed=4
+frames=2

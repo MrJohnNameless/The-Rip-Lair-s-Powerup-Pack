@@ -1,0 +1,2 @@
+Use the "Player Sprite Index with Highlighted Slots" .pdn/.aseprite file as a means to making your spritesheet much easier & streamlined. 
+Otherwise feel free to delete them & this file once you're done using them.

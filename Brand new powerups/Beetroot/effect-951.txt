@@ -1,0 +1,18 @@
+
+[Layer1]
+import = AI_SINGLE
+
+xOffset = -16:16 ;ranges are supported
+yOffset = -8
+xAlign = CENTER
+yAlign = CENTER
+spawnBindX = CENTER
+spawnBindY = CENTER
+xScale = 2
+yScale = 2
+
+frames = 3
+framestyle = 0
+framespeed = 3
+variants = 1
+gravity = 0

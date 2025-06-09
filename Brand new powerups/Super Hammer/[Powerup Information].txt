@@ -1,0 +1,17 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needabuildersuit
+* supersmbxmaker
+* wreckingcrew
+* canwefixit
+* fixitfelix
+* ifuckedupthecobblestonegeneratorpleaseforgiveme
+
+
+The powerup also has some configs you can apply. Simple open the file "builderSuit.lua" in the "AI" folder, using something like notepad++ or visual studio code.
+
+swingLength - How long does the hammer swing last? (40 by default)
+crateLimit - How many crates can a player make at a time? (5 by default)
+crateCooldown - How long does the player have to wait before spawning another crate & being able to swing again? (30 by default)
+allowFowardMovement - Should the player be at least allowed to move foward while swinging? (false by default)

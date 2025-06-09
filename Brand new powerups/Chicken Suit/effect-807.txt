@@ -1,0 +1,28 @@
+[first]
+import=AI_ARC
+xAlign = MID
+yAlign = MID
+spawnBindX = CENTER
+spawnBindY = CENTER
+frames = 1
+framestyle=0
+rotation = -5:5
+variants = 2
+speedX = -2
+speedY = -4
+
+[second]
+template=first
+variant = 1
+speedX = 2
+
+[third]
+template=first
+variant = 2
+speedY = -2
+
+[fourth]
+template=first
+variant = 2
+speedX = 2
+speedY = -2

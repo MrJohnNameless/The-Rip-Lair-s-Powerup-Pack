@@ -1,0 +1,5 @@
+[1]
+onTick = TICK_SINGLE
+frames = 2
+framestyle = 0
+framespeed = 4

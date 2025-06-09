@@ -1,0 +1,6 @@
+name=Spongebob
+gfxwidth=96
+gfxheight=96
+frames=4
+framespeed=16
+framestyle=1
