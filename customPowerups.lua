@@ -1,5 +1,5 @@
 --[[
-    By Marioman2007 [v1.2.1] (unreleased LATEST LATEST file)
+    By Marioman2007 [v1.3] (unreleased LATEST)
     uses code from anotherpowerup.lua by Emral
 ]]
 
@@ -9,7 +9,6 @@ local pm = require("playerManager")
 local npcManager = require("npcManager")
 
 local savedata = SaveData.customPowerups
-
 
 local cp = {}
 
@@ -30,6 +29,7 @@ local powerNames = {}
 local itemMap = {}
 local blacklistedChars = {}
 local playerData = {}
+local mapAssetsLoaded = {}
 
 local registeredAssets = {}
 local registeredFilenames = {}
@@ -44,17 +44,14 @@ if Misc.inEditor() and not isOverworld then
 end
 
 local apdl
-pcall(function() apdl = require("anotherPowerDownLibrary") end)
-
 local GP
-pcall(function()
-    if not isOverworld then
-        GP = require("GroundPound")
-    end
-end)
-
 local respawnRooms
-pcall(function() respawnRooms = require("respawnRooms") end)
+
+if not isOverworld then
+    pcall(function() apdl = require("anotherPowerDownLibrary") end)
+    pcall(function() GP = require("GroundPound") end)
+    pcall(function() respawnRooms = require("respawnRooms") end)
+end
 
 respawnRooms = respawnRooms or {respawnSettings = {respawnPowerup = 1}}
 
@@ -189,10 +186,12 @@ end
 local function loadFile(key, file, character, costumeName, name)
     local f = file
     local typ = name .. "-ini"
+    local canAddFile = true
 
     if string.find(file, ".png") then
         f = Graphics.loadImage(file)
         typ = name .. "-img"
+        canAddFile = (f.width == 1000 and f.height == 1000)
     end
 
     registeredAssets[character][costumeName][key] = f
@@ -206,7 +205,9 @@ local function loadFile(key, file, character, costumeName, name)
         registeredFilenames[character][costumeName] = {}
     end
 
-    registeredFilenames[character][costumeName][typ] = file
+    if canAddFile then
+        registeredFilenames[character][costumeName][typ] = file
+    end
 end
 
 local function registerAsset(powerup, character, filename)
@@ -246,6 +247,33 @@ local function getAsset(powerup, character, key)
     end
 
     return asset
+end
+
+local function fixHitboxOnMap(p)
+    if not savedata.registeredFilenames then
+        return
+    end
+
+    if not savedata[p.idx] or not savedata[p.idx][p.character] then
+        return
+    end
+    
+    local stored = savedata.registeredFilenames
+    local costumeName = pm.getCostume(p.character) or "__default"
+
+    if stored[p.character] and stored[p.character][costumeName] then
+        local iniFile = stored[p.character][costumeName][savedata[p.idx][p.character] .. "-ini"]
+
+        if iniFile then
+            Misc.loadCharacterHitBoxes(p.character, p.powerup, iniFile)
+        end
+
+        local imgFile = stored[p.character][costumeName][savedata[p.idx][p.character] .. "-img"]
+
+        if imgFile then
+            Graphics.sprites[pm.getName(p.character)][p.powerup].img = Graphics.loadImage(imgFile)
+        end
+    end
 end
 
 local function dropItem(id)
@@ -682,17 +710,21 @@ local function handleChanges(p, data, currentPowerup)
     end
     
     if data.oldCharacter ~= p.character then
-        if currentPowerup then
-            resetAssets(currentPowerup.basePowerup, data.oldCharacter, p)
-            callEvent(currentPowerup, "onDisable", p, true)
+        if not isOverworld then
+            if currentPowerup then
+                resetAssets(currentPowerup.basePowerup, data.oldCharacter, p)
+                callEvent(currentPowerup, "onDisable", p, true)
+            end
+
+            cp.setPowerup(savedata[p.idx][p.character] or p.powerup, p, true)
+            currentPowerup = data.currentPowerup
+            loadAssets(currentPowerup, p)
+            callEvent(currentPowerup, "onEnable", p, true)
+
+            data.oldCharacter = p.character
+        else
+            fixHitboxOnMap(p)
         end
-
-        cp.setPowerup(savedata[p.idx][p.character] or p.powerup, p, true)
-        currentPowerup = data.currentPowerup
-        loadAssets(currentPowerup, p)
-        callEvent(currentPowerup, "onEnable", p, true)
-
-        data.oldCharacter = p.character
     end
 
     local isInApdlForcedState = false
@@ -799,25 +831,29 @@ function cp.onStart()
     ]]
 
     if isOverworld and savedata.registeredFilenames then
-        local stored = savedata.registeredFilenames
+        Routine.run(function()
+            Routine.skip()
+            local stored = savedata.registeredFilenames
 
-        for _, p in ipairs(Player.get()) do
-            if savedata[p.idx] then
-                for k, char in pairs(savedata[p.idx]) do
-                    if stored[char] and stored[char][costumeName] then
+            for _, p in ipairs(Player.get()) do
+                if savedata[p.idx] then
+                    for char, powerName in pairs(savedata[p.idx]) do
                         local costumeName = pm.getCostume(char) or "__default"
-                        local iniFile = stored[char][costumeName][savedata[p.idx][char] .. "-ini"]
-                        local imgFile = stored[char][costumeName][savedata[p.idx][char] .. "-img"]
 
-                        if iniFile then
-                            Misc.loadCharacterHitBoxes(char, p.powerup, iniFile)
+                        if stored[char] and stored[char][costumeName] then
+                            local iniFile = stored[char][costumeName][savedata[p.idx][char] .. "-ini"]
+                            local imgFile = stored[char][costumeName][savedata[p.idx][char] .. "-img"]
+
+                            if iniFile then
+                                Misc.loadCharacterHitBoxes(char, p.powerup, iniFile)
+                            end
+
+                            Graphics.sprites[pm.getName(char)][p.powerup].img = Graphics.loadImage(imgFile)
                         end
-
-                        Graphics.sprites[pm.getName(char)][p.powerup].img = Graphics.loadImageResolved(imgFile)
                     end
                 end
             end
-        end
+        end)
     end
 
     for _, p in ipairs(Player.get()) do
@@ -827,7 +863,7 @@ function cp.onStart()
             savedata[p.idx] = {}
         end
 
-        if savedata[p.idx][p.character] then
+        if not isOverworld and savedata[p.idx][p.character] then
             cp.setPowerup(savedata[p.idx][p.character], p, true)
         end
     end
@@ -918,8 +954,9 @@ function cp.onDraw()
             data.checkedThisFrame = false
 
             if isOverworld then
-                if isOverworld and (Misc.isPaused() or (not Misc.isPaused() and wasPaused) or (Misc.isPaused() and not wasPaused)) then
-                    loadAssets(currentPowerup, p)
+                if isOverworld and (Misc.isPaused() or (not Misc.isPaused() and wasPaused) or (Misc.isPaused() and not wasPaused) or not mapAssetsLoaded[p.character]) then
+                    mapAssetsLoaded[p.character] = true
+                    fixHitboxOnMap(p)
                 end
 
                 -- why not?
@@ -950,7 +987,6 @@ function cp.onDraw()
 
     wasPaused = Misc.isPaused()
 end
-
 
 local function setReserveItem(p, id)
     -- given item is a mushroom
