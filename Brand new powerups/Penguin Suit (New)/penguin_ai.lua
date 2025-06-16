@@ -25,12 +25,15 @@ function penguin.onTickEndNPC(v)
 	if not v.data.initialized then
 		initialize(v, v.data)
 	end
+
+	if v.heldIndex ~= 0 or v.isProjectile or v.forcedState > 0 then return end
 	
 	if v.data.penguinWaitTimer >= 10 then
 		v.speedX = 0
 	else
 		v.speedX = math.min(1, (10 - v.data.penguinWaitTimer) / 10) * 0.25 * v.direction
 	end
+
 	v.data.rotation = v.data.rotation + 0.25
 	v.data.penguinWaitTimer = v.data.penguinWaitTimer - 1
 end
@@ -64,8 +67,8 @@ function penguin.onDrawNPC(v)
 	end
 	
 	penguinSprite.rotation = 22.5 * math.sin(v.data.rotation * 0.5) * math.min(1, ((100 - v.data.penguinWaitTimer) / 100) + 0.1)
-	penguinSprite.x = v.x + v.width*0.5 + config.gfxoffsetx + penguinOffset
-   	penguinSprite.y = v.y + v.height - config.gfxheight * 0.5 + config.gfxoffsety + 16
+	penguinSprite.x = v.x + (v.width * 0.5) + config.gfxoffsetx + penguinOffset
+   	penguinSprite.y = v.y + v.height - (config.gfxheight * 0.5) + config.gfxoffsety
 
 	local lowPriorityStates = table.map{1,3,4}
 	local priority = (lowPriorityStates[v:mem(0x138,FIELD_WORD)] and -75) or (v:mem(0x12C,FIELD_WORD) > 0 and -30) or (config.foreground and -15) or -45
