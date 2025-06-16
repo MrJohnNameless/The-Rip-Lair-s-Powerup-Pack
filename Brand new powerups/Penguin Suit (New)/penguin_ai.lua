@@ -68,7 +68,7 @@ function penguin.onDrawNPC(v)
 	
 	penguinSprite.rotation = 22.5 * math.sin(v.data.rotation * 0.5) * math.min(1, ((100 - v.data.penguinWaitTimer) / 100) + 0.1)
 	penguinSprite.x = v.x + (v.width * 0.5) + config.gfxoffsetx + penguinOffset
-   	penguinSprite.y = v.y + v.height - (config.gfxheight * 0.5) + config.gfxoffsety
+   	penguinSprite.y = v.y + v.height - (config.gfxheight * 0.5) + config.gfxoffsety + (config.gfxheight * 0.5) 
 
 	local lowPriorityStates = table.map{1,3,4}
 	local priority = (lowPriorityStates[v:mem(0x138,FIELD_WORD)] and -75) or (v:mem(0x12C,FIELD_WORD) > 0 and -30) or (config.foreground and -15) or -45
