@@ -77,7 +77,7 @@ function bombShroom.onTickPowerup(p)
     local count = 1
 
     if p:mem(0x50, FIELD_BOOL) and p.holdingNPC == nil then
-		p:mem(0x160, FIELD_WORD,1) -- also needed to prevent a base powerup's projectile from shooting while spinjumping for this particular powerup
+		p:mem(0x160, FIELD_WORD,1) -- also needed to prevent a base powerup's projectile from shooting while spinjumping for this particular powerup reason
         count = 2
 
         if p:isOnGround() then

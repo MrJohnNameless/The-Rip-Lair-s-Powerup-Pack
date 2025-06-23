@@ -96,7 +96,7 @@ function bomb.onTickEndNPC(v)
 	if v.ai1 >= config.explodeTime then
 		Explosion.spawn(v.x + 8, v.y + 16, -841)
 		v:kill(9)
-	elseif v.ai1 == config.explodeTime - 96 and config.allowAlert then
+	elseif v.ai1 == config.explodeTime - 72 and config.allowAlert then
 		data.animation = config.alertAnimation
 	end
 	
