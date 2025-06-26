@@ -1,6 +1,5 @@
 local npcManager = require("npcManager")
 local npcutils = require("npcs/npcutils")
-local powerupLib = require("powerups/boomflower")
 
 local powerup = {}
 local npcID = NPC_ID
@@ -19,7 +18,7 @@ local powerupSettings = {
 	height = 32,
 	
 	gfxoffsetx = 0,
-	gfxoffsety = 0,
+	gfxoffsety = 2,
 	
 	frames = 1,
 	framestyle = 0,
@@ -51,21 +50,30 @@ local powerupSettings = {
 }
 
 npcManager.setNpcSettings(powerupSettings)
-npcManager.registerHarmTypes(npcID,{HARM_TYPE_OFFSCREEN},{})
+npcManager.registerHarmTypes(npcID,
+	{
+		HARM_TYPE_FROMBELOW,
+		HARM_TYPE_LAVA,
+		HARM_TYPE_TAIL,
+		--HARM_TYPE_OFFSCREEN,
+	}, 
+	{
+		[HARM_TYPE_LAVA]={id=13, xoffset=0.5, xoffsetBack = 0, yoffset=1, yoffsetBack = 1.5},
+		--[HARM_TYPE_OFFSCREEN]=10,
+	}
+);
 
 function powerup.onInitAPI()
-	Cheats.register("needaboomerangflower",{
-		isCheat = true,
-		activateSFX = 12,
-		aliases = powerupLib.aliases,
-		onActivate = (function() 
-			for i,p in ipairs(Player.get()) do
-				p.reservePowerup = npcID
-			end
-			
-			return true
-		end)
-	})
+	registerEvent(powerup, "onNPCHarm")
+end
+
+function powerup.onNPCHarm(token,v,harm,c)
+	if v.id ~= npcID then return end
+	
+	if harm ~= HARM_TYPE_TAIL and harm ~= HARM_TYPE_FROMBELOW then return end
+	v.speedY = -6
+	SFX.play(2)
+	token.cancelled = true
 end
 
 return powerup

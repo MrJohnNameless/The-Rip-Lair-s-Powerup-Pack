@@ -25,7 +25,6 @@ local smb2Chars = table.map{3,4,6,9,10,11,16}
 -- Link, Snake, and Samus respectively
 local linkChars = table.map{5,12,16}
 
-local animFrames = {11, 11, 11, 11, 12, 12, 12, 12}
 local projectileTimerMax = {64, 64, 64, 64, 70}
 local lastDirection = {}
 
@@ -78,7 +77,6 @@ function bombShroom.onTickPowerup(p)
 
     if p:mem(0x50, FIELD_BOOL) and p.holdingNPC == nil then
 		p:mem(0x160, FIELD_WORD,1) -- also needed to prevent a base powerup's projectile from shooting while spinjumping for this particular powerup reason
-        count = 2
 
         if p:isOnGround() then
             return

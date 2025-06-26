@@ -312,10 +312,10 @@ function astroSuit.onNPCKill(token,v,harm,c)
 	for _,p in ipairs(Player.get()) do
 		if p.data.astroSuit then
 			local data = p.data.astroSuit
-			for i = #data.ownedLasers,1,-1 do
-				local n = data.ownedLasers[i];
+			for i,n in ipairs(data.ownedLasers) do
 				if n.isValid and n == v then
 					table.remove(data.ownedLasers, i) -- makes the player "disown" the laser they shot, allowing them to shoot more
+					break
 				end
 			end
 		end

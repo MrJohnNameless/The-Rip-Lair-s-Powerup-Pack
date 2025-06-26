@@ -190,7 +190,7 @@ function template.onTickPowerup(p)
 				v.isProjectile = true
 				v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
 				v.direction = dir
-				p:mem(0x118, FIELD_FLOAT,110)
+				p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 			end
 			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
 			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
@@ -211,6 +211,9 @@ function template.onTickEndPowerup(p)
 		data.lastDirection = p.direction * -1
 	end
 	p:mem(0x54,FIELD_WORD,data.lastDirection) -- prevents a base powerup's projectile from shooting while spinjumping
+	
+	-- put your own code here!
+	
 end
 
 function template.onDrawPowerup(p)

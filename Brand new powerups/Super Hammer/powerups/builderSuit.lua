@@ -54,6 +54,7 @@ builderSuit.settings = {
 	swingLength = 40, -- How long does the hammer swing last? (40 by default)
 	crateLimit = 5, -- How many crates can a player make at a time? (5 by default)
 	crateCooldown = 30, -- How long does the player have to wait before spawning another crate & being able to swing again? (30 by default)
+	allowSwingStun = true, -- Should the player be able to be stunned when hitting certain hard blocks? (true by default)
 	allowFowardMovement = false, -- Should the player be at least allowed to move foward while swinging? (false by default)
 }
 
@@ -247,7 +248,7 @@ function builderSuit.onTickPowerup(p)
 		p.keys.altJump = KEYS_UP
 		p.keys.down = KEYS_UP
 
-		if data.swingTimer >= 11 and data.swingTimer <= settings.swingLength/2 then
+		if data.swingTimer >= 8 and data.swingTimer <= settings.swingLength/2 then
 			local hittedSomething = false
 			local bumpedBlock = false
 			-- handles hitting blocks
@@ -295,7 +296,7 @@ function builderSuit.onTickPowerup(p)
 			end
 		
 			-- stuns the player whenever they hit a solid block
-			if bumpedBlock and data.swingTimer <= 14 then
+			if bumpedBlock and data.swingTimer <= 14 and settings.allowSwingStun then
 				data.swingState = STATE_STUN
 				playerStun.stunPlayer(p.idx, settings.swingLength - data.swingTimer)
 				SFX.play(35)
@@ -327,8 +328,7 @@ end
 function builderSuit.onDrawPowerup(p)
 	if not p.data.builderSuit then return end -- check if the powerup is currently active
 	local data = p.data.builderSuit
-	-- put your own code here!
-	
+
     local curFrame = animFrames[math.min(math.floor(data.swingTimer * 0.7), #animFrames)] -- sets the frame depending on how much the projectile timer has
     local canPlay = canSwing(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
 
@@ -345,12 +345,12 @@ function builderSuit.onNPCKill(token,v,harm)
 	for _,p in ipairs(Player.get()) do
 		if p.data.builderSuit then
 			local data = p.data.builderSuit	
-			for i = #data.ownedCrates,1,-1 do
-				local n = data.ownedCrates[i];
-				if (n.isValid) and n == v then
+			for i,n in ipairs(data.ownedCrates) do
+				if n.isValid and n == v then
 					table.remove(data.ownedCrates, i)
+					break
 				end
-			end	
+			end
 		end
 	end
 end
