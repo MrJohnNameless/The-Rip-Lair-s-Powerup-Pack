@@ -87,16 +87,12 @@ local function canPlayShootAnim(p)
     )
 end
 
-function concrete.onInitAPI()
-	-- register your events here!
-	--registerEvent(concrete,"onNPCHarm")
-end
-
 -- runs once when the powerup gets activated, passes the player
 function concrete.onEnable(p)	
 	p.data.concreteMushroom = {
-		projectileTimer = 0, -- don't remove this unless you know what you're doing
+		lastDirection = p.direction * -1, -- don't remove this unless you know what you're doing
 	}
+	p:mem(0x162, FIELD_WORD,5)
 end
 
 -- runs once when the powerup gets deactivated, passes the player
@@ -109,22 +105,25 @@ function concrete.onTickPowerup(p)
 	if not p.data.concreteMushroom then return end
 	local data = p.data.concreteMushroom
 	
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
-    
-    if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-        p:mem(0x160, FIELD_WORD, 2)
-	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
-    end
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end
+	 
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
+		if p:mem(0x162,FIELD_WORD) > 2 then return end
+	else
+		if p:mem(0x160, FIELD_WORD) > 0 then return end
+	end
 
-   if data.projectileTimer > 0 or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-
-    if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end
+	local flamethrowerActive = Cheats.get("flamethrower").active
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) 
 	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
+		tryingToShoot = true
+	end
 	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if ((p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) and not linkChars[p.character]) or player:mem(0x14, FIELD_WORD) == 2 then
+    if (tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
         local dir = p.direction
-		
 		-- spawns the projectile itself
         local v = NPC.spawn(
 			concrete.projectileID,
@@ -132,38 +131,51 @@ function concrete.onTickPowerup(p)
 			p.y + p.height/2 + p.speedY, p.section, false, true
         )
 		
-		-- handles making the projectile be held if the player pressed altRun & is a SMB2 character
-		if p.keys.altRun and smb2Chars[p.character] and p.holdingNPC == nil then
-			-- this sets the npc to be held by the player
-			v.speedY = 0
-			v.heldIndex = p.idx
-			p:mem(0x154, FIELD_WORD, v.idx+1)
-			SFX.play(18)
-		elseif linkChars[p.character] then -- handles shooting as link/snake/samus
-			if p:mem(0x12E,FIELD_BOOL) then -- if ducking, have the npc not rise higher
+		-- handles shooting as link/snake/samus
+		if linkChars[p.character] then 
+			-- shoot less higher when ducking
+			if p:mem(0x12E,FIELD_BOOL) then
 				v.speedY = -2
 			else
 				v.speedY = -5
 			end
-			v.x = v.x + (16 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
-			SFX.play(82)
-		else -- handles normal shooting
-			if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-				local speedYMod = p.speedY * 0.1
-				if p.standingNPC then
-					speedYMod = p.standingNPC.speedY * 0.1
-				end
-				v.speedY = -6 + speedYMod
-			else
-				v.speedY = -4
-			end
-			
+			v.x = v.x + (16 * dir)
 			v.isProjectile = true
 			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
+			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
+			SFX.play(82)
+			if flamethrowerActive then
+				p:mem(0x162, FIELD_WORD,2)
+			end
+		else
+			-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
+			if smb2Chars[p.character] and p.holdingNPC == nil and p.keys.altRun then 
+				v.speedY = 0
+				v.heldIndex = p.idx
+				p:mem(0x154, FIELD_WORD, v.idx+1)
+			else -- handles normal shooting
+				if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
+					local speedYMod = p.speedY * 0.1 -- adds extra vertical speed depending on how fast you were going vertically
+					if p.standingNPC then
+						speedYMod = p.standingNPC.speedY * 0.1
+					end
+					v.speedY = -6 + speedYMod
+				else
+					v.speedY = -4
+				end
+				v.isProjectile = true
+				v.direction = dir
+				v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
+				p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
+			end
+			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
 			SFX.play(18)
+	
+			if flamethrowerActive then
+				p:mem(0x160, FIELD_WORD,30)
+			end
 		end
-        data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
     end
 end
 
@@ -171,12 +183,13 @@ function concrete.onTickEndPowerup(p)
 	if not p.data.concreteMushroom then return end
 	local data = p.data.concreteMushroom
 	
-    local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
-    local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
-
-    if data.projectileTimer > 0 and canPlay and curFrame then
-        p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
-    end
+	if not p:mem(0x50, FIELD_BOOL) then
+		data.lastDirection = p.direction * -1
+	end
+	p:mem(0x54,FIELD_WORD,data.lastDirection) -- prevents a base powerup's projectile from shooting while spinjumping
+	
+	-- put your own code here!
+	
 end
 
 function concrete.onDrawPowerup(p)

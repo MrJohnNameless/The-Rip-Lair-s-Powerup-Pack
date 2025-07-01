@@ -16,6 +16,7 @@ function goldFlower.onInitPowerupLib()
         goldFlower:registerAsset(CHARACTER_LUIGI, "goldFlower-luigi.png"),
         goldFlower:registerAsset(CHARACTER_PEACH, "goldFlower-peach.png"),
         goldFlower:registerAsset(CHARACTER_TOAD,  "goldFlower-toad.png"),
+        goldFlower:registerAsset(CHARACTER_LINK,  "goldFlower-link.png"),
     }
 
     goldFlower.iniFiles = {
@@ -23,6 +24,7 @@ function goldFlower.onInitPowerupLib()
         goldFlower:registerAsset(CHARACTER_LUIGI, "goldFlower-luigi.ini"),
         goldFlower:registerAsset(CHARACTER_PEACH, "goldFlower-peach.ini"),
         goldFlower:registerAsset(CHARACTER_TOAD,  "goldFlower-toad.ini"),
+        goldFlower:registerAsset(CHARACTER_LINK,  "goldFlower-link.ini"),
     }
 
     goldFlower.gpImages = {
@@ -33,8 +35,7 @@ end
 
 
 local animFrames = {12, 12, 12, 11, 11, 11, 11, 11, 11}
-local projectileTimerMax = {30, 35, 40, 25, 25}
-local projectileTimer = {}
+local projectileTimerMax = {30, 35, 40, 25, 40}
 local checkedForLevelEnd = false
 
 
@@ -60,7 +61,7 @@ local function canShoot(p)
         and not p.inLaunchBarrel
         and not p.inClearPipe
         and p:mem(0x26,FIELD_WORD) <= 0 -- pulling objects from top
-        and not p:mem(0x12E, FIELD_BOOL) -- ducking
+        and (not p:mem(0x12E, FIELD_BOOL) or p.character == CHARACTER_LINK) -- ducking
         and not p:mem(0x3C,FIELD_BOOL) -- sliding
         and not p:mem(0x44,FIELD_BOOL) -- shell surfing
         and not p:mem(0x4A,FIELD_BOOL) -- statue
@@ -88,7 +89,7 @@ end
 ------------------
 
 function goldFlower.onEnable(p, noEffects)
-    projectileTimer[p.idx] = 0
+	p:mem(0x162, FIELD_WORD,2)
 end
 
 function goldFlower.onDisable(p, noEffects)
@@ -99,7 +100,7 @@ function goldFlower.onTickPowerup(p)
 
     flamethrowerActive = flamethrowerCheat and flamethrowerCheat.active
 
-    local decreaseRate = 1
+    local charHex = 0x160
     local keyCombo = p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED
 
     if flamethrowerActive then
@@ -107,11 +108,13 @@ function goldFlower.onTickPowerup(p)
         keyCombo = p.keys.run or p.keys.altRun
     end
 
-    projectileTimer[p.idx] = math.max(projectileTimer[p.idx] - decreaseRate, 0)
-    
-    if p.mount < 2 then
-        p:mem(0x160, FIELD_WORD, 2)
-    end
+	if p.character == CHARACTER_LINK then
+		charHex = 0x162
+		p:mem(charHex,FIELD_WORD,math.max(p:mem(charHex,FIELD_WORD),2))
+		if p:mem(charHex,FIELD_WORD) > 2 then return end
+	else
+		if p:mem(charHex, FIELD_WORD) > 0 then return end
+	end
 
     if canSpawnSparkles(p) and RNG.random(10) > 9 then
         local e =  Effect.spawn(goldFlower.projectileID, p.x - 12 + RNG.random(p.width + 16), p.y - 8 + RNG.random(p.height + 16), p.character)
@@ -119,12 +122,23 @@ function goldFlower.onTickPowerup(p)
         e.speedY = RNG.random(0.5) - 0.25
 	end
 
-    if projectileTimer[p.idx] > 0 or not canShoot(p) then return end
+    if not canShoot(p) then return end
 
-    if keyCombo or p:mem(0x50, FIELD_BOOL) then
+    if ((keyCombo or p:mem(0x50, FIELD_BOOL)) and p.character ~= CHARACTER_LINK) or p:mem(0x14, FIELD_WORD) == 2 then
+		local dir = p.direction
+		local cooldown = projectileTimerMax[p.character] or projectileTimerMax[1]
+		
+		if p.isSpinJumping and projectileTimerMax[p.character] % 2 ~= 0 then
+			if p:mem(0x52,FIELD_WORD) % 2 == 0 then
+				dir = p:mem(0x54,FIELD_WORD) * -1
+			else
+				dir = p:mem(0x54,FIELD_WORD)
+			end
+		end
+		
         local v = NPC.spawn(
             goldFlower.projectileID,
-            p.x + p.width/2 * (1 + p.direction) + p.speedX,
+            p.x + p.width/2 * (1 + dir) + p.speedX,
             p.y + p.height/2 + p.speedY, p.section, false, true
         )
 
@@ -132,15 +146,28 @@ function goldFlower.onTickPowerup(p)
         v.data.player = p
 
         v.isProjectile = true
-        v.direction = p.direction
+        v.direction = dir
 
-        if (p.character == CHARACTER_PEACH or p.character == CHARACTER_TOAD) and p.keys.altRun then
+		if p.character == CHARACTER_LINK then
+			v.x = v.x + (12 * dir)
+			v.speedX = 5 * v.direction + p.speedX/3.5
+			if p.isDucking then
+				v.y = (v.y + 8) - p.speedY
+			else
+				v.y = v.y - 8
+			end
+			cooldown = cooldown + 2
+			SFX.play(82)
+        elseif (p.character == CHARACTER_PEACH or p.character == CHARACTER_TOAD) and p.keys.altRun then
             p:mem(0x154, FIELD_WORD, v.idx + 1)
             v:mem(0x12C, FIELD_WORD, p.idx)
             p:mem(0x62, FIELD_WORD, 5)
+			SFX.play(18)
         else
             v.speedX = 5 * v.direction + p.speedX/3.5
             v.speedY = 8
+			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
+			SFX.play(18)
         end
 
         if p.standingNPC then
@@ -165,19 +192,20 @@ function goldFlower.onTickPowerup(p)
             v.speedX = v.speedX * 1.5
             v.speedY = v.speedY * 1.5
         end
-
-        SFX.play(18)
-        projectileTimer[p.idx] = projectileTimerMax[p.character]
+		
+        p:mem(charHex, FIELD_WORD,cooldown)
     end
 end
 
 function goldFlower.onTickEndPowerup(p)
+	--[[
     local curFrame = animFrames[projectileTimerMax[p.character] - projectileTimer[p.idx] + 1]
     local canPlay = canShoot(p) and not p:mem(0x50,FIELD_BOOL) and p.mount == MOUNT_NONE
 
     if projectileTimer[p.idx] > 0 and canPlay and curFrame then
         p:setFrame(curFrame)
     end
+	--]]
 end
 
 

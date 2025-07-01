@@ -24,7 +24,7 @@ function fireIceShroom.pulseThePlayer(p, isIceShroom)
 	if isOverworld then return end
 	if lunatime.tick() <= 1 then return end
 
-	Defines.earthquake = 5
+	Defines.earthquake = math.max(Defines.earthquake,5)
 	SFX.play(Misc.resolveFile("powerups/player-pulse.ogg"))
 	for j = 1, RNG.randomInt(8, 24) do
                 local e = Effect.spawn(((isIceShroom and 80) or 265), p.x + p.width * 0.5, p.y + p.height * 0.5)
@@ -81,8 +81,8 @@ local function canPulse(p)
 end
 
 function fireIceShroom.onTickShroom(p, data, isIceShroom)
-    	data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
-   	if data.projectileTimer > 0 or not canPulse(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
+   	if (data.projectileTimer > 0 and not Cheats.get("flamethrower").active) or not canPulse(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
 
     	if p.keys.altRun == KEYS_PRESSED then
 		fireIceShroom.pulseThePlayer(p, isIceShroom)

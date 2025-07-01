@@ -40,12 +40,13 @@ local projectileTimerMax = {30, 35, 40, 25, 25}
 local dashFrames = {16, 17}
 local dashFramesAir = {17}
 
-local playerData = {}
 local starShader = Shader.fromFile(nil, Misc.multiResolveFile("starman.frag", "shaders\\npc\\starman.frag"))
 local stompSfx = Misc.resolveSoundFile("chuck-stomp")
 
 local blockBlacklist = {}
 local blockWhitelist = {}
+
+local linkChars = table.map{5,12,16}
 
 local GP
 pcall(function() GP = require("GroundPound") end)
@@ -54,10 +55,10 @@ local aw
 pcall(function() aw = require("anotherwalljump") end)
 pcall(function() aw = aw or require("aw") end)
 
-
 ---------------------
 -- Local Functions --
 ---------------------
+
 
 local function canDoStuff(p)
     return (
@@ -69,7 +70,7 @@ local function canDoStuff(p)
         and not p.inLaunchBarrel
         and not p.inClearPipe
         and p:mem(0x26,FIELD_WORD) <= 0 -- pulling objects from top
-        and not p:mem(0x12E, FIELD_BOOL) -- ducking
+        and (not p:mem(0x12E, FIELD_BOOL) or linkChars[p.character])-- ducking
         and not p:mem(0x3C,FIELD_BOOL) -- sliding
         and not p:mem(0x44,FIELD_BOOL) -- shell surfing
         and not p:mem(0x4A,FIELD_BOOL) -- statue
@@ -80,6 +81,14 @@ local function canDoStuff(p)
         and (not aw or aw.isWallSliding(p) == 0)
         and Level.endState() == LEVEL_WIN_TYPE_NONE
     )
+end
+
+local function cooldownHex(p)
+	if not linkChars[p.character] then 
+		return 0x160
+	else
+		return 0x162
+	end
 end
 
 local function cancelDashing(p, data)
@@ -105,32 +114,37 @@ function chuckSuit.whitelist(id)
 end
 
 function chuckSuit.onEnable(p, noEffects)
-    if not playerData[p.idx] then
-        playerData[p.idx] = {
-            projectileTimer = 0,
-            dashTimer = -1,
-            initDirection = 0,
-            cooldown = 0,
-            collider = Colliders.Box(0, 0, 1, 1),
-            holdingAltrun = false,
-        }
-    end
-
-    local data = playerData[p.idx]
-
+	p.data.chuckSuit = {
+		projectileTimer = 0,
+		dashTimer = -1,
+		initDirection = 0,
+		cooldown = 0,
+		collider = Colliders.Box(0, 0, 1, 1),
+		holdingAltrun = false,
+	}
+    local data = p.data.chuckSuit
     data.projectileTimer = 0
     data.dashTimer = -1
 end
 
 function chuckSuit.onDisable(p, noEffects)
-    cancelDashing(p, playerData[p.idx])
-    playerData[p.idx].dashCooldown = 0
+    cancelDashing(p, p.data.chuckSuit)
+    p.data.chuckSuit.dashCooldown = 0
+	p.data.chuckSuit = nil
 end
 
 function chuckSuit.onTickPowerup(p)
-    local data = playerData[p.idx]
-    local keyCombo = p.keys.run == KEYS_PRESSED and not p.keys.altRun
+	if not p.data.chuckSuit then return end
+    local data = p.data.chuckSuit
+	local flamethrowerActive = Cheats.get("flamethrower").active
+    local keyCombo = (p.keys.run == KEYS_PRESSED or (p.keys.run and flamethrowerActive)) and not p.keys.altRun
     local variousChecks = canDoStuff(p)
+	
+	local shootCheck = 0
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
+		shootCheck = 2
+	end
 
     data.projectileTimer = math.max(data.projectileTimer - 1, 0)
     data.cooldown = math.max(data.cooldown - 1, 0)
@@ -138,14 +152,14 @@ function chuckSuit.onTickPowerup(p)
     if data.holdingAltrun and not p.keys.altRun then
         data.holdingAltrun = false
     end
-    
-    if p.mount < 2 then
-        p:mem(0x160, FIELD_WORD, 2)
-    end
+
+	if p:mem(0x50,FIELD_BOOL) or ((p.keys.run and not p:isOnGround()) or p.keys.altRun) then
+		p:mem(cooldownHex(p), FIELD_WORD,shootCheck + 2)
+	end
 
     if variousChecks
-    and keyCombo
-    and data.projectileTimer == 0
+    and ((not linkChars[p.character] and keyCombo) or p:mem(0x14, FIELD_WORD) == 2)
+    and p:mem(cooldownHex(p),FIELD_WORD) <= shootCheck
     and data.dashTimer == -1
     and p:isOnGround()
     and chuckSuit.canThrow
@@ -161,9 +175,25 @@ function chuckSuit.onTickPowerup(p)
 
         v.isProjectile = true
         v.direction = p.direction
-        v.data.moveStartTime = 12
-
-        data.projectileTimer = projectileTimerMax[p.character]
+		
+		p:mem(cooldownHex(p), FIELD_WORD,projectileTimerMax[p.character])
+   
+		if not linkChars[p.character] then
+			data.projectileTimer = projectileTimerMax[p.character]
+			v.data.moveStartTime = 12
+			if flamethrowerActive then
+				p:mem(cooldownHex(p), FIELD_WORD,30)
+			end
+		else
+			if not p:mem(0x12E, FIELD_BOOL) then
+				v.y = v.y - 16
+				v.speedY = -6
+			end
+			v.data.moveStartTime = 1
+			if flamethrowerActive then
+				p:mem(cooldownHex(p), FIELD_WORD,2)
+			end
+		end   
     end
 
     if variousChecks
@@ -242,7 +272,8 @@ function chuckSuit.onTickPowerup(p)
 
         if not broken then
             for k, v in ipairs(Colliders.getColliding{a = data.collider, b = Block.SOLID, btype = Colliders.BLOCK}) do
-                local canBreak = (Block.MEGA_SMASH_MAP[v.id] or blockWhitelist[v.id]) and not blockBlacklist[v.id]
+                local canBreak = (Block.MEGA_SMASH_MAP[v.id] or blockWhitelist[v.id]) and not blockBlacklist[v.id] 
+				and not (Block.config[player:mem(0x48,FIELD_WORD)].floorslope == player.direction)
 
                 if v.contentID == 0 and canBreak then
                     v:remove(true)
@@ -263,10 +294,13 @@ function chuckSuit.onTickPowerup(p)
             e.y = e.y - e.height/2
         end
     end
+	
+
 end
 
 function chuckSuit.onTickEndPowerup(p)
-    local data = playerData[p.idx]
+	if not p.data.chuckSuit then return end
+    local data = p.data.chuckSuit
 
     data.collider.width = 32
     data.collider.height = p.height - 8
@@ -298,7 +332,8 @@ function chuckSuit.onTickEndPowerup(p)
 end
 
 function chuckSuit.onDrawPowerup(p)
-    local data = playerData[p.idx]
+	if not p.data.chuckSuit then return end
+    local data = p.data.chuckSuit
 
     if data.dashTimer > chuckSuit.dashWaitTime and p.forcedState ~= 8 and not p:mem(0x142, FIELD_BOOL) and p.deathTimer == 0 then
         local img = chuckSuit.chargeFX

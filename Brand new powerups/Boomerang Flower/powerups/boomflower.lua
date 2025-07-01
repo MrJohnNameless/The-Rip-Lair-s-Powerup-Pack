@@ -81,10 +81,10 @@ function boomerangFlower.onTickPowerup(p)
 	end
 	
 	local flamethrowerActive = Cheats.get("flamethrower").active
-	local tryingToShoot = (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and not p:mem(0x50, FIELD_BOOL)
+	local tryingToShoot = (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and not p.isSpinJumping
 	
 	if #data.thrownBoomerangs >= boomerangFlower.projectileCap and not flamethrowerActive then return end
-    if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end
+    if p.isSpinJumping and p:isOnGround() then return end
 	
 	if (p.keys.run == KEYS_DOWN) and flamethrowerActive and lunatime.tick() % 8 == 0 then 
 		tryingToShoot = true

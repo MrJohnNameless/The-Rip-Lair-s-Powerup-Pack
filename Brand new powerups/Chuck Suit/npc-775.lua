@@ -67,6 +67,7 @@ function sampleNPC.onTickNPC(v)
 	end
 
 	if not data.initialized then
+		data.lastX = v.x - 2
 		data.initialized = true
 		data.timer = 0
 	end
@@ -96,6 +97,12 @@ function sampleNPC.onTickNPC(v)
 	if not data.inMotion then
 		return
 	end
+
+	if data.lastX == v.x and not v.collidesBlockBottom then
+		v.isProjectile = true
+		v.speedX = 4 * v.direction
+	end
+	data.lastX = v.x
 
 	if v.collidesBlockBottom then
 		v.speedY = -6

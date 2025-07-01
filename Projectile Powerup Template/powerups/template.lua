@@ -116,6 +116,7 @@ function template.onEnable(p)
 		-- put your own values here!
 		exampleValue = 1,
 	}
+	p:mem(0x162, FIELD_WORD,5) -- prevents link from accidentally shooting a base projectile when getting the powerup via a sword
 end
 
 -- runs once when the powerup gets deactivated, passes the player
@@ -129,7 +130,7 @@ function template.onTickPowerup(p)
 	local data = p.data.template
 	
 	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-	if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end
+	if p.isSpinJumping and p:isOnGround() then return end
 	 
 	if linkChars[p.character] then
 		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
@@ -151,7 +152,7 @@ function template.onTickPowerup(p)
 		-- spawns the projectile itself
         local v = NPC.spawn(
 			template.projectileID,
-			p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
+			p.x + p.width/2 + (p.width/2) * dir + p.speedX,
 			p.y + p.height/2 + p.speedY, p.section, false, true
         )
 		
@@ -188,8 +189,8 @@ function template.onTickPowerup(p)
 					v.speedY = -4
 				end
 				v.isProjectile = true
-				v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
 				v.direction = dir
+				v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
 				p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 			end
 			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
@@ -207,7 +208,7 @@ function template.onTickEndPowerup(p)
 	if not p.data.template then return end
 	local data = p.data.template
 	
-	if not p:mem(0x50, FIELD_BOOL) then
+	if not p.isSpinJumping then
 		data.lastDirection = p.direction * -1
 	end
 	p:mem(0x54,FIELD_WORD,data.lastDirection) -- prevents a base powerup's projectile from shooting while spinjumping

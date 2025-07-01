@@ -18,6 +18,7 @@ goldBall.explosionColors = {
 	[CHARACTER_LUIGI] = Color.fromHexRGB(0xBECCE5),
 	[CHARACTER_PEACH] = Color.fromHexRGB(0xFFD7C1),
 	[CHARACTER_TOAD]  = Color.fromHexRGB(0xFFBD16),
+	[CHARACTER_LINK]  = Color.fromHexRGB(0x99CC66),
 }
 
 
@@ -182,13 +183,17 @@ function goldBall.onTickEndNPC(v)
 		data.wasHeld = true
 	end
 
+	if data.character == CHARACTER_LINK then
+		v.speedY = -Defines.npc_grav
+	end
+
+	handleAnimation(v, data, config)
+	
 	if v.heldIndex ~= 0 -- Grabbed
 	or v.forcedState > 0 -- Contained within
 	then
 		return
 	end
-
-	handleAnimation(v, data, config)
 
 	if data.wasHeld then
 		local p = data.player
@@ -202,7 +207,7 @@ function goldBall.onTickEndNPC(v)
 	end
 
 	if v.collidesBlockBottom then
-		if v.speedX == 0 then
+		if v.speedX == 0 or v.data.character == CHARACTER_LINK then
 			data.explode = true
 			v:kill(HARM_TYPE_OFFSCREEN)
 			return

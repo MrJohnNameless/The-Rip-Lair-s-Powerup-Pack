@@ -95,7 +95,6 @@ npcManager.registerHarmTypes(npcID,
 );
 
 --Custom local definitions below
-
 local function updateSpeed(v)
 	v.speedY = -6
 	v.direction = v.direction * -1

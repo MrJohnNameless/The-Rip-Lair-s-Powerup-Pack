@@ -9,12 +9,10 @@
 	Marioman2007 - created customPowerups framework which this script uses as a base (https://www.smbxgame.com/forums/viewtopic.php?t=29435&sid=09762126985be58594941d2479968bbf)
 	SleepyVA - created all of the player sprites used for this.
 	
-	Version 1.0.0
+	Version 1.2.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 ]]--
-
-
 
 local cp = require("customPowerups")
 local cloudFlower = {}
@@ -22,15 +20,15 @@ local cloudFlower = {}
 -- reserved variable names are "name", "items", "id", "collectSounds", "basePowerup", "spritesheets" and "iniFiles"
 -- everything except "name" and "id" can be safely modified
 
-
 ------ SETTINGS ------
 cloudFlower.settings = {
 	katesWindID = 797, -- what is the current id of the SMB1-LL Wind NPC? (797 by default) (requires KateBulka's Wind NPC: https://www.smbxgame.com/forums/viewtopic.php?t=27266) 
-	
-	initialLimit = 3,
+
+	initialLimit = 3, -- what is the limit of the amount of clouds a player can have when using the cloud flower? (3 by default)
 	slowFall = true, -- should the player be able to fall slowly when using the cloud flower? (true by default)
 	autoReplenish = true, -- should the player be able to replenish clouds automatically without needing to pick up another cloud flower? (false by default)
-	replenishAnywhere = false, -- should the player be able to replenish clouds anywhere, regardles if they're airborne or not? (false by default)
+	replenishAnywhere = false, -- should the player be able to replenish clouds anywhere, regardless if they're airborne or not? (false by default)
+	followerImage = Graphics.loadImageResolved("powerups/cloudFlower-follower.png"),
 }
 ----------------------
 
@@ -50,22 +48,27 @@ function cloudFlower.onInitPowerupLib()
 	}
 end
 
-cloudFlower.basePowerup = 2
+cloudFlower.basePowerup = PLAYER_FIRE
 cloudFlower.items = {}
 cloudFlower.collectSounds = {
     upgrade = 6,
     reserve = 12,
 }
+
+cloudFlower.projectileID = 852
 cloudFlower.cheats = {"needacloudflower","imcloudnine"}
+
 
 local validForcedStates = table.map{0,754,755}
 
+local linkChars = table.map{5,12,16}
+
 local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scripts
 	return (
-		p.speedY == 0 -- "on a block"
-		or p:isGroundTouching() -- on a block (fallback if the former check fails)
+		p:isOnGround() -- on a block (fallback if the former check fails)
 		or p.standingNPC -- on an NPC
 		or p:mem(0x48,FIELD_WORD) ~= 0 -- on a slope
+		or (p.mount == MOUNT_BOOT and p:mem(0x10C, FIELD_WORD) ~= 0) -- hopping around while wearing a boot
 	)
 end
 
@@ -86,7 +89,7 @@ local function initFollower(p,follower,i)
 		canShow = true,
 		warpDelay = 0,
 		sprite = Sprite{
-			texture = Graphics.loadImageResolved("powerups/cloudFlower-follower.png"),
+			texture = cloudFlower.settings.followerImage,
 			pivot = Sprite.align.CENTER,
 			x = getPlayerSide(p) - ((16 * i)*p.direction),
 			y = p.y + p.height * 0.5,
@@ -130,10 +133,16 @@ end
 function cloudFlower.onTickPowerup(p)
 	if not p.data.cloudFlower then return end
 	
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,5)
+	elseif p.mount ~= MOUNT_YOSHI then
+		p:mem(0x160, FIELD_WORD,5)
+	end
+	
 	if p.deathTimer ~= 0 or p.forcedState ~= 0 then p.data.cloudFlower.animTimer = 0 return end
 	
-	-- lose the powerup whenever the player touches water
-	if p:mem(0x36,FIELD_BOOL) then
+	-- lose the powerup whenever the player touches water specifically
+	if p:isUnderwater() and p:mem(0x06,FIELD_WORD) == 0 then
 		cp.setPowerup(2, p, false)
 		SFX.play(5)
 		cloudFlower.onDisable(p)
@@ -143,7 +152,7 @@ function cloudFlower.onTickPowerup(p)
 	local data = p.data.cloudFlower	
 	
 	-- replicates slow-falling from SMG2
-	if cloudFlower.settings.slowFall and p.speedY > 0 then
+	if cloudFlower.settings.slowFall and p.speedY > 0 and not isOnGround(p) then
 		p.speedY = math.min(p.speedY ,4.5)
 	end
 	
@@ -173,24 +182,30 @@ function cloudFlower.onTickPowerup(p)
 	if (not data.canSummon) or #data.clouds >= data.limit then return end
 	
 	-- spawns the cloud platform
-	if p.keys.altJump == KEYS_PRESSED and not isOnGround(p) and p.mount == 0 then
+	--if ((p.keys.altJump == KEYS_PRESSED and p.mount == 0) or (p.keys.altRun == KEYS_PRESSED and p.mount ~= 0 and p.mount ~= 2)) and not isOnGround(p)  then
+	if p.keys.altJump == KEYS_PRESSED and p.mount ~= 2 and not isOnGround(p)  then
 		p.speedY = -4
+		if p.mount ~= 0 then
+			p:mem(0x120,FIELD_BOOL,false)
+		end
 		data.animTimer = 20
 		data.canSummon = false
-
 		-- spawns & makes the cloud platform "owned" by the player via inserting to the player's clouds table
-		n = NPC.spawn(852, p.x + p.width*0.5 ,p.y + p:getCurrentPlayerSetting().hitboxHeight + 16,p.section,false,true)
+		n = NPC.spawn(
+			cloudFlower.projectileID, 
+			(p.x + p.width*0.5) + p.speedX*12,
+			p.y + p:getCurrentPlayerSetting().hitboxHeight + 16,
+			p.section,
+			false,
+			true
+		)
 		n.speedX = 0
 		table.insert(data.clouds,n)
 		Effect.spawn(131,p.x,n.y)
 		SFX.play(82)
 		SFX.play(35)
 	end
-	
-
 end
-
-
 
 -- runs when the powerup is active, passes the player
 function cloudFlower.onTickEndPowerup(p)
@@ -221,7 +236,7 @@ function cloudFlower.onTickEndPowerup(p)
 			current.warpDelay = current.warpDelay - 1
 		else
 		-- otherwise, make the cloud follow the target position slowly & smoothly
-			sprite.x = math.lerp(sprite.x, targetX, 0.15 + (0.02 * (data.limit - 3)) - (i * 0.02))
+			sprite.x = math.lerp(sprite.x, targetX, 0.175 + (0.02 * (data.limit - 3)) - (i * 0.02))
 			sprite.y = math.lerp(sprite.y, targetY, 0.1 + (0.02 * (data.limit - 3)) - (i * 0.02))
 		end
 			
@@ -250,8 +265,8 @@ function cloudFlower.onDrawPowerup(p)
 	if not p.data.cloudFlower then return end
 	local data = p.data.cloudFlower
 	
-	if data.animTimer > 0 then -- handles	
-		p.frame = 12 + math.floor(data.animTimer * 0.3) % 4
+	if data.animTimer > 0 and not linkChars[p.character] then -- handles the spinning animation of spawning a cloud
+		p:setFrame(12 + math.floor(data.animTimer * 0.3) % 4)
 	end
 	
 	for i = #data.followers,1,-1 do
@@ -282,8 +297,7 @@ function cloudFlower.onNPCKill(token,v,harm,c)
 				data.canSummon = true
 			end
 			
-			for i = #data.clouds,1,-1 do
-				local n = data.clouds[i];
+			for i,n in ipairs(data.clouds) do --= #data.clouds,1,-1 do
 				if (n.isValid) and n == v then
 					n.canBeRemoved = true -- allows the cloud to be removed
 				end

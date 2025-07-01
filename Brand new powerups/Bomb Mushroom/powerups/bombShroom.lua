@@ -75,7 +75,7 @@ function bombShroom.onTickPowerup(p)
 	
     local count = 1
 
-    if p:mem(0x50, FIELD_BOOL) and p.holdingNPC == nil then
+    if p.isSpinJumping and p.holdingNPC == nil then
 		p:mem(0x160, FIELD_WORD,1) -- also needed to prevent a base powerup's projectile from shooting while spinjumping for this particular powerup reason
 
         if p:isOnGround() then
@@ -151,7 +151,7 @@ function bombShroom.onTickPowerup(p)
 		else
 			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
 			SFX.play(18)
-			if not p:mem(0x50,FIELD_BOOL) then
+			if not p.isSpinJumping then
 				p:mem(0x118, FIELD_FLOAT,110)
 			end
 			if flamethrowerActive then
@@ -162,7 +162,7 @@ function bombShroom.onTickPowerup(p)
 end
 
 function bombShroom.onTickEndPowerup(p)
-	if not p:mem(0x50, FIELD_BOOL) then
+	if not p.isSpinJumping then
 		lastDirection[p.idx] = p.direction * -1
 	end
 	p:mem(0x54,FIELD_WORD,lastDirection[p.idx]) -- prevents a base powerup's projectile from shooting while spinjumping

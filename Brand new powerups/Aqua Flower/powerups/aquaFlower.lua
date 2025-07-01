@@ -131,7 +131,7 @@ function aquaFlower.onTickPowerup(p)
 	
 	local data = p.data.aquaFlower
 	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-	if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end
+	if p.isSpinJumping and p:isOnGround() then return end
 	 
 	if linkChars[p.character] then
 		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
@@ -217,7 +217,7 @@ function aquaFlower.onTickEndPowerup(p)
 	if not p.data.aquaFlower then return end
 	
 	local data = p.data.aquaFlower
-	if not p:mem(0x50, FIELD_BOOL) then
+	if not p.isSpinJumping then
 		data.lastDirection = p.direction * -1
 	end
 	p:mem(0x54,FIELD_WORD,data.lastDirection) -- prevents a base powerup's projectile from shooting while spinjumping
