@@ -27,7 +27,7 @@ ninja.collectSounds = {
     reserve = 12,
 }
 
-local activePlayer
+local activePlayers = {}
 
 -- Peach, Toad, Megaman, Klonoa, Ninja Bomberman, Rosalina, and Ultimate-Rinka respectively
 local smb2Chars = table.map{3,4,6,9,10,11,16}
@@ -70,53 +70,52 @@ local function canPlayShootAnim(p)
         and not p:mem(0x0C, FIELD_BOOL) -- fairy
         and (not GP or not GP.isPounding(p))
         and (not aw or aw.isWallSliding(p) == 0)
-		and not p.data.ninja.isNinjaClimbing
+		and (not p.data.ninjaSuit or not p.data.ninjaSuit.isNinjaClimbing)
     )
 end
 
 -- runs once when the powerup gets activated, passes the player
 function ninja.onEnable(p)	
-	p.data.ninja = {
-		projectileTimer = 0, -- don't remove this
+	local ps = p:getCurrentPlayerSetting()
+	p.data.ninjaSuit = {
+		lastDirection = p.direction * -1, -- don't remove this unless you know what you're doing
+		originalDuckHeight = ps.hitboxDuckHeight,
 		isNinjaClimbing = false,
 		wallClingTimer = 0,
 		wallCollider = 0,
 		currentDir = 0,
 		currentX = 0
 	}
-	
-	if aw then aw.disable(p) end
 end
 
 -- runs once when the powerup gets deactivated, passes the player
-function ninja.onDisable(p)	
-	p.data.ninja = nil
+function ninja.onDisable(p)
 	local ps = p:getCurrentPlayerSetting()
-	ps.hitboxDuckHeight = 32
-	
-	if not p.data.noWallJumpByDefault then
-		if aw then aw.enable(p) end
-	end
+	ps.hitboxDuckHeight = p.data.ninjaSuit.originalDuckHeight
+	p.data.ninjaSuit = nil
 end
 
 registerEvent(ninja, "onExit", "onExit")
 
 function ninja.onExit()
-	if activePlayer then
-		local ps = activePlayer:getCurrentPlayerSetting()
-		activePlayer.hitboxDuckHeight = 32
-		if aw then aw.enable(activePlayer) end
+	for i,p in ipairs(Player.get()) do
+		if activePlayers[p.idx] and p.data.ninjaSuit then
+			local ps = p:getCurrentPlayerSetting()
+			ps.hitboxDuckHeight = p.data.ninjaSuit.originalDuckHeight
+		end
 	end
 end
 
 -- runs when the powerup is active, passes the player
 function ninja.onTickPowerup(p)
 
-	if cp.getCurrentPowerup(p) ~= ninja or not p.data.ninja then return end -- check if the powerup is currenly active
+	if cp.getCurrentPowerup(p) ~= ninja or not p.data.ninjaSuit then return end -- check if the powerup is currenly active
 	
-	local data = p.data.ninja
+	if aw then aw.preventWallSlide(p) end
 	
-	activePlayer = p
+	local data = p.data.ninjaSuit
+	
+	activePlayers[p.idx] = true
 	
 	if data.wallCollider == 0 then
 		data.wallCollider = Colliders.Box(p.x, p.y, 16, 48)
@@ -125,102 +124,103 @@ function ninja.onTickPowerup(p)
 		data.wallCollider.y = p.y
 	end
 	
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
-    
-    if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-        p:mem(0x160, FIELD_WORD, 2)
-	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
-    end
-
-   if data.projectileTimer > 0 or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-
-
-    if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end -- if spinjumping while on the ground
-	
-	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if ((p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) and not linkChars[p.character]) or player:mem(0x14, FIELD_WORD) == 2 then
-        local dir = p.direction
-		
-		-- reverses the direction the projectile goes when the player is spinjumping to make it be shot """in front""" of the player 
-		if p:mem(0x50, FIELD_BOOL) and p.holdingNPC == nil then
-			dir = p.direction * -1
-		end
-		
-		-- spawns the projectile itself
-        local v = NPC.spawn(
-			ninja.projectileID,
-			p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
-			p.y + p.height/2 + p.speedY, p.section, false, true
-        )
-		
-		-- handles making the projectile be held if the player pressed altRun & is a SMB2 character
-		if p.keys.altRun and smb2Chars[p.character] and p.holdingNPC == nil then
-			-- this sets the npc to be held by the player
-			v.speedY = 0
-			v.heldIndex = p.idx
-			p:mem(0x154, FIELD_WORD, v.idx+1)
-			SFX.play(18)
-			
-			-- put your own code here!
-			
-		elseif linkChars[p.character] then -- handles shooting as link/snake/samus
-			if p:mem(0x12E,FIELD_BOOL) then -- if ducking, have the npc not rise higher
-				v.speedY = -2
-			else
-				v.speedY = -5
-			end
-			v.x = v.x + (16 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
-			
-			-- put your own code here!
-			
-			SFX.play(82)
-		else -- handles normal shooting
-			v.speedX = NPC.config[v.id].speed * dir
-			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
-			SFX.play(18)
-		end
-        data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
-    end
-	
 	--Start grabbing a wall
-	if (p:mem(0x148, FIELD_WORD) == 2 or p:mem(0x14C, FIELD_WORD) == 2) and not p:isOnGround() and p.data.ninja.wallClingTimer <= 0 and (p:mem(0x34, FIELD_WORD) == 0 and not p:isClimbing() and p.mount == 0) then
+	if (p:mem(0x148, FIELD_WORD) == 2 or p:mem(0x14C, FIELD_WORD) == 2) and not p:isOnGround() 
+	and data.wallClingTimer <= 0 and (p:mem(0x34, FIELD_WORD) == 0 and not p:isClimbing() and p.mount == 0) then
 		data.isNinjaClimbing = true
 		data.currentDir = p.direction
 		data.currentX = p.x
 	end
+
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	if p.isSpinJumping and p:isOnGround() then return end
+	 
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
+		if p:mem(0x162,FIELD_WORD) > 2 then return end
+	else
+		if p:mem(0x160, FIELD_WORD) > 0 then return end
+	end
+
+	local flamethrowerActive = Cheats.get("flamethrower").active
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p.isSpinJumping) 
+	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
+		tryingToShoot = true
+	end
+	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
+    if (tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
+        local dir = p.direction
+		
+		-- spawns the projectile itself
+        local v = NPC.spawn(
+			ninja.projectileID,
+			p.x + p.width/2 + (p.width/2) * dir + p.speedX,
+			p.y + p.height/2 + p.speedY, p.section, false, true
+        )
+		v.direction = dir
+		v.speedX = (NPC.config[v.id].speed * dir) + p.speedX/3.5
+		v.speedY = 0
+		-- handles shooting as link/snake/samus
+		if linkChars[p.character] then 
+			-- shoot less higher when ducking
+			if p.isDucking then
+				v.y = v.y + 6
+			else
+				v.y = v.y - 12
+			end
+			v.x = v.x + (16 * dir)
+			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
+			SFX.play(82)
+			if flamethrowerActive then
+				p:mem(0x162, FIELD_WORD,2)
+			end
+			return
+		end
+		-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
+		if smb2Chars[p.character] and p.holdingNPC == nil and p.keys.altRun then 
+			v.heldIndex = p.idx
+			p:mem(0x154, FIELD_WORD, v.idx+1)
+		else
+			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
+		end
+		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+		SFX.play(18)
+
+		if flamethrowerActive then
+			p:mem(0x160, FIELD_WORD,30)
+		end
+    end
 end
 
 function ninja.onTickEndPowerup(p)
-	if cp.getCurrentPowerup(p) ~= ninja or not p.data.ninja then return end -- check if the powerup is currently active
+	if cp.getCurrentPowerup(p) ~= ninja or not p.data.ninjaSuit then return end -- check if the powerup is currently active
 	
-	local data = p.data.ninja
+	local data = p.data.ninjaSuit
 	local ps = p:getCurrentPlayerSetting()
 	
-    local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
-    local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
+	if not p.isSpinJumping then
+		data.lastDirection = p.direction * -1
+	end
+	p:mem(0x54,FIELD_WORD,data.lastDirection) -- prevents a base powerup's projectile from shooting while spinjumping
+	
+    local curFrame = nil
+    local canPlay = canPlayShootAnim(p) and not p.isSpinJumping and not linkChars[p.character]
 
-	if not p.data.ninja.isNinjaClimbing then
-		if data.projectileTimer > 0 and canPlay and curFrame then
-			p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
-		end
-		p.data.ninja.wallClingTimer = p.data.ninja.wallClingTimer - 1
-		ps.hitboxDuckHeight = 32
-	else
+	if data.isNinjaClimbing then
 		--Frames for when climbing a wall
 		if math.abs(p.speedY) <= 0.1 then
 			p.frame = 32
-			p.data.ninja.wallClingTimer = 0
+			data.wallClingTimer = 0
 		else
-			p.data.ninja.wallClingTimer = p.data.ninja.wallClingTimer + 1
-			p.frame = math.floor(p.data.ninja.wallClingTimer / 6) % 4 + 32
+			data.wallClingTimer = data.wallClingTimer + 1
+			p.frame = math.floor(data.wallClingTimer / 6) % 4 + 32
 		end
 		
 		p.speedX = 0
 		
-		p.direction = p.data.ninja.currentDir
-		p.x = p.data.ninja.currentX
+		p.direction = data.currentDir
+		p.x = data.currentX
 		
 		ps.hitboxDuckHeight = 56		
 		
@@ -258,7 +258,10 @@ function ninja.onTickEndPowerup(p)
 				p:mem(0x11C,FIELD_WORD, finalHeight) -- sets the final jumpheight the player can have		
 				SFX.play(1)
 			end
+			ps.hitboxDuckHeight = p.data.ninjaSuit.originalDuckHeight
 		end
+	else
+		data.wallClingTimer = math.max(data.wallClingTimer - 1, 0) -- decrement the projectile timer/cooldown
 	end
 end
 

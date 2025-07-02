@@ -68,10 +68,8 @@ local smb2Chars = table.map{3,4,6,9,10,11,16}
 -- Link, Snake, and Samus respectively
 local linkChars = table.map{5,12,16}
 
-local animFrames = {11, 11, 11, 11, 12, 12, 12, 12} -- the animation frames for shooting a fireball
-
 -- Projectile cooldown timers for Mario, Luigi, Peach, Toad, and Link respectively
-local projectileTimerMax = {55, 55, 55, 50, 45}
+local projectileTimerMax = {30, 35, 40, 25, 40}
 
 -- calls in Marioman2007's Ground Pound if it's in the same level folder as this customPowerups (https://www.smbxgame.com/forums/viewtopic.php?t=28456)
 local GP
@@ -92,7 +90,7 @@ local function canPlayShootAnim(p)
         and not p.inLaunchBarrel
         and not p.inClearPipe
         and p:mem(0x26,FIELD_WORD) <= 0 -- pulling objects from top
-        and (not p:mem(0x12E, FIELD_BOOL) or linkChars[p.character]) -- ducking and is not link/snake/samus
+        and (not p.isDucking or linkChars[p.character]) -- ducking and is not link/snake/samus
         and not p:mem(0x3C,FIELD_BOOL) -- sliding
         and not p:mem(0x44,FIELD_BOOL) -- shell surfing
         and not p:mem(0x4A,FIELD_BOOL) -- statue
@@ -140,7 +138,7 @@ function template.onTickPowerup(p)
 	end
 
 	local flamethrowerActive = Cheats.get("flamethrower").active
-	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) 
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p.isSpinJumping) 
 	
 	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
 		tryingToShoot = true
@@ -155,51 +153,49 @@ function template.onTickPowerup(p)
 			p.x + p.width/2 + (p.width/2) * dir + p.speedX,
 			p.y + p.height/2 + p.speedY, p.section, false, true
         )
+		v.direction = dir
+		v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/3.5
 		
 		-- handles shooting as link/snake/samus
 		if linkChars[p.character] then 
 			-- shoot less higher when ducking
-			if p:mem(0x12E,FIELD_BOOL) then
+			if p.isDucking then
 				v.speedY = -2
 			else
 				v.speedY = -5
 			end
 			v.x = v.x + (16 * dir)
 			v.isProjectile = true
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
 			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
 			SFX.play(82)
 			if flamethrowerActive then
 				p:mem(0x162, FIELD_WORD,2)
 			end
-		else
-			-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
-			if smb2Chars[p.character] and p.holdingNPC == nil and p.keys.altRun then 
-				v.speedY = 0
-				v.heldIndex = p.idx
-				p:mem(0x154, FIELD_WORD, v.idx+1)
-			else -- handles normal shooting
-				if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-					local speedYMod = p.speedY * 0.1 -- adds extra vertical speed depending on how fast you were going vertically
-					if p.standingNPC then
-						speedYMod = p.standingNPC.speedY * 0.1
-					end
-					v.speedY = -6 + speedYMod
-				else
-					v.speedY = -4
+			return
+		end
+		-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
+		if smb2Chars[p.character] and p.holdingNPC == nil and p.keys.altRun then 
+			v.speedY = 0
+			v.heldIndex = p.idx
+			p:mem(0x154, FIELD_WORD, v.idx+1)
+		else -- handles normal shooting
+			if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
+				local speedYMod = p.speedY * 0.1 -- adds extra vertical speed depending on how fast you were going vertically
+				if p.standingNPC then
+					speedYMod = p.standingNPC.speedY * 0.1
 				end
-				v.isProjectile = true
-				v.direction = dir
-				v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
-				p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
+				v.speedY = -6 + speedYMod
+			else
+				v.speedY = -4
 			end
-			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
-			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
-			SFX.play(18)
-	
-			if flamethrowerActive then
-				p:mem(0x160, FIELD_WORD,30)
-			end
+			v.isProjectile = true
+			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
+		end
+		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+		SFX.play(18)
+
+		if flamethrowerActive then
+			p:mem(0x160, FIELD_WORD,30)
 		end
     end
 end
