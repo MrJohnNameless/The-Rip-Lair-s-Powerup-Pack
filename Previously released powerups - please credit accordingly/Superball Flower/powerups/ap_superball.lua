@@ -103,7 +103,7 @@ function superBallFlower.onTickPowerup(p)
                 p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
                 p.y + p.height/2 + p.speedY, p.section, false, true
             )
-            
+            v.direction = p.direction
             v.speedY = 4
 			if player.keys.up then
 				local speedYMod = player.speedY * 0.1
