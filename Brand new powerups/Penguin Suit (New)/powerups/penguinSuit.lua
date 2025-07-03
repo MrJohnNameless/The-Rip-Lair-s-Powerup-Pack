@@ -255,17 +255,6 @@ function penguinSuit.onTickPowerup(p)
 			horizontalSpeed = horizontalSpeed * 4
 			verticalSpeed = verticalSpeed * 4
 		end
-		-- handles swimming left or right
-		if (p.keys.left and p.direction == -1) or (p.keys.right and p.direction == 1) then
-			p.speedX = horizontalSpeed * p.direction
-			p.speedX = math.clamp(p.speedX,-speedcap,speedcap)
-			p:mem(0x138, FIELD_FLOAT, p.speedX)
-			p.speedX = 0
-			data.curAnim = "swimHorizontal"
-			isMoving = true
-		else
-			p.speedX = p.speedX * 0.85
-		end
 		-- handles swimming up or down
 		if p.keys.up then
 			if p:mem(0x14A,FIELD_WORD) == 0 then
@@ -283,6 +272,17 @@ function penguinSuit.onTickPowerup(p)
 			else
 				p.speedY = p.speedY * 0.9
 			end
+		end
+		-- handles swimming left or right
+		if (p.keys.left and p.direction == -1) or (p.keys.right and p.direction == 1) then
+			p.speedX = horizontalSpeed * p.direction
+			p.speedX = math.clamp(p.speedX,-speedcap,speedcap)
+			p:mem(0x138, FIELD_FLOAT, p.speedX)
+			p.speedX = 0
+			data.curAnim = "swimHorizontal"
+			isMoving = true
+		else
+			p.speedX = p.speedX * 0.85
 		end
 		
 		if isMoving then 
