@@ -15,12 +15,12 @@
 	S3K Stage - made the original sprites of Peach with a ponytail which were used here (https://youtu.be/vwAQmpKEWhI)
 	David184, Qw2, Terra King - Ripped the laser firing SFX from Terraria which was used here (https://www.sounds-resource.com/pc_computer/terraria/sound/2890/)
 	
-	Version 3.0.0
+	Version 3.5.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 ]]--
 
-local utils = require("npcs/npcutils")
+local cp = require("customPowerups")
 
 local astroSuit = {}
 
@@ -198,9 +198,9 @@ function astroSuit.onTickPowerup(p)
     data.animTimer = math.max(data.animTimer - 1, 0) -- decrement the projectile timer/cooldown
     
     if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-		p:mem(0x160, FIELD_WORD, 2)
+		p:mem(0x160, FIELD_WORD, 5)
 	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
+		p:mem(0x162, FIELD_WORD, 5)
     end
 	
 	-- replaces the default SMBX jump with a replica that allows extended jumpheights
@@ -282,7 +282,7 @@ end
 function astroSuit.onNPCHarm(token,v,harm,c)
 	if not c or type(c) ~= "Player" then return end
 	if harm ~= 1 or harm ~= 8 then return end
-	if not c.data.astroSuit then return end 	
+	if cp.getCurrentPowerup(c) ~= astroSuit or not c.data.astroSuit then return end 	
 	handleJumping(c,false,true,false,"hold")
 end
 
@@ -290,7 +290,7 @@ end
 function astroSuit.onNPCTransform(v,oldID,harm)
 	if harm ~= 1 or harm ~= 8 then return end
 	for _,p in ipairs(Player.getIntersecting(v.x - 2,v.y - 4,v.x + v.width + 2,v.y + v.height)) do 
-		if p.data.astroSuit then
+		if cp.getCurrentPowerup(p) == astroSuit and p.data.astroSuit then
 			-- refreshes the player's jump replica
 			handleJumping(p,false,true,false,"hold")
 		end
@@ -301,7 +301,7 @@ end
 function astroSuit.onBlockHit(token,v,above,p)
 	if v.id ~= 55 or not above then return end
 	for _,p in ipairs(Player.getIntersecting(v.x,v.y - 4,v.x + v.width,v.y + v.height)) do  -- refreshes the player's jump replica after hitting a note block
-		if p.data.astroSuit then
+		if cp.getCurrentPowerup(p) == astroSuit and p.data.astroSuit then
 			handleJumping(p,false,true,true,"hold")
 		end
 	end
@@ -310,7 +310,7 @@ end
 function astroSuit.onNPCKill(token,v,harm,c)
 	if v.id ~= astroSuit.projectileID then return end
 	for _,p in ipairs(Player.get()) do
-		if p.data.astroSuit then
+		if cp.getCurrentPowerup(p) == astroSuit and p.data.astroSuit then
 			local data = p.data.astroSuit
 			for i,n in ipairs(data.ownedLasers) do
 				if n.isValid and n == v then
