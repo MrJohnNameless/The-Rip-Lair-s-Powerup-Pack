@@ -20,8 +20,6 @@ local thwompMushroom = {}
 ------ SETTINGS ------
 
 thwompMushroom.settings = {
-	katesWindID = 797, -- what is the current id of the SMB1-LL Wind NPC? (797 by default) (requires KateBulka's Wind NPC: https://www.smbxgame.com/forums/viewtopic.php?t=27266) 
-	
 	directionControl = true, -- if the player can use the ability in any direction by using the respective direction keys (true by default)
 	canInfinitelySlam = false, -- if the player can use the ability multiple times at once mid-air (false by default)
 }
@@ -108,18 +106,16 @@ function thwompMushroom.onEnable(p)
 	}
 end
 
-local function resetStuff()
-	Defines.player_grav = 0.4
-	Defines.player_walkspeed = 3
-	Defines.player_runspeed = 6
+-- Disables horizontal speedcap, call each onTick, after you set any speed you want
+function ultimateSlip(p)
+    p:mem(0x138, FIELD_FLOAT, player.speedX)
+    p.speedX = 0
 end
 
 -- runs once when the powerup gets deactivated, passes the player
 function thwompMushroom.onDisable(p)
 	if not p.data.thwompMushroom then return end
-	Defines.player_runspeed = 6
 	p.speedX = p.speedX / 2
-	resetStuff()
 	p.data.thwompMushroom = nil
 end
 
@@ -144,7 +140,6 @@ local function sideSlam(p)
 	end
 	data.timer = 0
 	Defines.earthquake = math.max(Defines.earthquake, 4)
-	resetStuff()
 end
 
 local function upSlam(p)
@@ -161,7 +156,6 @@ local function upSlam(p)
 	e2.speedX = 1
 	data.timer = 0
 	Defines.earthquake = math.max(Defines.earthquake, 4)
-	resetStuff()
 end
 
 local function enemyHurt(p, x1, y1, x2, y2)
@@ -183,7 +177,11 @@ function thwompMushroom.onTickPowerup(p)
 	if not p.data.thwompMushroom then return end
 	
 	-- disables shooting the projectile of the respective basegame powerup used
-    if p.character ~= 5 then p:mem(0x160, FIELD_WORD, 2) end
+    if linkChars[p.character] then
+		p:mem(0x162, FIELD_WORD, 5)
+	else
+		p:mem(0x160, FIELD_WORD, 5) 
+	end
 	
 	if p.deathTimer ~= 0 or p.forcedState ~= 0 or p.mount ~= 0 or p:mem(0x0C, FIELD_BOOL) then p.data.thwompMushroom.animTimer = 0 return end
 	
@@ -192,11 +190,13 @@ function thwompMushroom.onTickPowerup(p)
 	if isOnGround(p) then
 		data.combo = 2
 		data.alreadySlammed = false
-		resetStuff()
 	end
 	
 	if not isOnGround(p) then
 		if not data.slamming and not data.slammed and not data.returning and not data.alreadySlammed and p.keys.altRun == KEYS_PRESSED then
+			if linkChars[p.character] then
+				p:mem(0x160, FIELD_WORD, 2)
+			end
 			data.slamming = true
 			p:mem(0x11C, FIELD_WORD, 0)
 			p.speedY = -1
@@ -208,16 +208,12 @@ function thwompMushroom.onTickPowerup(p)
 			if thwompMushroom.settings.directionControl then
 				if p.keys.left == KEYS_DOWN then
 					data.slamDir = 1
-					Defines.player_walkspeed = 12
-					Defines.player_runspeed = 12
 				elseif p.keys.down == KEYS_DOWN then
 					data.slamDir = 2
 				elseif p.keys.up == KEYS_DOWN then
 					data.slamDir = 3
 				elseif p.keys.right == KEYS_DOWN then
 					data.slamDir = 4
-					Defines.player_walkspeed = 12
-					Defines.player_runspeed = 12
 				else
 					data.slamDir = 2
 				end
@@ -229,12 +225,12 @@ function thwompMushroom.onTickPowerup(p)
 	
 	if data.slamming then
 		if data.slamDir == 1 then
-			p.speedX = p.speedX - 0.4
-			p.speedY = -0.01
-			Defines.player_grav = 0.01
+			p.speedX = math.max(p.speedX - 0.4,-12)
+			p.speedY = -Defines.player_grav + 0.001
 			p.direction = -1
 			p.keys.left = false
 			p.keys.right = false
+			ultimateSlip(p)
 		elseif data.slamDir == 2 then
 			p.speedX = 0
 			p.speedY = p.speedY + 0.2
@@ -245,12 +241,12 @@ function thwompMushroom.onTickPowerup(p)
 				p.speedY = -Defines.gravity
 			end
 		elseif data.slamDir == 4 then
-			p.speedX = p.speedX + 0.4
-			p.speedY = -0.01
-			Defines.player_grav = 0.01
+			p.speedX = math.min(p.speedX + 0.4,12)
+			p.speedY = -Defines.player_grav + 0.001
 			p.direction = 1
 			p.keys.left = false
 			p.keys.right = false
+			ultimateSlip(p)
 		end
 		p.keys.down = false
 		
@@ -264,7 +260,6 @@ function thwompMushroom.onTickPowerup(p)
 			if not thwompMushroom.settings.canInfinitelySlam then
 				data.alreadySlammed = true
 			end
-			resetStuff()
 		end
 		
 		-- To prevent the player from skipping levels
@@ -277,7 +272,6 @@ function thwompMushroom.onTickPowerup(p)
 			if not thwompMushroom.settings.canInfinitelySlam then
 				data.alreadySlammed = true
 			end
-			resetStuff()
 		end
 		
 		if isOnGround(p) then
@@ -290,7 +284,6 @@ function thwompMushroom.onTickPowerup(p)
 			e2.speedX = 1
 			data.timer = 0
 			Defines.earthquake = math.max(Defines.earthquake, 4)
-			resetStuff()
 		end
 		
 		if data.slamDir == 1 or data.slamDir == 4 then
@@ -396,7 +389,7 @@ function thwompMushroom.onTickPowerup(p)
 	
 	if data.slammed then
 		p.speedX = 0
-		p.speedY = 0.000001 - Defines.player_grav
+		p.speedY = -Defines.player_grav
 		p.keys.jump = false
 		p.keys.altJump = false
 		p.keys.down = false
@@ -494,7 +487,7 @@ function thwompMushroom.onTickPowerup(p)
 	
 	if data.returningFromSide then
 		p.speedX = -3 * p.direction
-		p.speedY = 0.000001 - Defines.player_grav
+		p.speedY = -Defines.player_grav
 		p.keys.jump = false
 		p.keys.altJump = false
 		p.keys.down = false

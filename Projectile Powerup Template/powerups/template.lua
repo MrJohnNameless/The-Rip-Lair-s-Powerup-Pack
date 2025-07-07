@@ -165,7 +165,6 @@ function template.onTickPowerup(p)
 				v.speedY = -5
 			end
 			v.x = v.x + (16 * dir)
-			v.isProjectile = true
 			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
 			SFX.play(82)
 			if flamethrowerActive then
@@ -188,7 +187,6 @@ function template.onTickPowerup(p)
 			else
 				v.speedY = -4
 			end
-			v.isProjectile = true
 			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 		end
 		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])

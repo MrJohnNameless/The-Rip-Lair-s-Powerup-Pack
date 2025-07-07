@@ -133,7 +133,6 @@ function leaf.onTickPowerup(p)
 				v.y = v.y - 14
 			end
 			v.x = v.x + (16 * dir)
-			v.isProjectile = true
 		else
 			-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
 			if smb2Chars[p.character] and p.holdingNPC == nil and p.keys.altRun then 
@@ -151,7 +150,6 @@ function leaf.onTickPowerup(p)
 					v.speedY = 20
 				end
 				v.speedY = v.speedY + speedYMod
-				v.ai1 = p.character
 			end
 		end
 		if linkChars[p.character] then 

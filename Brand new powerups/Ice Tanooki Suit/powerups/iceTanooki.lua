@@ -108,7 +108,6 @@ function leaf.onTickPowerup(p)
 			v.x = v.x + (16 * dir)
 			v.ai1 = 5
 		else
-			v.ai1 = 1
 			speedYMod = speedYMod * 1.5
 			if p.standingNPC then
 				speedYMod = p.standingNPC.speedY * 0.1
@@ -119,7 +118,7 @@ function leaf.onTickPowerup(p)
 				v.speedY = 20
 			end
 			v.speedY = v.speedY + speedYMod
-			v.ai1 = p.character
+			v.ai1 = 1
 		end
 		if linkChars[p.character] then 
 			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
@@ -136,4 +135,5 @@ function leaf.onTickPowerup(p)
 		end
     end
 end
+
 return leaf

@@ -2,12 +2,12 @@
 local npcManager = require("npcManager")
 local npcutils = require("npcs/npcutils")
 --Create the library table
-local sampleNPC = {}
+local pill = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local pillSettings = {
 	id = npcID,
 	--Sprite size
 	gfxheight = 14,
@@ -47,7 +47,7 @@ local sampleNPCSettings = {
 }
 
 --Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
+npcManager.setNpcSettings(pillSettings)
 
 
 --Register the vulnerable harm types for this NPC. The first table defines the harm types the NPC should be affected by, while the second maps an effect to each, if desired.
@@ -78,15 +78,17 @@ npcManager.registerHarmTypes(npcID,
 	}
 );
 
+local pillHitbox = Colliders.Box(0, 0, 0, 0)
+
 --Register events
-function sampleNPC.onInitAPI()
-	npcManager.registerEvent(npcID, sampleNPC, "onTickEndNPC")
-	npcManager.registerEvent(npcID, sampleNPC, "onDrawNPC")
+function pill.onInitAPI()
+	npcManager.registerEvent(npcID, pill, "onTickEndNPC")
+	npcManager.registerEvent(npcID, pill, "onDrawNPC")
 end
 
 local function explode(v)
 	for k,n in ipairs(Colliders.getColliding{
-		a = v,
+		a = pillHitbox,
 		b = NPC.HITTABLE,
 		btype = Colliders.NPC,
 		filter = function(w)
@@ -102,19 +104,23 @@ local function explode(v)
 		elseif v.ai1 == 2 then Explosion.spawn(v.x + v.width/2, v.y + v.height/2, 3) end
 		
 		v:kill(9)
-                SFX.play("powerups/pillhit.ogg")
+		SFX.play("powerups/pillhit.ogg")
 		return
 	end
 end
 
-function sampleNPC.onTickEndNPC(v)
+function pill.onTickEndNPC(v)
 	--Don't act during time freeze
 	if Defines.levelFreeze then return end
 	local data = v.data
 	
-	if v.id == npcID and rsn ~= 9 then
-		explode(v)
-	end
+	pillHitbox.width = v.width + 4
+	pillHitbox.height = v.height + 4
+	pillHitbox.x = (v.x + v.width*0.5) - (pillHitbox.width*0.5)
+	pillHitbox.y = (v.y + v.height*0.5) - (pillHitbox.height*0.5)
+	
+
+	explode(v)
 
 	--If despawned
 	if v:mem(0x12A, FIELD_WORD) <= 0 then
@@ -166,7 +172,7 @@ local function drawSprite(args) -- handy function to draw sprites
 	sprite:draw{priority = args.priority,color = args.color,sceneCoords = args.sceneCoords or args.scene}
 end
 
-function sampleNPC.onDrawNPC(v)
+function pill.onDrawNPC(v)
 	local config = NPC.config[v.id]
 	local data = v.data
 
@@ -194,4 +200,4 @@ function sampleNPC.onDrawNPC(v)
 end
 
 --Gotta return the library table!
-return sampleNPC
+return pill

@@ -56,7 +56,6 @@ npcManager.registerHarmTypes(npcID,
 
 function jumper.onInitAPI()
 	npcManager.registerEvent(npcID, jumper, "onTickNPC")
-	registerEvent(jumper, "onPostNPCCollect")
 end
 
 function jumper.onTickNPC(v)
@@ -81,12 +80,6 @@ function jumper.onTickNPC(v)
 		v.speedY = 2
 	end
 	
-end
-
-function jumper.onPostNPCCollect(v,p)
-	if v.id ~= npcID then return end
-	
-	if v.forcedState == 2 then p.reservePowerup = 0 return end
 end
 
 return jumper

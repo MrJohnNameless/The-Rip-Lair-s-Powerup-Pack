@@ -163,10 +163,9 @@ function frogSuit.onTickPowerup(p)
 			false,
 			true
         )
+		v:mem(0x1C,FIELD_BOOL,true) -- this is needed to work around a bug with the nowaterphysics config not working properly whenever the npc enters water
 		data.shotCount = data.shotCount + 1
 		data.timer = 0
-		
-		--v.isProjectile = true
 		v.direction = dir
 		v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir + (math.sin(lunatime.tick() * 0.2) * 2)
 		
@@ -180,8 +179,6 @@ function frogSuit.onTickPowerup(p)
 		else
 			v.speedY = -8 - (math.cos(lunatime.tick() * 0.2) * 2)
 		end
-		
-		--v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
 		
 		-- put your own code here!
 		

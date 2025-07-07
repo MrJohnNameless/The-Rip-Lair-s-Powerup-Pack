@@ -136,7 +136,6 @@ function leaf.onTickPowerup(p)
 				v.speedY = 20
 			end
 			v.speedY = v.speedY + speedYMod
-			v.ai1 = p.character
 		end
 		if linkChars[p.character] then 
 			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)

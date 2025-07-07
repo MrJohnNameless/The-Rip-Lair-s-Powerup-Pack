@@ -24,7 +24,7 @@ function spike.registerSpike(selfID)
 end
 
 function spike.registerBall(selfID)
-	npcManager.registerEvent(selfID,spike,"onTickNPC","onTickBall")
+	npcManager.registerEvent(selfID,spike,"onTickEndNPC","onTickEndBall")
 	npcManager.registerEvent(selfID,spike,"onDrawNPC","onDrawBall")
 	spike.ballIDs[selfID] = true
 end
@@ -405,7 +405,7 @@ function spike.onDrawSpike(v)
 	)
 end
 
-function spike.onTickBall(v)
+function spike.onTickEndBall(v)
 	if Defines.levelFreeze then return end
 	
 	local data = v.data._basegame

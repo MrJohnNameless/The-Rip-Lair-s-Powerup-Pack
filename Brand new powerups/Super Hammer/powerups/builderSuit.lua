@@ -118,6 +118,7 @@ function builderSuit.onEnable(p)
 		hittedNPCs = {},
 		ownedCrates = {},
 	}
+	p:mem(0x162,FIELD_WORD,5)
 end
 
 -- runs once when the powerup gets deactivated, passes the player
@@ -133,7 +134,6 @@ end
 function builderSuit.onTickPowerup(p) 
 	if not p.data.builderSuit then return end -- check if the powerup is currenly active
 	local data = p.data.builderSuit
-	
 	local settings = builderSuit.settings
 	
     if not p.holdingNPC or p.holdingNPC.id ~= builderSuit.projectileID  then
@@ -146,14 +146,15 @@ function builderSuit.onTickPowerup(p)
 		p:mem(0x162, FIELD_WORD, 2)
     end	
 
+	local atSwordApex = p:mem(0x14, FIELD_WORD) == 2 
+
 	-- handles spawning crates
-	if ((canSwing(p) and data.swingState == STATE_NORMAL and p.keys.altRun == KEYS_PRESSED) or player:mem(0x14, FIELD_WORD) == 2) and data.crateCooldown <= 0 then
+	if ((canSwing(p) and data.swingState == STATE_NORMAL and p.keys.altRun == KEYS_PRESSED) or (atSwordApex and p.keys.altRun)) and data.crateCooldown <= 0 then
         local v = NPC.spawn(
 			builderSuit.projectileID,
 			p.x + p.width/2 + (p.width/2 + 0) * p.direction + p.speedX,
 			p.y + p.height/2 + p.speedY, p.section, false, true
         )
-		
 		if not linkChars[p.character] then -- makes the player hold the crate
 			v.speedY = 0
 			v.heldIndex = p.idx
@@ -163,16 +164,19 @@ function builderSuit.onTickPowerup(p)
 			SFX.play(23)
 		else -- handles shooting a projectile from link
 			if p:mem(0x12E,FIELD_BOOL) then -- shoot less higher when ducking
-				v.speedY = -2
-				v.speedX = (2 + p.speedX/3.5) * p.direction
-			else
 				v.speedY = -3
+				v.speedX = (2 + p.speedX/3.5) * p.direction
+				v.y = v.y - 2
+			else
+				v.speedY = -4
 				v.y = v.y - v.height*0.25
 				v.speedX = (6 + p.speedX/3.5) * p.direction
 			end
-			v.x = v.x + (16 * p.direction)
+			v.x = v.x + (8 * p.direction)
+			v:mem(0x156,FIELD_WORD,32)
 			data.crateCooldown = settings.crateCooldown + 10
 			SFX.play(82)
+			SFX.play(90)
 		end
 		v.isProjectile = true
 		v.data.variant = p.character -- changes the sprite variant relative to the player's character
@@ -189,9 +193,7 @@ function builderSuit.onTickPowerup(p)
 		end
 		return
 	end
-	
-	if linkChars[p.character] then return end
-	
+
 	-- initializes swinging the hammer
 	if p.keys.run == KEYS_PRESSED and canSwing(p) and data.crateCooldown <= 0 and data.swingState == STATE_NORMAL then
 		p:mem(0x154,FIELD_WORD,-2) -- prevents the player from holding an item
@@ -204,6 +206,31 @@ function builderSuit.onTickPowerup(p)
 		SFX.play(77)
 	end
 	
+	if data.swingState == STATE_SWING then 
+		if settings.allowFowardMovement then -- handles letting the player at least move foward when swinging
+			if p.direction == -1 then
+				if p.keys.right then p.speedX = p.speedX + 0.075 end
+				p.keys.right = KEYS_UP
+			else
+				if p.keys.left then p.speedX = p.speedX - 0.075 end
+				p.keys.left = KEYS_UP
+			end
+		else -- otherwise, take away the player's controls
+			p.keys.left = KEYS_UP
+			p.keys.right = KEYS_UP
+		end	
+		p.keys.jump = KEYS_UP
+		p.keys.altJump = KEYS_UP
+		p.keys.down = KEYS_UP
+	end
+end
+
+-- runs when the powerup is active, passes the player
+function builderSuit.onTickEndPowerup(p) 
+	if not p.data.builderSuit then return end -- check if the powerup is currenly active
+	local data = p.data.builderSuit
+	local settings = builderSuit.settings
+
 	if data.swingState == STATE_NORMAL then return end -- prevents the rest of the code below from activating if not swinging
 	
 	data.swingTimer = math.min(data.swingTimer + 1,  settings.swingLength)
@@ -221,21 +248,7 @@ function builderSuit.onTickPowerup(p)
 	if data.swingState == STATE_SWING then 
 		local left = 0; local right = 0
 		local top = p.y
-		local bottom = player.y + player.height - 2
-		
-		if settings.allowFowardMovement then -- handles letting the player at least move foward when swinging
-			if p.direction == -1 then
-				if p.keys.right then p.speedX = p.speedX + 0.075 end
-				p.keys.right = KEYS_UP
-			else
-				if p.keys.left then p.speedX = p.speedX - 0.075 end
-				p.keys.left = KEYS_UP
-			end
-		else -- otherwise, take away the player's controls
-			p.keys.left = KEYS_UP
-			p.keys.right = KEYS_UP
-		end
-		
+		local bottom = p.y + p.height - 2
 		if p.direction == -1 then
 			right = p.x
 			left = (right - 30) 
@@ -243,12 +256,7 @@ function builderSuit.onTickPowerup(p)
 			left = p.x + p.width
 			right = (left + 30)
 		end
-		
-		p.keys.jump = KEYS_UP
-		p.keys.altJump = KEYS_UP
-		p.keys.down = KEYS_UP
-
-		if data.swingTimer >= 8 and data.swingTimer <= settings.swingLength/2 then
+		if data.swingTimer >= 10 and data.swingTimer <= math.floor(settings.swingLength/1.5) then
 			local hittedSomething = false
 			local bumpedBlock = false
 			-- handles hitting blocks
@@ -310,13 +318,7 @@ function builderSuit.onTickPowerup(p)
 	elseif data.swingState == STATE_STUN then
 		p.speedX = -1 * p.direction -- gives the player recoil when stunned
 	end
-end
-	
-function builderSuit.onTickEndPowerup(p)
-	if not p.data.builderSuit then return end -- check if the powerup is currently active
-	
-	local data = p.data.builderSuit
-	
+
 	for i = #data.ownedCrates,1,-1 do
 		local n = data.ownedCrates[i];
 		if (n.isValid) then

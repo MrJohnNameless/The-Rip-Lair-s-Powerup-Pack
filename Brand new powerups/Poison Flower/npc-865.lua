@@ -5,12 +5,12 @@ local acceleration = 0.2
 local npcManager = require("npcManager")
 
 --Create the library table
-local sampleNPC = {}
+local bubble = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local bubbleSettings = {
 	id = npcID,
 
 	-- ANIMATION
@@ -105,7 +105,7 @@ local sampleNPCSettings = {
 }
 
 --Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
+npcManager.setNpcSettings(bubbleSettings)
 
 --Register the vulnerable harm types for this NPC. The first table defines the harm types the NPC should be affected by, while the second maps an effect to each, if desired.
 npcManager.registerHarmTypes(npcID,
@@ -122,30 +122,27 @@ npcManager.registerHarmTypes(npcID,
 		--HARM_TYPE_SWORD
 	}, 
 	{
-		[HARM_TYPE_JUMP]=865,
-		[HARM_TYPE_FROMBELOW]=865,
-		[HARM_TYPE_NPC]=865,
-		[HARM_TYPE_PROJECTILE_USED]=865,
+		--[HARM_TYPE_JUMP]=npcID,
+		--[HARM_TYPE_FROMBELOW]=npcID,
+		--[HARM_TYPE_NPC]=npcID,
+		--[HARM_TYPE_PROJECTILE_USED]=npcID,
 		[HARM_TYPE_LAVA]={id=13, xoffset=0.5, xoffsetBack = 0, yoffset=1, yoffsetBack = 1.5},
-		[HARM_TYPE_HELD]=865,
-		[HARM_TYPE_TAIL]=865,
-		[HARM_TYPE_SPINJUMP]=865,
-		[HARM_TYPE_OFFSCREEN]=865,
-		[HARM_TYPE_SWORD]=865,
+		--[HARM_TYPE_HELD]=npcID,
+		[HARM_TYPE_TAIL]=npcID,
+		--[HARM_TYPE_SPINJUMP]=npcID,
+		[HARM_TYPE_OFFSCREEN]=npcID,
+		--[HARM_TYPE_SWORD]=npcID,
 	}
 );
 
 --Custom local definitions below
 
 --Register events
-function sampleNPC.onInitAPI()
-	npcManager.registerEvent(npcID, sampleNPC, "onTickNPC")
-	--npcManager.registerEvent(npcID, sampleNPC, "onTickEndNPC")
-	--npcManager.registerEvent(npcID, sampleNPC, "onDrawNPC")
-	--registerEvent(sampleNPC, "onNPCKill")
+function bubble.onInitAPI()
+	npcManager.registerEvent(npcID, bubble, "onTickEndNPC")
 end
 
-function sampleNPC.onTickNPC(v)
+function bubble.onTickEndNPC(v)
 	--Don't act during time freeze
 	if Defines.levelFreeze then return end
 	
@@ -162,20 +159,9 @@ function sampleNPC.onTickNPC(v)
 	if not data.initialized then
 		--Initialize necessary data.
 		data.initialized = true
-		--v.isProjectile = true
-		--v.collisionGroup = "beetroot"
+		data.owner = data.owner or npcutils.getNearestPlayer(v)
 		data.timer = 0
 		data.killCount = 0
-	end
-
-	--Depending on the NPC, these checks must be handled differently
-	if v.heldIndex ~= 0 --Negative when held by NPCs, positive when held by players
-	or v.isProjectile   --Thrown
-	or v.forcedState > 0--Various forced states
-	then
-		-- Handling of those special states. Most NPCs want to not execute their main code when held/coming out of a block/etc.
-		-- If that applies to your NPC, simply return here.
-		-- return
 	end
 	
 	data.timer = data.timer + 1
@@ -186,44 +172,47 @@ function sampleNPC.onTickNPC(v)
 	v.speedX = v.speedX * 0.97
 	v.speedY = v.speedY * 0.97
 	
-	local n = npcutils.getNearestPlayer(v)
+	local p = data.owner
 	local distance = vector(
-		n.x + n.width/2 - v.x - v.width/2 + (48 * n.direction),
-		n.y + n.height/2 - v.y - v.height/2 
+		p.x + p.width/2 - v.x - v.width/2 + (48 * p.direction),
+		p.y + p.height/2 - v.y - v.height/2 
 	)
 	
-	if player.keys.down then
-		distance = vector(
-			n.x + n.width/2 - v.x - v.width/2 + (48 * n.direction),
-			n.y + n.height/2 - v.y - v.height/2 + 128
+	if p.keys.down then
+		p = vector(
+			p.x + p.width/2 - v.x - v.width/2 + (48 * p.direction),
+			p.y + p.height/2 - v.y - v.height/2 + 128
 		)
-	elseif player.keys.up then
+	elseif p.keys.up then
 		distance = vector(
-			n.x + n.width/2 - v.x - v.width/2 + (48 * n.direction),
-			n.y + n.height/2 - v.y - v.height/2 - 128
+			p.x + p.width/2 - v.x - v.width/2 + (48 * p.direction),
+			p.y + p.height/2 - v.y - v.height/2 - 128
 		)
 	end
 
 	v.speedX = v.speedX + acceleration * math.sign(distance.x)
 	v.speedY = v.speedY + acceleration * math.sign(distance.y)
 	
-	for _,n in ipairs(NPC.getIntersecting(v.x + v.speedX - 4, v.y + v.speedY, v.x + v.width + v.speedX + 4, v.y + v.height + v.speedY)) do
-		if n:mem(0x12A, FIELD_WORD) > 0 and n:mem(0x138, FIELD_WORD) == 0 and v:mem(0x138, FIELD_WORD) == 0 and (not pnisHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and n.idx ~= v.idx and v:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
-			if n.id ~= v.id then
-				n:harm(3, 2)
-				data.killCount = data.killCount + 1
+	for _,n in NPC.iterateIntersecting(v.x + v.speedX - 4, v.y + v.speedY, v.x + v.width + v.speedX + 4, v.y + v.height + v.speedY) do
+		if n.despawnTimer > 0 and (not n.isHidden)
+		and n.forcedState == 0 and (not n.friendly) 
+		and n.heldIndex == 0 and n.idx ~= v.idx then
+			if NPC.COIN_MAP[n.id] or NPC.POWERUP_MAP[n.id] or n.id == 310 and v.heldIndex == 0 then
+				n:collect(p)
+			elseif NPC.HITTABLE_MAP[n.id] then
+				if n.id ~= v.id then
+					n:harm(3, 2)
+					data.killCount = data.killCount + 1
+				end
 			end
 		end
 	end
-	for _,n in ipairs(NPC.getIntersecting(v.x + v.speedX - 4, v.y + v.speedY, v.x + v.width + v.speedX + 4, v.y + v.height + v.speedY)) do
-		if NPC.COIN_MAP[n.id] or NPC.POWERUP_MAP[n.id] or n.id == 310 then
-			n:collect(p)
-		end
-	end
+
 	if data.killCount >= 1 then
 		v:kill(9)
+		SFX.play(91)
 	end
 end
 
 --Gotta return the library table!
-return sampleNPC
+return bubble
