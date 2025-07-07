@@ -1,18 +1,17 @@
 --NPCManager is required for setting basic NPC properties
 local npcManager = require("npcManager")
-local powerup = require("powerups/cp_thunderFlower")
 
 --Create the library table
-local sampleNPC = {}
+local flower = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
-cp.addPowerup("Thunder Flower", "powerups/cp_thunderFlower", npcID, npcID+1, true)
+cp.addPowerup("Thunder Flower", "powerups/cp_thunderFlower", npcID)
 cp.transformWhenSmall(npcID, 9)
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local flowerSettings = {
 	id = npcID,
 	--Sprite size
 	gfxheight = 32,
@@ -53,7 +52,7 @@ local sampleNPCSettings = {
 }
 
 --Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
+npcManager.setNpcSettings(flowerSettings)
 
 --Register the vulnerable harm types for this NPC. The first table defines the harm types the NPC should be affected by, while the second maps an effect to each, if desired.
 npcManager.registerHarmTypes(npcID,
@@ -83,22 +82,10 @@ npcManager.registerHarmTypes(npcID,
 	}
 );
 
-function sampleNPC.onInitAPI()
-	Cheats.register("needathunderflower",{
-		isCheat = true,
-		activateSFX = 12,
-		aliases = powerup.aliases,
-		onActivate = (function() 
-			for i,p in ipairs(Player.get()) do
-				p.reservePowerup = npcID
-			end
-			
-			return true
-		end)
-	})
+function flower.onInitAPI()
 end
 
 --Custom local definitions below
 
 --Gotta return the library table!
-return sampleNPC
+return flower

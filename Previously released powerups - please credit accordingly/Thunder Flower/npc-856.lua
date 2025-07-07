@@ -2,12 +2,12 @@
 local npcManager = require("npcManager")
 local npcutils = require("npcs/npcutils")
 --Create the library table
-local sampleNPC = {}
+local lightning = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local lightningSettings = {
 	id = npcID,
 	--Sprite size
 	gfxheight = 20,
@@ -70,7 +70,7 @@ local sampleNPCSettings = {
 }
 
 --Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
+npcManager.setNpcSettings(lightningSettings)
 
 
 --Register the vulnerable harm types for this NPC. The first table defines the harm types the NPC should be affected by, while the second maps an effect to each, if desired.
@@ -105,9 +105,9 @@ npcManager.registerHarmTypes(npcID,
 
 
 --Register events
-function sampleNPC.onInitAPI()
-	npcManager.registerEvent(npcID, sampleNPC, "onTickNPC")
-	npcManager.registerEvent(npcID, sampleNPC, "onDrawNPC")
+function lightning.onInitAPI()
+	npcManager.registerEvent(npcID, lightning, "onTickNPC")
+	npcManager.registerEvent(npcID, lightning, "onDrawNPC")
 end
 
 local function explode(v)
@@ -116,7 +116,9 @@ local function explode(v)
 		b = NPC.HITTABLE,
 		btype = Colliders.NPC,
 		filter = function(w)
-			if (not w.isHidden) and w:mem(0x64, FIELD_BOOL) == false and w:mem(0x12A, FIELD_WORD) > 0 and w:mem(0x138, FIELD_WORD) == 0 and w:mem(0x12C, FIELD_WORD) == 0 then
+			if (not w.isHidden) and w:mem(0x156,FIELD_WORD) <= 0
+			and w:mem(0x64, FIELD_BOOL) == false and w:mem(0x12A, FIELD_WORD) > 0 
+			and w:mem(0x138, FIELD_WORD) == 0 and w:mem(0x12C, FIELD_WORD) == 0 then
 				return true
 			end
 			return false
@@ -132,7 +134,7 @@ local function explode(v)
 	end
 end
 
-function sampleNPC.onTickNPC(v)
+function lightning.onTickNPC(v)
 	--Don't act during time freeze
 	if Defines.levelFreeze then return end
 	local data = v.data
@@ -221,7 +223,7 @@ local function drawSprite(args) -- handy function to draw sprites
 	sprite:draw{priority = args.priority,color = args.color,sceneCoords = args.sceneCoords or args.scene}
 end
 
-function sampleNPC.onDrawNPC(v)
+function lightning.onDrawNPC(v)
 	local config = NPC.config[v.id]
 	local data = v.data
 
@@ -251,4 +253,4 @@ function sampleNPC.onDrawNPC(v)
 end
 
 --Gotta return the library table!
-return sampleNPC
+return lightning

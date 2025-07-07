@@ -38,7 +38,7 @@ local ballSettings = {
 	noyoshi= false,
 	nowaterphysics = true,
 	
-	jumphurt = false,
+	jumphurt = true,
 	spinjumpsafe = false,
 	harmlessgrab = true,
 	harmlessthrown = true,
@@ -85,12 +85,18 @@ function ball.onTickNPC(v)
 		data.init = true
 	end
 	
-	if v.heldIndex ~= 0  or v.forcedState > 0 then return end
-        if v.isProjectile then v.isProjectile = false end
+	if v.heldIndex ~= 0  or v.forcedState > 0 then 
+		data.verticalDir = 1
+		return 
+	end
+	if v.isProjectile then 
+		v.speedX = config.ballSpeed * v.direction
+		v.isProjectile = false 
+	end
 
 	-- Reboundin' logic
 
-	v.speedX = config.ballSpeed * v.direction
+	
 	v.speedY = (data.verticalDir == 0 and -config.ballSpeed) or config.ballSpeed
 
 	if v.collidesBlockUp and data.verticalDir == 0 then data.verticalDir = 1 end

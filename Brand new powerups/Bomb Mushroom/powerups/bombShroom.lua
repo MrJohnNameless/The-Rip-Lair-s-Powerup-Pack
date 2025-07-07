@@ -106,19 +106,20 @@ function bombShroom.onTickPowerup(p)
 			
 			local speedYMod = p.speedY * 0.1
 			local holdingUp = 0
-			local xSlowDown = 0
+
+			v.speedX = ((NPC.config[v.id].ballSpeed + 4) + p.speedX/3.5) * dir
 			
 			-- handles shooting as link/snake/samus
 			if linkChars[p.character] then 
 				-- shoot less higher when ducking
 				if p:mem(0x12E,FIELD_BOOL) then
-					v.speedY = -3
+					v.speedY = 2
 				else
-					v.speedY = -5
+					v.speedY = 4
 				end
 				v.x = v.x + (16 * dir)
 				v.isProjectile = true
-				v.speedX = ((NPC.config[v.id].speed + 4) + p.speedX/3.5) * dir
+				
 			else
 				-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
 				if smb2Chars[p.character] and p.holdingNPC == nil and p.keys.altRun then 
@@ -133,11 +134,9 @@ function bombShroom.onTickPowerup(p)
 							speedYMod = p.standingNPC.speedY * 0.1
 						end
 					   holdingUp = -7
-					   xSlowDown = -2
 					end
 					v.speedY = -2 + speedYMod + holdingUp
 					v.ai1 = p.character
-					v.speedX = dir * (6 + xSlowDown)
 					v:mem(0x156, FIELD_WORD, 32)
 				end
 			end
