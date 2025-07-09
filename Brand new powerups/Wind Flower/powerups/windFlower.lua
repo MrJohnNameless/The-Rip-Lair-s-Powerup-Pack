@@ -26,13 +26,8 @@ windFlower.largeProjectileID = 875
 windFlower.forcedStateType = 1 -- 0 for instant, 2 for normal/flickering, 3 for poof/raccoon
 windFlower.basePowerup = PLAYER_FIREFLOWER
 windFlower.cheats = {"needawindflower","needsomewind","breezy","pacifist","pacifistmode","trickytrials","hurricane","woosh","rslashwoosh","foo","playablebreeze","fooexhaledotogg"}
-windFlower.settings = {
-	exampleSetting = true,
-	-- put your own settings here!
-}
 
 windFlower.scuttleAnim = playeranim.Anim({37, 38, 47, -38, -37, 39, 48, -39}, 3)
-
 
 -- runs when customPowerups is done initializing the library
 function windFlower.onInitPowerupLib()
@@ -105,11 +100,6 @@ local function stopSFX(sfx)
 	sfx:stop()
 end
 
-function windFlower.onInitAPI()
-	-- register your events here!
-	--registerEvent(windFlower,"onNPCHarm")
-end
-
 -- runs once when the powerup gets activated, passes the player
 function windFlower.onEnable(p)	
 	p.data.windFlower = {
@@ -140,160 +130,171 @@ end
 function windFlower.onTickPowerup(p) 
 	if not p.data.windFlower then return end -- check if the powerup is currenly active
 	local data = p.data.windFlower
+
+	-- GENERAL PROJECTILES
 	
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
+    	data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
     
-    if p.mount < 2 then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-        p:mem(0x160, FIELD_WORD, 2)
-    end
+    	if p.mount < 2 then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
+        	p:mem(0x160, FIELD_WORD, 2)
+    	end
 
-   if data.projectileTimer > 0 or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-
-    if p:mem(0x50, FIELD_BOOL) and isOnGround(p) then return end -- if spinjumping while on the ground
+   	if data.projectileTimer > 0 or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+    	if p:mem(0x50, FIELD_BOOL) and isOnGround(p) then return end -- if spinjumping while on the ground
 	
 	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if (p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) then
-		
-		-- handles projectile shooting while spinjumping
-		if p:mem(0x50, FIELD_BOOL) and p.holdingNPC == nil then
-			-- put your own code here!
-		end
+    	if (p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) then
 		
 		-- spawns the projectile itself
-        local v = NPC.spawn(
-			windFlower.projectileID,
-			p.x + p.width/2 + (p.width/2 + 16) * p.direction + p.speedX,
-			p.y + p.height/2 + p.speedY, p.section, false, true
-        )	
-			if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-				v.speedY = -6
-			end		
-			v.isProjectile = true
-			v.direction = p.direction
+        	local v = NPC.spawn(
+		windFlower.projectileID,
+		p.x + p.width/2 + (p.width/2 + 16) * p.direction + p.speedX,
+		p.y + p.height/2 + p.speedY, p.section, false, true)	
 
-			SFX.play(shootSFX)
+		if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
+			v.speedY = -6
+		end	
+	
+		v.isProjectile = true
+		v.direction = p.direction
+
+		SFX.play(shootSFX)
 			
-			-- put your own code here!
-        data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
-        data.hasCharged = false
-    end
+        	data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
+        	data.hasCharged = false
+    	end
 
-    if isOnGround(p) and canPlayShootAnim(p) and (p.mount == 0) then
-    data.canSpinCharge = true
-    end
+	-- MID-AIR JUMP
 
-    if not isOnGround(p) and data.canSpinCharge then
-       if (p.keys.altJump == KEYS_PRESSED and not p:mem(0x50, FIELD_BOOL)) then
-        local v = NPC.spawn(
+    	if isOnGround(p) and canPlayShootAnim(p) and (p.mount == 0) then
+    		data.canSpinCharge = true
+    	end
+
+    	if not isOnGround(p) and data.canSpinCharge then
+       		if (p.keys.altJump == KEYS_PRESSED and not p:mem(0x50, FIELD_BOOL)) then
+        		local v = NPC.spawn(
 			windFlower.projectileID,
 			p.x + p.width/2,
-			p.y + p.height + 8, p.section, false, true
-        )			
+			p.y + p.height + 8, p.section, false, true)		
+	
 			v.isProjectile = true
 			v.direction = p.direction
                         v.speedY = 6
-			SFX.play(shootSFX)
 
+			SFX.play(shootSFX)
                         SFX.play(1)
+
                         p.speedY = -12
                         Effect.spawn(10, (p.x), (p.y + p.height*0.5)) 
                         data.canSpinCharge = false
-       end
-   end
+       		end
+   	end
 
-    if (not isOnGround(p)) and (p.speedY > 0) and (not p:mem(0x50, FIELD_BOOL)) and (canPlayShootAnim(p)) and (p.mount == 0) then
-    data.canScuttle = true
-    else
-    data.canScuttle = false
-    end
+	-- 'SCUTTLING' 
 
-    if data.canScuttle and p.keys.jump then
-    data.isScuttling = true
-    p.speedY = p.speedY - (Defines.player_grav - 0.1)
-    else
-    data.isScuttling = false
-    end
+    	if (not isOnGround(p)) and (p.speedY > 0) and (not p:mem(0x50, FIELD_BOOL)) and (canPlayShootAnim(p)) and (p.mount == 0) then
+    		data.canScuttle = true
+    	else
+    		data.canScuttle = false
+    	end
 
-    if data.isScuttling then
-        if not data.canPlayScuttleSFX then
-        	data.scuttleSFX = SFX.play(scuttleSFX,1,0)
-        	data.canPlayScuttleSFX = true
-        end
-	if lunatime.tick() % 8 == 0 then
-        	local e = Effect.spawn(10, p.x + p.width * 0.5,p.y)
-        	e.x = e.x - e.width * 0.5
-        	e.y = e.y - e.height * 0.5
-		e.speedX = -p.speedX
-		e.speedY = -5
-	end
-	if RNG.randomInt(1, 2) == 1 then
-        	local e = Effect.spawn(74, p.x + p.width * 0.5,p.y + p.height)
-        	e.x = e.x - e.width * 0.5
-        	e.y = e.y - e.height * 0.5
-		e.speedX = RNG.random(-6, 6)
-		e.speedY = RNG.random(-4, -8)
-	end
-    else
-         stopSFX(data.scuttleSFX)
-         data.canPlayScuttleSFX = false
-    end
+    	if data.canScuttle and p.keys.jump then
+    		data.isScuttling = true
+    		p.speedY = p.speedY - (Defines.player_grav - 0.1)
+    	else
+    		data.isScuttling = false
+    	end
 
-    if data.projectileTimer < projectileTimerMax[p.character] then
-    data.canLargeCharge = true
-    else
-    data.canLargeCharge = false
-    end
+    	if data.isScuttling then
+        	if not data.canPlayScuttleSFX then
+        		data.scuttleSFX = SFX.play(scuttleSFX,1,0)
+        		data.canPlayScuttleSFX = true
+        	end
+
+		if lunatime.tick() % 8 == 0 then
+        		local e = Effect.spawn(10, p.x + p.width * 0.5,p.y)
+        		e.x = e.x - e.width * 0.5
+        		e.y = e.y - e.height * 0.5
+			e.speedX = -p.speedX
+			e.speedY = -5
+		end
+		if RNG.randomInt(1, 2) == 1 then
+        		local e = Effect.spawn(74, p.x + p.width * 0.5,p.y + p.height)
+        		e.x = e.x - e.width * 0.5
+        		e.y = e.y - e.height * 0.5
+			e.speedX = RNG.random(-6, 6)
+			e.speedY = RNG.random(-4, -8)
+		end
+   	else
+         	stopSFX(data.scuttleSFX)
+         	data.canPlayScuttleSFX = false
+    	end
+
+	-- LARGE WIND CHARGING
+
+    	if data.projectileTimer < projectileTimerMax[p.character] then
+    		data.canLargeCharge = true
+    	else
+    		data.canLargeCharge = false
+    	end
  
-    if data.canLargeCharge and p.keys.run and not data.hasCharged then
-    data.largeProjectileTimer = math.max(data.largeProjectileTimer + 1, 0)
-    data.largeCharging = true
-    else
-    data.largeProjectileTimer = 0
-    data.largeCharging = false
-    end
+    	if data.canLargeCharge and p.keys.run and not data.hasCharged then
+    		data.largeProjectileTimer = math.max(data.largeProjectileTimer + 1, 0)
+    		data.largeCharging = true
+    	else
+    		data.largeProjectileTimer = 0
+    		data.largeCharging = false
+    	end
 
-    if data.largeCharging then
-       if data.largeProjectileTimer%2 == 0 then
-       Defines.earthquake = 2
-       end
-         if not data.canPlayChargeSFX then
-         data.chargeSFX = SFX.play(prepareSFX)
-         data.canPlayChargeSFX = true
-         end
-    else
-         stopSFX(data.chargeSFX)
-         data.canPlayChargeSFX = false
-    end
+    	if data.largeCharging then
+       		if data.largeProjectileTimer%2 == 0 then
+       			Defines.earthquake = 2
+       		end
 
-    if data.largeProjectileTimer > largeProjectileTimerMax[p.character] then
-        local v = NPC.spawn(
-			windFlower.largeProjectileID,
-			p.x + p.width/2 + (p.width/2 + 16) * p.direction + p.speedX,
-			p.y + p.height/2 + p.speedY, p.section, false, true
-        )	
-			if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-				v.speedY = -12
-			end		
-			v.isProjectile = true
-			v.direction = p.direction
-    SFX.play(shootLargeSFX)
-    data.largeProjectileTimer = 0
-    data.largeCharging = false
-    data.hasCharged = true
-    Defines.earthquake = 8
-    if p:isGroundTouching() then
-    p.speedY = -6
-    else
-    p.speedY = -8
-    end
-    if p:mem(0x148, FIELD_WORD) ~= 2 or p:mem(0x14C, FIELD_WORD) ~= 2 then
-         if p:isGroundTouching() then
-         p.speedX = -3 * p.direction
-         else
-         p.speedX = -6 * p.direction
-         end
-    end
-    end
+        	if not data.canPlayChargeSFX then
+         		data.chargeSFX = SFX.play(prepareSFX)
+         		data.canPlayChargeSFX = true
+         	end
+    	else
+         	stopSFX(data.chargeSFX)
+         	data.canPlayChargeSFX = false
+    	end
+
+    	if data.largeProjectileTimer > largeProjectileTimerMax[p.character] then
+        	local v = NPC.spawn(
+		windFlower.largeProjectileID,
+		p.x + p.width/2 + (p.width/2 + 16) * p.direction + p.speedX,
+		p.y + p.height/2 + p.speedY, p.section, false, true)	
+
+		if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
+			v.speedY = -12
+		end		
+
+		v.isProjectile = true
+		v.direction = p.direction
+
+    		SFX.play(shootLargeSFX)
+
+    		data.largeProjectileTimer = 0
+    		data.largeCharging = false
+    		data.hasCharged = true
+
+    		Defines.earthquake = 8
+
+    		if isOnGround(p) then
+    			p.speedY = -6
+    		else
+    			p.speedY = -8
+    		end
+
+    		if p:mem(0x148, FIELD_WORD) ~= 2 or p:mem(0x14C, FIELD_WORD) ~= 2 then
+         		if isOnGround(p) then
+         			p.speedX = -3 * p.direction
+         		else
+         			p.speedX = -6 * p.direction
+         		end
+    		end
+    	end
 end
 
 function windFlower.onTickEndPowerup(p)
@@ -303,22 +304,22 @@ function windFlower.onTickEndPowerup(p)
 	
 	-- put your own code here!
 	
-    local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
-    local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL)
+    	local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
+    	local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL)
 
-    if data.projectileTimer > 0 and canPlay and curFrame and (p.mount == 0) then
-        p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
-    end
+    	if data.projectileTimer > 0 and canPlay and curFrame and (p.mount == 0) then
+        	p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
+    	end
 
-    if (data.canScuttle) and (p.keys.jump) and (not p:mem(0x12E, FIELD_BOOL)) and (p:mem(0x146, FIELD_WORD) ~= 2) and (p.mount == 0) then
-	if not data.hasPlayed then
-       		windFlower.scuttleAnim:play(p)
-		data.hasPlayed = true
-	end
+    	if (data.canScuttle) and (p.keys.jump) and (not p:mem(0x12E, FIELD_BOOL)) and (p:mem(0x146, FIELD_WORD) ~= 2) and (p.mount == 0) then
+		if not data.hasPlayed then
+       			windFlower.scuttleAnim:play(p)
+			data.hasPlayed = true
+		end
 	else
-	windFlower.scuttleAnim:stop(p)
-	data.hasPlayed = false
-    end
+		windFlower.scuttleAnim:stop(p)
+		data.hasPlayed = false
+    	end
 end
 
 function windFlower.onDrawPowerup(p)

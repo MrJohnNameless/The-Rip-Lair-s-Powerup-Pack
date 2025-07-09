@@ -77,7 +77,7 @@ function randomizer.onTickNPC(v)
 	--Don't act during time freeze
 	v.animationFrame = 0
 	v.animationTimer = 0
-	if Defines.levelFreeze then return end
+	--if Defines.levelFreeze then return end
 	if v.despawnTimer <= 0 or v.id ~= npcID then
 		return
 	end
