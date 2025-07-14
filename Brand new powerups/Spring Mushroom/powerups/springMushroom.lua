@@ -216,9 +216,11 @@ function springMushroom.onTickEndPowerup(p)
 	end
 
         if data.scale > 1 then 
-                data.scale = data.scale - 0.05
+                data.scale = math.max(1, data.scale - 0.05)
         elseif data.scale < 1 then 
-                data.scale = data.scale + 0.05
+                data.scale = math.min(1, data.scale + 0.05)
+	else
+		data.scale = 1
         end
 
 	data.turnTimer = data.turnTimer - 1
