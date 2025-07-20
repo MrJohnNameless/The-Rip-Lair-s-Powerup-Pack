@@ -93,7 +93,6 @@ local function canPlayShootAnim(p)
     return (
         p.forcedState == 0
         and p.deathTimer == 0 -- not dead
-        and (p.mount == 0 or p.mount == MOUNT_BOOT)
         and not p.climbing
         and not p.holdingNPC
         and not p.inLaunchBarrel
@@ -155,8 +154,10 @@ function chickenSuit.onTickPowerup(p)
 		return 
 	end	
 	
-	local flamethrowerActive = Cheats.get("flamethrower").active
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
 	
+	local flamethrowerActive = Cheats.get("flamethrower").active
+
 	if p.keys.jump == KEYS_PRESSED and not isOnGround(p) and p.mount ~= MOUNT_CLOWNCAR and (data.touchedGround or flamethrowerActive) then
         local egg = NPC.spawn(
 			chickenSuit.projectileID,
@@ -172,12 +173,10 @@ function chickenSuit.onTickPowerup(p)
 		data.touchedGround = false
 		data.matildaTimer = projectileTimerMax[p.character]
 		return
-	elseif p:isOnGround(p) then
+	elseif isOnGround(p) then
 		data.touchedGround = true
 	end
 
-	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-	
 	if linkChars[p.character] then
 		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
 		if p:mem(0x162,FIELD_WORD) > 2 then return end
@@ -191,8 +190,9 @@ function chickenSuit.onTickPowerup(p)
 	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
 		tryingToShoot = true
 	end
+	
 	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if (tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
+    if ((tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2) and (p.mount == 0 or p.mount == MOUNT_BOOT) then
         local dir = p.direction
 		
 		-- spawns the projectile itself
@@ -253,7 +253,7 @@ end
 function chickenSuit.onTickEndPowerup(p)
 	if not p.data.chickenSuit then return end
 	local data = p.data.chickenSuit
-    if not canPlayShootAnim(p) or p:mem(0x50,FIELD_BOOL) or linkChars[p.character] then return end
+    if not canPlayShootAnim(p) or p.mount ~= 0 or p:mem(0x50,FIELD_BOOL) or linkChars[p.character] then return end
 	if p.speedY >= -Defines.player_grav or data.touchedGround or data.matildaTimer <= 0 then return end
 	p:setFrame(24) 
 end
