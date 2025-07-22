@@ -53,25 +53,23 @@ function apt.onInitPowerupLib()
     ai.getAsset = apt.getAsset
 end
 
-
 ai.register(apt)
 
+function apt.onEnable(p)
+    ai.onEnable(apt,p)
+end
+function apt.onDisable(p)
+    ai.onDisable(apt,p)
+end
 
-function apt.onEnable()
-    ai.onEnable(apt)
+function apt.onTickPowerup(p)
+    ai.onTick(apt,p)
 end
-function apt.onDisable()
-    ai.onDisable(apt)
+function apt.onTickEndPowerup(p)
+    ai.onTickEnd(apt,p)
 end
-
-function apt.onTick()
-    ai.onTick(apt)
-end
-function apt.onTickEnd()
-    ai.onTickEnd(apt)
-end
-function apt.onDraw()
-    ai.onDraw(apt)
+function apt.onDrawPowerup(p)
+    ai.onDraw(apt,p)
 end
 
 

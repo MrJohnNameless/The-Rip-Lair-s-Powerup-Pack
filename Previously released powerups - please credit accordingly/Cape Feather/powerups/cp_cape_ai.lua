@@ -8,6 +8,8 @@
     Custom Peach sprites by Lx Xzit and Pakesho
     SMW Mario and Luigi graphics from AwesomeZack
 
+	Tweaked to work with multiplayer by John Nameless
+
     Credit to FyreNova for generally being cool (oh and maybe working on a SMBX38A version of this, too)
 
 ]]
@@ -22,140 +24,164 @@ local MOUNT_BOOT     = 1
 local MOUNT_CLOWNCAR = 2
 local MOUNT_YOSHI    = 3
 
-
 local colBox = Colliders.Box(0,0,0,0)
-
 
 apt.screenShake = 0
 
+--[[
+	The following table variables below are supposed to be equivalents to "p.data.powerupName" values seen in other custom powerups.
+	Unforunately, due to MDA's cape feather being initially designed for single player, I had to resort to either this or restructure the code entirely.
+	I apologize if this method makes manipulating player data values of this powerup awful to work with, 
+	because it absolutely is awful to work with.
+		
+	- John Nameless
+--]]
+apt.flyingState = {}
+apt.spinTimer = {}
+apt.capeAnimation = {}
+apt.capeAnimationTimer = {}
+apt.capeAnimationSpeed = {}
+apt.capeAnimationFinished = {}
+apt.capeFrame = {}
+apt.pSpeed = {}
+apt.pSpeedSmokeTimer = {}
+apt.usePSpeedFrames = {}
+apt.pullingBack = {}
+apt.catchingAirTimer = {}
+apt.highestFlyingState = {}
+apt.slidingFromFlight = {}
+apt.walkingTimer = {}
+apt.ascentTimer = {}
+apt.sprite = {}
+
 
 -- Convenience functions
-local function isOnGround()
+local function isOnGround(p)
     return (
-        player:isOnGround()
-        or (player.mount == MOUNT_BOOT and player:mem(0x10C,FIELD_BOOL)) -- Hopping in boot
-        or player:mem(0x40,FIELD_WORD) > 0                               -- Climbing
-        or player.mount == MOUNT_CLOWNCAR
+        p:isOnGround(p)
+        or (p.mount == MOUNT_BOOT and p:mem(0x10C,FIELD_BOOL)) -- Hopping in boot
+        or p:mem(0x40,FIELD_WORD) > 0                               -- Climbing
+        or p.mount == MOUNT_CLOWNCAR
     )
 end
-local function isOnGroundRedigit() -- isOnGround, except redigit
+local function isOnGroundRedigit(p) -- isOnGround, except redigit
     return (
-        player.speedY == 0
-        or player.standingNPC ~= nil
-        or player:mem(0x48,FIELD_WORD) > 0 -- On a slope
+        p.speedY == 0
+        or p.standingNPC ~= nil
+        or p:mem(0x48,FIELD_WORD) > 0 -- On a slope
     )
 end
-local function getPlayerGravity()
+local function getPlayerGravity(p)
     local gravity = Defines.player_grav
-    if player:mem(0x34,FIELD_WORD) > 0 and player:mem(0x06,FIELD_WORD) == 0 then
+    if p:mem(0x34,FIELD_WORD) > 0 and p:mem(0x06,FIELD_WORD) == 0 then
         gravity = gravity*0.1
-    elseif player:mem(0x3A,FIELD_WORD) > 0 then
+    elseif p:mem(0x3A,FIELD_WORD) > 0 then
         gravity = 0
-    elseif playerManager.getBaseID(player.character) == CHARACTER_LUIGI then
+    elseif playerManager.getBaseID(p.character) == CHARACTER_LUIGI then
         gravity = gravity*0.9
     end
 
     return gravity
 end
-local function isUnderwater()
+local function isUnderwater(p)
     return (
-        player:mem(0x36,FIELD_BOOL)          -- In a liquid
-        and player:mem(0x06,FIELD_WORD) == 0 -- Not in quicksand
+        p:mem(0x36,FIELD_BOOL)          -- In a liquid
+        and p:mem(0x06,FIELD_WORD) == 0 -- Not in quicksand
     )
 end
 
 -- "Requirement" functions
-local function powerupAbilitiesDisabled()
+local function powerupAbilitiesDisabled(p)
     return (
-        player.forcedState > 0 or player.deathTimer > 0 or player:mem(0x13C,FIELD_BOOL) -- In a forced state/dead
-        or player:mem(0x40,FIELD_WORD) > 0 -- Climbing
-        or player:mem(0x0C,FIELD_BOOL)     -- Fairy
-        or player.mount == MOUNT_CLOWNCAR
+        p.forcedState > 0 or p.deathTimer > 0 or p:mem(0x13C,FIELD_BOOL) -- In a forced state/dead
+        or p:mem(0x40,FIELD_WORD) > 0 -- Climbing
+        or p:mem(0x0C,FIELD_BOOL)     -- Fairy
+        or p.mount == MOUNT_CLOWNCAR
     )
 end
-local function canFallSlowly()
+local function canFallSlowly(p)
     return (
-        not powerupAbilitiesDisabled()
-        and not isOnGround()
-        and not player:mem(0x36,FIELD_BOOL) -- Not in a liquid
-        and not player:mem(0x5C,FIELD_BOOL) -- Not ground pounding with a purple yoshi
-        and apt.flyingState == nil
+        not powerupAbilitiesDisabled(p)
+        and not isOnGround(p)
+        and not p:mem(0x36,FIELD_BOOL) -- Not in a liquid
+        and not p:mem(0x5C,FIELD_BOOL) -- Not ground pounding with a purple yoshi
+        and apt.flyingState[p.idx] == nil
     )
 end
-local function canSpin()
+local function canSpin(p)
     return (
-        not powerupAbilitiesDisabled()
-        and not player:mem(0x12E,FIELD_BOOL) -- Ducking
-        and not player:mem(0x3C,FIELD_BOOL)  -- Sliding
-        and player.character ~= CHARACTER_LINK
-        and player.mount == MOUNT_NONE
-        and player.holdingNPC == nil
+        not powerupAbilitiesDisabled(p)
+        and not p:mem(0x12E,FIELD_BOOL) -- Ducking
+        and not p:mem(0x3C,FIELD_BOOL)  -- Sliding
+        and p.character ~= CHARACTER_LINK
+        and p.mount == MOUNT_NONE
+        and p.holdingNPC == nil
     )
 end
-local function canBuildPSpeed()
+local function canBuildPSpeed(p)
     return (
-        not powerupAbilitiesDisabled()
-        and not player:mem(0x36,FIELD_BOOL) -- In a liquid
-        and player.mount ~= MOUNT_CLOWNCAR
+        not powerupAbilitiesDisabled(p)
+        and not p:mem(0x36,FIELD_BOOL) -- In a liquid
+        and p.mount ~= MOUNT_CLOWNCAR
     )
 end
-local function canFly()
+local function canFly(p)
     return (
-        canBuildPSpeed()
-        and (player.keys.run or player.keys.altRun)
-        and not player:mem(0x50,FIELD_BOOL) -- Spin jumping
-        and player.mount == MOUNT_NONE
-        and player.holdingNPC == nil
+        canBuildPSpeed(p)
+        and (p.keys.run or p.keys.altRun)
+        and not p:mem(0x50,FIELD_BOOL) -- Spin jumping
+        and p.mount == MOUNT_NONE
+        and p.holdingNPC == nil
     )
 end
 
 
-local function isSlipping()
+local function isSlipping(p)
     return (
-        player:mem(0x0A,FIELD_BOOL)                          -- On a slippery block
-        and (not player.keys.left and not player.keys.right) -- Slip, sliding away
+        p:mem(0x0A,FIELD_BOOL)                          -- On a slippery block
+        and (not p.keys.left and not p.keys.right) -- Slip, sliding away
     )
 end
 
 local walkingFrames = {[CHARACTER_MARIO] = table.map{1,2,3,16,17,18},[CHARACTER_LINK] = table.map{1,2,3,4,16,17,18}}
 local jumpingFrames = {[CHARACTER_MARIO] = table.map{4,5,19}        ,[CHARACTER_LINK] = table.map{5,3,19}          }
-local function isInWalkingAnimation() -- Note: doesn't account for walking while holding an NPC
-    local currentFrame = player:getFrame()
+local function isInWalkingAnimation(p) -- Note: doesn't account for walking while holding an NPC
+    local currentFrame = p:getFrame()
 
     return (
-        (walkingFrames[player.character] or walkingFrames[CHARACTER_MARIO])[currentFrame]
+        (walkingFrames[p.character] or walkingFrames[CHARACTER_MARIO])[currentFrame]
 
-        and ((player.forcedState == 0 and player.speedX ~= 0 and not isSlipping()) or player.forcedState == 3)
-        and player.deathTimer == 0 and not player:mem(0x13C,FIELD_BOOL) -- Dead
-        and not player:mem(0x50,FIELD_BOOL) -- Spin jumping
-        and isOnGroundRedigit()
+        and ((p.forcedState == 0 and p.speedX ~= 0 and not isSlipping(p)) or p.forcedState == 3)
+        and p.deathTimer == 0 and not p:mem(0x13C,FIELD_BOOL) -- Dead
+        and not p:mem(0x50,FIELD_BOOL) -- Spin jumping
+        and isOnGroundRedigit(p)
 
-        and player.mount == MOUNT_NONE
+        and p.mount == MOUNT_NONE
     )
 end
-local function isInJumpingAnimation()
-    local currentFrame = player:getFrame()
+local function isInJumpingAnimation(p)
+    local currentFrame = p:getFrame()
 
     return (
-        (jumpingFrames[player.character] or jumpingFrames[CHARACTER_MARIO])[currentFrame]
+        (jumpingFrames[p.character] or jumpingFrames[CHARACTER_MARIO])[currentFrame]
 
-        and player.deathTimer == 0 and not player:mem(0x13C,FIELD_BOOL) -- Dead
-        and not isOnGroundRedigit()
-        and not isUnderwater()
+        and p.deathTimer == 0 and not p:mem(0x13C,FIELD_BOOL) -- Dead
+        and not isOnGroundRedigit(p)
+        and not isUnderwater(p)
 
-        and player.forcedState == 0
-        and player.mount == MOUNT_NONE
+        and p.forcedState == 0
+        and p.mount == MOUNT_NONE
     )
 end
 
 local invisibleStates = table.map{5,8,10}
-local function canDrawCape()
+local function canDrawCape(p)
     return (
-        player.deathTimer == 0 and not player:mem(0x13C,FIELD_BOOL) -- Dead
-        and not invisibleStates[player.forcedState] -- In a forced state that prevents rendering
-        and player.powerup ~= PLAYER_SMALL          -- Small, from the "powering down" animation
-        and not player:mem(0x142,FIELD_BOOL)        -- Flashing
-        and not player:mem(0x0C,FIELD_BOOL)         -- Fairy
+        p.deathTimer == 0 and not p:mem(0x13C,FIELD_BOOL) -- Dead
+        and not invisibleStates[p.forcedState] -- In a forced state that prevents rendering
+        and p.powerup ~= PLAYER_SMALL          -- Small, from the "powering down" animation
+        and not p:mem(0x142,FIELD_BOOL)        -- Flashing
+        and not p:mem(0x0C,FIELD_BOOL)         -- Fairy
     )
 end
 
@@ -178,61 +204,62 @@ do
         invisible = {0},
     }
 
-    function apt.setCapeAnimation(name,forceRestart)
+    function apt.setCapeAnimation(name,forceRestart,idx)
         if apt.capeAnimations[name] == nil then
             error("Cape animation '".. tostring(name).. "' does not exist.")
         end
 
 
-        if name == apt.capeAnimation and not forceRestart then return end
+        if name == apt.capeAnimation[idx] and not forceRestart then return end
     
-        apt.capeAnimation = name
-        apt.capeAnimationTimer = 0
-        apt.capeAnimationSpeed = 1
+        apt.capeAnimation[idx] = name
+        apt.capeAnimationTimer[idx] = 0
+        apt.capeAnimationSpeed[idx] = 1
     
-        apt.capeAnimationFinished = false
+        apt.capeAnimationFinished[idx] = false
     end
     
-    apt.setCapeAnimation("idle",true)
-    apt.capeFrame = 1
-
+	for i = 1,2 do
+		apt.setCapeAnimation("idle",true,i)
+		apt.capeFrame[i] = 1
+	end
 
     local frontFrames = table.map{0,15}
     local backFrames = table.map{13,25,26}
 
-    local function isSpinning()
+    local function isSpinning(p)
         return (
-            player:mem(0x50,FIELD_BOOL) -- Spin jumping
-            or apt.spinTimer > 0        -- Spin attack
+            p:mem(0x50,FIELD_BOOL) -- Spin jumping
+            or apt.spinTimer[p.idx] > 0        -- Spin attack
         )
     end
-    local function isInFlight()
+    local function isInFlight(p)
         return (
-            apt.flyingState ~= nil
-            or apt.slidingFromFlight
+            apt.flyingState[p.idx] ~= nil
+            or apt.slidingFromFlight[p.idx]
         )
     end
 
     local horizontalDirections = table.map{2,4}
-    local function isUsingHorizontalPipe()
-        local warp = Warp(player:mem(0x15E,FIELD_WORD)-1)
+    local function isUsingHorizontalPipe(p)
+        local warp = Warp(p:mem(0x15E,FIELD_WORD)-1)
 
         return (
-            player.forcedState == 3
+            p.forcedState == 3
             and (
-                (player.forcedTimer == 0 and horizontalDirections[warp:mem(0x80,FIELD_WORD)])
-                or (player.forcedTimer == 2 and horizontalDirections[warp:mem(0x82,FIELD_WORD)])
+                (p.forcedTimer == 0 and horizontalDirections[warp:mem(0x80,FIELD_WORD)])
+                or (p.forcedTimer == 2 and horizontalDirections[warp:mem(0x82,FIELD_WORD)])
             )
         )
     end
 
-    local function findCapeIdleAnimation()
-        local animation = apt.capeAnimations[apt.capeAnimation]
+    local function findCapeIdleAnimation(p)
+        local animation = apt.capeAnimations[apt.capeAnimation[p.idx]]
 
-        if (apt.capeAnimation == "rest" and apt.capeAnimationFinished) or (animation.isIdle) then
-            if player.mount ~= MOUNT_YOSHI then
+        if (apt.capeAnimation[p.idx] == "rest" and apt.capeAnimationFinished[p.idx]) or (animation.isIdle) then
+            if p.mount ~= MOUNT_YOSHI then
                 return "idle"
-            elseif not player:mem(0x12E,FIELD_BOOL) then
+            elseif not p:mem(0x12E,FIELD_BOOL) then
                 return "idleOnYoshi"
             else
                 return "duckOnYoshi"
@@ -242,31 +269,31 @@ do
         end
     end
 
-    function findCapeAnimation()
-        local playerFrame = player:getFrame()
+    function findCapeAnimation(p)
+        local playerFrame = p:getFrame()
 
 
-        if player.mount == MOUNT_CLOWNCAR then
-            return findCapeIdleAnimation()
+        if p.mount == MOUNT_CLOWNCAR then
+            return findCapeIdleAnimation(p)
         end
 
 
-        if (player.speedY > 0 or player:mem(0x1C,FIELD_WORD) > 0) and not isOnGround() and not isInFlight() then
+        if (p.speedY > 0 or p:mem(0x1C,FIELD_WORD) > 0) and not isOnGround(p) and not isInFlight(p) then
             return "fall"
         end
 
 
-        if isSpinning() then
+        if isSpinning(p) then
             return "spin"
         end
 
 
-        if isInFlight() then
+        if isInFlight(p) then
             return "invisible"
         end
 
 
-        if player.character ~= CHARACTER_LINK then
+        if p.character ~= CHARACTER_LINK then
             if backFrames[playerFrame] then
                 return "backFacing"
             elseif frontFrames[playerFrame] then
@@ -275,14 +302,14 @@ do
         end
 
 
-        if (isOnGround() and player.speedX ~= 0 or isUsingHorizontalPipe()) or (apt.ascentTimer ~= nil) then
-            return "walk",math.max(0.2,math.abs(player.speedX)/Defines.player_runspeed)
-        elseif player.forcedState == 0 and not isOnGround() and isUnderwater() then
+        if (isOnGround(p) and p.speedX ~= 0 or isUsingHorizontalPipe(p)) or (apt.ascentTimer[p.idx] ~= nil) then
+            return "walk",math.max(0.2,math.abs(p.speedX)/Defines.player_runspeed)
+        elseif p.forcedState == 0 and not isOnGround(p) and isUnderwater(p) then
             return "walk",0.4
         end
 
 
-        return findCapeIdleAnimation()
+        return findCapeIdleAnimation(p)
     end
 end
 
@@ -317,16 +344,16 @@ end
 
 local invalidSpinBlocks = table.map{90,293,457}
 
-local function spinAttack()
+local function spinAttack(p)
     colBox.width  = apt.spinAttackSettings.hitboxSize.x
     colBox.height = apt.spinAttackSettings.hitboxSize.y
 
-    colBox.x = player.x+(player.width /2)-(colBox.width /2)
-    colBox.y = player.y+(player.height/2)-(colBox.height/2)
+    colBox.x = p.x+(p.width /2)-(colBox.width /2)
+    colBox.y = p.y+(p.height/2)-(colBox.height/2)
 
 
     for _,block in ipairs(Colliders.getColliding{a = colBox,btype = Colliders.BLOCK}) do
-		block:hit(false,player)
+		block:hit(false,p)
     end
     for _,npc in ipairs(Colliders.getColliding{a = colBox,b = NPC.HITTABLE,btype = Colliders.NPC,filter = capeHitNPCFilter}) do
         local oldProjectileFlag = npc:mem(0x136,FIELD_BOOL)
@@ -352,73 +379,73 @@ local characterSpeedMultipliers = {
     [CHARACTER_PEACH] = 0.93,
     [CHARACTER_TOAD ] = 1.07,
 }
-local function getPlayerMaxSpeed()
-    return (Defines.player_runspeed*(characterSpeedMultipliers[playerManager.getBaseID(player.character)] or 1))
+local function getPlayerMaxSpeed(p)
+    return (Defines.player_runspeed*(characterSpeedMultipliers[playerManager.getBaseID(p.character)] or 1))
 end
 
 local smwCostumes = table.map{"SMW-MARIO","SMW-LUIGI"}
-local function pSpeedRunningAnimation()
-    local currentFrame = player:getFrame()
+local function pSpeedRunningAnimation(p)
+    local currentFrame = p:getFrame()
 
 
     -- Custom walk cycle stuff
-    local isUsingSMWCostume = smwCostumes[player:getCostume()]
-    local isLink = (player.character == CHARACTER_LINK)
+    local isUsingSMWCostume = smwCostumes[p:getCostume()]
+    local isLink = (p.character == CHARACTER_LINK)
 
-    if (isUsingSMWCostume or isLink) and isInWalkingAnimation() then
-        apt.walkingTimer = (apt.walkingTimer + math.max(1,math.abs(player.speedX)))%45
+    if (isUsingSMWCostume or isLink) and isInWalkingAnimation(p) then
+        apt.walkingTimer[p.idx] = (apt.walkingTimer[p.idx] + math.max(1,math.abs(p.speedX)))%45
 
-        local timer = math.floor(apt.walkingTimer)
+        local timer = math.floor(apt.walkingTimer[p.idx])
         if isUsingSMWCostume then
             timer = (45-timer)-1
         end
 
         currentFrame = math.floor(timer/15)+1
-    elseif isLink and isInJumpingAnimation() then
-        if player.speedY < 0 then
+    elseif isLink and isInJumpingAnimation(p) then
+        if p.speedY < 0 then
             currentFrame = 4
         else
             currentFrame = 5
         end
     else
-        apt.walkingTimer = 0
+        apt.walkingTimer[p.idx] = 0
     end
 
 
-    if not isInWalkingAnimation() and not isInJumpingAnimation() then
+    if not isInWalkingAnimation(p) and not isInJumpingAnimation(p) then
         return
     end
 
 
-    local runningFrameIndex = table.ifind(apt.flightSettings.runningFrames,currentFrame)
-    local walkingFrameIndex = table.ifind(apt.flightSettings.normalFrames ,currentFrame)
+    local runningFrameIndex = table.ifind(apt.flightSettings.runningFrames[p.character],currentFrame)
+    local walkingFrameIndex = table.ifind(apt.flightSettings.normalFrames[p.character] ,currentFrame)
 
 
 
-    if apt.usePSpeedFrames then
+    if apt.usePSpeedFrames[p.idx] then
         if walkingFrameIndex ~= nil then
-            player:setFrame(apt.flightSettings.runningFrames[walkingFrameIndex])
+            p:setFrame(apt.flightSettings.runningFrames[p.character][walkingFrameIndex])
         end
     else
         if runningFrameIndex ~= nil then
-            player:setFrame(apt.flightSettings.normalFrames[runningFrameIndex])
+            p:setFrame(apt.flightSettings.normalFrames[p.character][runningFrameIndex])
         elseif walkingFrameIndex ~= nil and isUsingSMWCostume then
-            player:setFrame(currentFrame) -- Make sure that its P-speed animations don't happen
+            p:setFrame(currentFrame) -- Make sure that its P-speed animations don't happen
         end
     end
 end
 
 
-local function disableLinkJump()
-    local baseCharacter = playerManager.getBaseID(player.character)
+local function disableLinkJump(p)
+    local baseCharacter = playerManager.getBaseID(p.character)
 
-    if baseCharacter == CHARACTER_LINK and player:mem(0x12E,FIELD_BOOL) then
-        local settings = PlayerSettings.get(baseCharacter,player.powerup)
+    if baseCharacter == CHARACTER_LINK and p:mem(0x12E,FIELD_BOOL) then
+        local settings = PlayerSettings.get(baseCharacter,p.powerup)
 
-        player.y = player.y+player.height-settings.hitboxHeight
-        player.height = settings.hitboxHeight
+        p.y = p.y+p.height-settings.hitboxHeight
+        p.height = settings.hitboxHeight
 
-        player:mem(0x12E,FIELD_BOOL,false)
+        p:mem(0x12E,FIELD_BOOL,false)
     end
 end
 
@@ -432,7 +459,7 @@ local function diveBombNPCFilter(npc)
         and npc.collidesBlockBottom
     )
 end
-local function flightDiveBomb()
+local function flightDiveBomb(p)
     for _,npc in NPC.iterate() do
         if diveBombNPCFilter(npc) then
             -- Redigit stuff
@@ -458,50 +485,48 @@ end
 
 
 
-local function resetSpinAttack()
-    player:mem(0x164,FIELD_WORD,0)
-    apt.spinTimer = 0
-end
-local function resetPSpeed()
-    apt.pSpeed = 0
-    apt.pSpeedSmokeTimer = 0
-    apt.usePSpeedFrames = false
-end
-local function resetAscent()
-    apt.ascentTimer = nil
-end
-local function resetFlight()
-    apt.flyingState = nil
-    apt.pullingBack = false
-    apt.catchingAirTimer = 0
-
-    apt.highestFlyingState = nil
+local function resetSpinAttack(p)
+    p:mem(0x164,FIELD_WORD,0)
+    apt.spinTimer[p.idx] = 0
 end
 
-local function resetState()
-    resetSpinAttack()
-    resetPSpeed()
-    resetAscent()
-    resetFlight()
-
-    apt.slidingFromFlight = false
-
-    apt.walkingTimer = 0 -- For the SMW-Mario costume and Link
+local function resetPSpeed(p)
+    apt.pSpeed[p.idx] = 0
+    apt.pSpeedSmokeTimer[p.idx] = 0
+    apt.usePSpeedFrames[p.idx] = false
 end
-resetState()
+local function resetAscent(p)
+    apt.ascentTimer[p.idx] = nil
+end
+local function resetFlight(p)
+    apt.flyingState[p.idx] = nil
+    apt.pullingBack[p.idx] = false
+    apt.catchingAirTimer[p.idx] = 0
 
+    apt.highestFlyingState[p.idx] = nil
+end
 
+local function resetState(p)
+    resetSpinAttack(p)
+    resetPSpeed(p)
+    resetAscent(p)
+    resetFlight(p)
+
+    apt.slidingFromFlight[p.idx] = false
+
+    apt.walkingTimer[p.idx] = 0 -- For the SMW-Mario costume and Link
+end
 
 local canSpinJumpCharacters = table.map{CHARACTER_MARIO,CHARACTER_LUIGI,CHARACTER_TOAD}
 function apt.onPlayerHarm(eventObj,p)
-    if p ~= player or (apt.flyingState == nil or not canFly()) then return end
+    if not p or (apt.flyingState[p.idx] == nil or not canFly(p)) then return end
 
-    player:mem(0x140,FIELD_WORD,150)
+    p:mem(0x140,FIELD_WORD,150)
     eventObj.cancelled = true
 
-    player:mem(0x50,FIELD_BOOL,canSpinJumpCharacters[player.character])
+    p:mem(0x50,FIELD_BOOL,canSpinJumpCharacters[p.idx])
 
-    resetFlight()
+    resetFlight(p)
 
     if apt.flightSettings.hitSFX ~= nil then
         SFX.play(apt.flightSettings.hitSFX)
@@ -510,141 +535,138 @@ end
 
 
 
-function apt.onEnable(library)
-    resetState()
+function apt.onEnable(library,p)
+    resetState(p)
 end
 
-function apt.onDisable(library)
-    resetState()
+function apt.onDisable(library,p)
+    resetState(p)
 end
 
 
-function apt.onTick(library)
+function apt.onTick(library,p)
     -- Make link... actually work
-    if player.character == CHARACTER_LINK and (player:mem(0x14,FIELD_WORD) == 0 or player:mem(0x14,FIELD_WORD) < -7) then
-        player:mem(0x160,FIELD_WORD,0)
+    if p.character == CHARACTER_LINK and (p:mem(0x14,FIELD_WORD) == 0 or p:mem(0x14,FIELD_WORD) < -7) then
+        p:mem(0x160,FIELD_WORD,0)
     end
 
 
     -- Slow falling
-    if canFallSlowly() and (player.keys.jump or player.keys.altJump) and Level.winState() == 0 then
-        player.speedY = math.min(player.speedY,apt.slowFallSettings.speed-getPlayerGravity())
+    if canFallSlowly(p) and (p.keys.jump or p.keys.altJump) and Level.winState() == 0 then
+        p.speedY = math.min(p.speedY,apt.slowFallSettings.speed-getPlayerGravity(p))
     end
 
     -- Spin attack
-    if canSpin() and Level.winState() == 0 then
-        if player:mem(0x50,FIELD_BOOL) then -- Spin jumping
-            resetSpinAttack()
-            spinAttack()
-        elseif (player.keys.run == KEYS_PRESSED or player.keys.altRun == KEYS_PRESSED) then
+    if canSpin(p) and Level.winState() == 0 then
+        if p:mem(0x50,FIELD_BOOL) then -- Spin jumping
+            resetSpinAttack(p)
+            spinAttack(p)
+        elseif (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) then
             SFX.play(apt.spinAttackSettings.sfx)
-            apt.spinTimer = 1
-
-            if apt.flyingState ~= nil then
-                player.direction = -player.direction
+            apt.spinTimer[p.idx] = 1
+            if apt.flyingState[p.idx] ~= nil then
+                p.direction = -p.direction
             end
         end
 
-        if apt.spinTimer > apt.spinAttackSettings.length then
-            resetSpinAttack()
-        elseif apt.spinTimer > 0 then
-            player:mem(0x164,FIELD_WORD,-1)
+        if apt.spinTimer[p.idx] > apt.spinAttackSettings.length then
+            resetSpinAttack(p)
+        elseif apt.spinTimer[p.idx] > 0 then
+            p:mem(0x164,FIELD_WORD,-1)
 
-            apt.spinTimer = apt.spinTimer + 1
-            spinAttack()
+            apt.spinTimer[p.idx] = apt.spinTimer[p.idx] + 1
+            spinAttack(p)
         end
     else
-        resetSpinAttack()
+        resetSpinAttack(p)
     end
 
     -- P-Speed
-    if canBuildPSpeed() then
-        if math.abs(player.speedX) >= getPlayerMaxSpeed() and isOnGround() then
-            apt.pSpeed = math.min(apt.flightSettings.neededRunTime[player.character],apt.pSpeed + 1)
+    if canBuildPSpeed(p) then
+        if math.abs(p.speedX) >= getPlayerMaxSpeed(p) and isOnGround(p) then
+            apt.pSpeed[p.idx] = math.min(apt.flightSettings.neededRunTime[p.character],apt.pSpeed[p.idx] + 1)
 
-            apt.usePSpeedFrames = (apt.pSpeed >= apt.flightSettings.neededRunTime[player.character])
-        elseif (math.abs(player.speedX) < getPlayerMaxSpeed() and isOnGroundRedigit()) then -- changed this line & added an elseif statement
-            apt.pSpeed = math.max(0,apt.pSpeed - 0.5)
+            apt.usePSpeedFrames[p.idx] = (apt.pSpeed[p.idx] >= apt.flightSettings.neededRunTime[p.character])
+        elseif (math.abs(p.speedX) < getPlayerMaxSpeed(p) and isOnGroundRedigit(p)) then -- changed this line & added an elseif statement
+            apt.pSpeed[p.idx] = math.max(0,apt.pSpeed[p.idx] - 0.5)
 
-            apt.usePSpeedFrames = (apt.usePSpeedFrames and not isOnGround())
+            apt.usePSpeedFrames[p.idx] = (apt.usePSpeedFrames[p.idx] and not isOnGround(p))
         end
 
-        if apt.usePSpeedFrames and isOnGround() then
-            apt.pSpeedSmokeTimer = apt.pSpeedSmokeTimer + 1
+        if apt.usePSpeedFrames[p.idx] and isOnGround(p) then
+            apt.pSpeedSmokeTimer[p.idx] = apt.pSpeedSmokeTimer[p.idx] + 1
 
-            if apt.pSpeedSmokeTimer%4 == 0 then
-                local effect = Effect.spawn(74,player.x+(player.width/2)-(8*player.direction),player.y+player.height)
+            if apt.pSpeedSmokeTimer[p.idx]%4 == 0 then
+                local effect = Effect.spawn(74,p.x+(p.width/2)-(8*p.direction),p.y+p.height)
 
                 effect.x = effect.x-(effect.width /2)
                 effect.y = effect.y-(effect.height/2)
             end
         end
     else
-        resetPSpeed()
+        resetPSpeed(p)
     end
 
-
-
     -- Ascent
-    if canBuildPSpeed() and Level.winState() == 0 then
-        if (apt.pSpeed >= apt.flightSettings.neededRunTime[player.character] or getCheatIsActive("wingman")) and player:mem(0x11C,FIELD_WORD) > 0 then
+    if canBuildPSpeed(p) and Level.winState() == 0 then
+        if (apt.pSpeed[p.idx] >= apt.flightSettings.neededRunTime[p.character] or getCheatIsActive("wingman")) and p:mem(0x11C,FIELD_WORD) > 0 then
             -- Start ascent
-            player:mem(0x11C,FIELD_WORD,0) -- Stop the jump force
+            p:mem(0x11C,FIELD_WORD,0) -- Stop the jump force
 
-            apt.ascentTimer = apt.flightSettings.maximumAscentTime
-            apt.usePSpeedFrames = true
+            apt.ascentTimer[p.idx] = apt.flightSettings.maximumAscentTime
+            apt.usePSpeedFrames[p.idx] = true
         end
 
-        if apt.ascentTimer ~= nil then
-            apt.ascentTimer = math.max(0,apt.ascentTimer-1)
+        if apt.ascentTimer[p.idx] ~= nil then
+            apt.ascentTimer[p.idx] = math.max(0,apt.ascentTimer[p.idx]-1)
 
             -- This isn't exactly accurate to SMW, but it's the best I could do without it feeling like a soggy bag of potatoes. The default numbers are pretty much accurate, though.
-            if apt.ascentTimer > 0 and (player.keys.jump or player.keys.altJump) or (apt.flightSettings.maximumAscentTime-apt.ascentTimer) < apt.flightSettings.minimumAscentTime then
-                player.speedY = math.max(apt.flightSettings.ascentMaxSpeed,player.speedY+apt.flightSettings.ascentAcceleration)-getPlayerGravity()
+            if apt.ascentTimer[p.idx] > 0 and (p.keys.jump or p.keys.altJump) or (apt.flightSettings.maximumAscentTime-apt.ascentTimer[p.idx]) < apt.flightSettings.minimumAscentTime then
+                p.speedY = math.max(apt.flightSettings.ascentMaxSpeed,p.speedY+apt.flightSettings.ascentAcceleration)-getPlayerGravity(p)
             else
-                apt.ascentTimer = 0
+                apt.ascentTimer[p.idx] = 0
             end
 
-            if player.speedY > 0 or player:mem(0x14A,FIELD_WORD) > 0 then
-                if canFly() then
-                    resetFlight()
-                    apt.flyingState = 1
+            if p.speedY > 0 or p:mem(0x14A,FIELD_WORD) > 0 then
+                if canFly(p) then
+                    resetFlight(p)
+                    apt.flyingState[p.idx] = 1
 
-                    apt.usePSpeedFrames = false
+                    apt.usePSpeedFrames[p.idx] = false
                 end
 
-                resetAscent()
+                resetAscent(p)
             end
 
 
             for _,name in ipairs(ascentDisableKeys) do
-                player.keys[name] = false
+                p.keys[name] = false
             end
         end
     else
-        resetAscent()
+        resetAscent(p)
     end
 
     -- Flight
-    if canFly() and not isOnGround() and apt.flyingState ~= nil and Level.winState() == 0 then
-        local holdingForward   = player.keys[directionKeys[ player.direction]]
-        local holdingBackwards = player.keys[directionKeys[-player.direction]]
+    if canFly(p) and not isOnGround(p) and apt.flyingState[p.idx] ~= nil and Level.winState() == 0 then
+        local holdingForward   = p.keys[directionKeys[ p.direction]]
+        local holdingBackwards = p.keys[directionKeys[-p.direction]]
 
         local stateChangeSpeed = apt.flightSettings.stateChangeSpeed
 
 
-        if player:mem(0x11C,FIELD_WORD) > 0 then -- Bounced on an enemy or something
-            player:mem(0x11C,FIELD_WORD,0) -- Stop the jump force
+        if p:mem(0x11C,FIELD_WORD) > 0 then -- Bounced on an enemy or something
+            p:mem(0x11C,FIELD_WORD,0) -- Stop the jump force
 
-            apt.pullingBack = true
+            apt.pullingBack[p.idx] = true
         end
 
-        player:mem(0x18,FIELD_BOOL,false) -- Stop Peach's hover
+        p:mem(0x18,FIELD_BOOL,false) -- Stop Peach's hover
 
 
 
-        if apt.pullingBack then
-            local fromDiveBomb = (apt.highestFlyingState >= 6)
+        if apt.pullingBack[p.idx] then
+            local fromDiveBomb = (apt.highestFlyingState[p.idx] >= 6)
 
             if fromDiveBomb then
                 stateChangeSpeed = -apt.flightSettings.stateChangeSpeedFast
@@ -653,103 +675,104 @@ function apt.onTick(library)
             end
 
 
-            if apt.flyingState < 2 then
-                apt.flyingState = 1
-                apt.pullingBack = false
+            if apt.flyingState[p.idx] < 2 then
+                apt.flyingState[p.idx] = 1
+                apt.pullingBack[p.idx] = false
 
-                if apt.highestFlyingState >= 3 and (player.speedX*player.direction) > 0 then
+                if apt.highestFlyingState[p.idx] >= 3 and (p.speedX*p.direction) > 0 then
                     if fromDiveBomb then
-                        apt.catchingAirTimer = apt.flightSettings.catchAirTimeLong
+                        apt.catchingAirTimer[p.idx] = apt.flightSettings.catchAirTimeLong
                     else
-                        apt.catchingAirTimer = apt.flightSettings.catchAirTime
+                        apt.catchingAirTimer[p.idx] = apt.flightSettings.catchAirTime
                     end
 
-                    player.speedY = 0
+                    p.speedY = 0
 
                     SFX.play(apt.flightSettings.catchAirSFX)
                 end
             end
-        elseif apt.catchingAirTimer > 0 then
-            apt.catchingAirTimer = apt.catchingAirTimer - 1
+        elseif apt.catchingAirTimer[p.idx] > 0 then
+            apt.catchingAirTimer[p.idx] = apt.catchingAirTimer[p.idx] - 1
 
-            player.speedY = player.speedY + apt.flightSettings.catchAirSpeed
+            p.speedY = p.speedY + apt.flightSettings.catchAirSpeed
 
             stateChangeSpeed = -stateChangeSpeed
         elseif holdingBackwards then
-            apt.pullingBack = true
+            apt.pullingBack[p.idx] = true
 
             stateChangeSpeed = 0
-        elseif player.speedY < -1 then
+        elseif p.speedY < -1 then
             stateChangeSpeed = 0
         elseif holdingForward then
-            player.speedX = player.speedX + (apt.flightSettings.acceleration*player.direction)
+            p.speedX = p.speedX + (apt.flightSettings.acceleration*p.direction)
         else
-            stateChangeSpeed = stateChangeSpeed*math.sign(3-apt.flyingState)
+            stateChangeSpeed = stateChangeSpeed*math.sign(3-apt.flyingState[p.idx])
         end
 
 
 
-        if apt.flyingState == 1 then
-            apt.highestFlyingState = 1
+        if apt.flyingState[p.idx] == 1 then
+            apt.highestFlyingState[p.idx] = 1
         else
-            apt.highestFlyingState = math.max(apt.flyingState,apt.highestFlyingState or 1)
+            apt.highestFlyingState[p.idx] = math.max(apt.flyingState[p.idx],apt.highestFlyingState[p.idx] or 1)
         end
 
         if stateChangeSpeed ~= 0 then
-            apt.flyingState = math.clamp(apt.flyingState + (1/stateChangeSpeed),1,6)
+            apt.flyingState[p.idx] = math.clamp(apt.flyingState[p.idx] + (1/stateChangeSpeed),1,6)
         end
         
 
-        local gravity = (apt.flightSettings.gravity*apt.flyingState)
-        local terminalVelocity = (apt.flightSettings.maxDownwardsSpeed*apt.flyingState)
+        local gravity = (apt.flightSettings.gravity*apt.flyingState[p.idx])
+        local terminalVelocity = (apt.flightSettings.maxDownwardsSpeed*apt.flyingState[p.idx])
 
-        player.speedY = math.clamp(player.speedY-getPlayerGravity()+gravity,apt.flightSettings.maxUpwardsSpeed,terminalVelocity)
+        p.speedY = math.clamp(p.speedY-getPlayerGravity(p)+gravity,apt.flightSettings.maxUpwardsSpeed,terminalVelocity)
 
 
         for _,name in ipairs(flightDisableKeys) do
-            player.keys[name] = false
+            p.keys[name] = false
         end
         
 
-        --Text.print(apt.flyingState,32,32)
-        --Text.print(apt.highestFlyingState,32,64)
-        --Text.print(apt.catchingAirTimer,32,96)
-    elseif canFly() and apt.flyingState ~= nil then
-        if apt.flyingState >= 5 then
-            flightDiveBomb()
+        --Text.print(apt.flyingState[p.idx],32,32)
+        --Text.print(apt.highestFlyingState[p.idx],32,64)
+        --Text.print(apt.catchingAirTimer[p.idx],32,96)
+    elseif canFly(p) and apt.flyingState[p.idx] ~= nil then
+        if apt.flyingState[p.idx] >= 5 then
+            flightDiveBomb(p)
+			resetPSpeed(p)
         else
-            player:mem(0x3C,FIELD_BOOL,true)
-            apt.slidingFromFlight = true
+            p:mem(0x3C,FIELD_BOOL,true)
+            apt.slidingFromFlight[p.idx] = true
         end
 
-        player:mem(0x18,FIELD_BOOL,false) -- Give back Peach's hover
+        p:mem(0x18,FIELD_BOOL,false) -- Give back Peach's hover
 
-        resetFlight()
+        resetFlight(p)
     else
-        resetFlight()
+        resetFlight(p)
     end
 
 
     -- Sliding after flight
-    apt.slidingFromFlight = (apt.slidingFromFlight and player:mem(0x3C,FIELD_BOOL))
+    apt.slidingFromFlight[p.idx] = (apt.slidingFromFlight[p.idx] and p:mem(0x3C,FIELD_BOOL))
 end
 
 
-function apt.onTickEnd(library)
+function apt.onTickEnd(library,p)
     -- Find player frame
-    local currentFrame = player:getFrame()
+    local currentFrame = p:getFrame()
 
-    if canSpin() and apt.spinTimer > 0 then
-        local frameIndex = (apt.spinTimer%#apt.spinAttackSettings.frames)+1
+    if canSpin(p) and apt.spinTimer[p.idx] > 0 then
+        local frameIndex = (apt.spinTimer[p.idx]%#apt.spinAttackSettings.frames)+1
 
-        player:setFrame(apt.spinAttackSettings.frames[frameIndex])
-    elseif (canFly() and apt.flyingState ~= nil) or (player:mem(0x3C,FIELD_BOOL) and apt.slidingFromFlight) then
+        p:setFrame(apt.spinAttackSettings.frames[frameIndex])
+    elseif (canFly(p) and apt.flyingState[p.idx] ~= nil) or (p:mem(0x3C,FIELD_BOOL) and apt.slidingFromFlight[p.idx]) then
         local frameIndex = 1
 
-        if apt.flyingState ~= nil then
-            frameIndex = math.floor(apt.flyingState)
-        elseif apt.slidingFromFlight then
-            local slopeBlock = Block(player:mem(0x48,FIELD_WORD))
+        if apt.flyingState[p.idx] ~= nil then
+            frameIndex = math.floor(apt.flyingState[p.idx])
+        elseif apt.slidingFromFlight[p.idx] then
+            local slopeBlock = Block(p:mem(0x48,FIELD_WORD))
             if slopeBlock.idx == 0 or not slopeBlock.isValid then
                 slopeBlock = nil
             end
@@ -757,17 +780,17 @@ function apt.onTickEnd(library)
 
             if slopeBlock ~= nil then
                 local config = Block.config[slopeBlock.id]
-                local againstPlayer = (player.direction ~= config.floorslope)
+                local againstPlayer = (p.direction ~= config.floorslope)
 
 
                 frameIndex = math.floor(slopeBlock.width/slopeBlock.height)
 
                 if not againstPlayer then
-                    frameIndex = #apt.flightSettings.frames-frameIndex
+                    frameIndex = #apt.flightSettings.frames[p.character]-frameIndex
                 end
-            elseif isOnGround() then
+            elseif isOnGround(p) then
                 frameIndex = 3
-            elseif player.speedY < 0 then
+            elseif p.speedY < 0 then
                 frameIndex = 1
             else
                 frameIndex = 2
@@ -775,34 +798,34 @@ function apt.onTickEnd(library)
         end
 
 
-        frameIndex = math.clamp(frameIndex,1,#apt.flightSettings.frames)
+        frameIndex = math.clamp(frameIndex,1,#apt.flightSettings.frames[p.character])
 
-        player:setFrame(apt.flightSettings.frames[frameIndex])
+        p:setFrame(apt.flightSettings.frames[p.character][frameIndex])
     else
         -- P-Speed frames
-        pSpeedRunningAnimation()
+        pSpeedRunningAnimation(p)
     end
 
     -- Janky, janky, here comes the redigit
-    if apt.usePSpeedFrames or apt.flyingState ~= nil then
-        disableLinkJump()
+    if apt.usePSpeedFrames[p.idx] or apt.flyingState[p.idx] ~= nil then
+        disableLinkJump(p)
     end
 
     
     -- Find the cape's animation
-    local name,speed = findCapeAnimation()
+    local name,speed = findCapeAnimation(p)
 
     if name ~= nil then
-        apt.setCapeAnimation(name)
+        apt.setCapeAnimation(name,nil,p.idx)
     end
-    apt.capeAnimationSpeed = speed or apt.capeAnimationSpeed
+    apt.capeAnimationSpeed[p.idx] = speed or apt.capeAnimationSpeed[p.idx]
 
 
     -- Actually handle the animation
-    local animation = apt.capeAnimations[apt.capeAnimation]
-    local frameIndex = math.floor(apt.capeAnimationTimer/(animation.frameDelay or 4))+1
+    local animation = apt.capeAnimations[apt.capeAnimation[p.idx]]
+    local frameIndex = math.floor(apt.capeAnimationTimer[p.idx]/(animation.frameDelay or 4))+1
 
-    apt.capeAnimationTimer = apt.capeAnimationTimer + apt.capeAnimationSpeed
+    apt.capeAnimationTimer[p.idx] = apt.capeAnimationTimer[p.idx] + apt.capeAnimationSpeed[p.idx]
 
     if frameIndex > #animation then -- Finished the animation
         if animation.loopPoint ~= nil then
@@ -810,21 +833,18 @@ function apt.onTickEnd(library)
 
             frameIndex = (frameIndex%loopingFrames)+animation.loopPoint
         else
-            apt.capeAnimationFinished = true
+            apt.capeAnimationFinished[p.idx] = true
             frameIndex = #animation
         end
     end
 
-    apt.capeFrame = animation[frameIndex]
+    apt.capeFrame[p.idx] = animation[frameIndex]
 end
 
 
 -- Drawing
 do
     local capeImageSize = 100
-
-    local capeBuffer = Graphics.CaptureBuffer(capeImageSize,capeImageSize)
-
 
     local starmanShader = Shader()
     starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
@@ -850,28 +870,28 @@ do
         [CHARACTER_LINK]  = -8,
     }
 
-    local function getPosition()
-        local baseCharacter = playerManager.getBaseID(player.character)
+    local function getPosition(p)
+        local baseCharacter = playerManager.getBaseID(p.character)
 
-        local settings = PlayerSettings.get(baseCharacter,player.powerup)
-        local animation = apt.capeAnimations[apt.capeAnimation]
+        local settings = PlayerSettings.get(baseCharacter,p.powerup)
+        local animation = apt.capeAnimations[apt.capeAnimation[p.idx]]
 
-        local position = vector(player.x+(player.width/2),player.y+player.height)
+        local position = vector(p.x+(p.width/2),p.y+p.height)
 
-        if player.mount == MOUNT_CLOWNCAR then
+        if p.mount == MOUNT_CLOWNCAR then
             local clownCarOffset = clownCarOffsets[baseCharacter]
-            clownCarOffset = clownCarOffset[player.powerup] or clownCarOffset[PLAYER_BIG]
+            clownCarOffset = clownCarOffset[p.powerup] or clownCarOffset[PLAYER_BIG]
 
-            position.y = player.y-clownCarOffset+settings.hitboxHeight
-        elseif player.mount == MOUNT_YOSHI then
-            position.x = position.x - (4*player.direction)
+            position.y = p.y-clownCarOffset+settings.hitboxHeight
+        elseif p.mount == MOUNT_YOSHI then
+            position.x = position.x - (4*p.direction)
 
-            position.y = position.y + player:mem(0x10E,FIELD_WORD) + 2
-            position.y = position.y-player.height+settings.hitboxHeight
+            position.y = position.y + p:mem(0x10E,FIELD_WORD) + 2
+            position.y = position.y-p.height+settings.hitboxHeight
         end
 
         if not animation.isIdle then
-            position.y = position.y+(characterOffsets[player.character] or 0)
+            position.y = position.y+(characterOffsets[p.character] or 0)
         end
 
 
@@ -883,18 +903,18 @@ do
         return position
     end
 
-    local function getCapePriority()
-        local animation = apt.capeAnimations[apt.capeAnimation]
+    local function getCapePriority(p)
+        local animation = apt.capeAnimations[apt.capeAnimation[p.idx]]
 
         local priority = -25
-        if player.forcedState == 3 then
+        if p.forcedState == 3 then
             priority = -70
-        elseif player.mount == MOUNT_CLOWNCAR then
+        elseif p.mount == MOUNT_CLOWNCAR then
             priority = -35
         end
 
         priority = priority+(animation.priorityDifference or -0.01)
-        if player.mount == MOUNT_YOSHI then
+        if p.mount == MOUNT_YOSHI then
             priority = priority+0.01
         end
 
@@ -902,8 +922,8 @@ do
     end
 
 
-    local function drawCape(spritesheets,position,priority,sceneCoords,target)
-        local texture = apt:getAsset(player.character, spritesheets[player.character])
+    local function drawCape(spritesheets,position,priority,sceneCoords,target,p)
+        local texture = apt:getAsset(p.character, spritesheets[p.character])
 
         if texture == nil then
             texture = apt:getAsset(CHARACTER_MARIO, spritesheets[CHARACTER_MARIO])
@@ -911,20 +931,19 @@ do
 
         if texture == nil then return end
 
-
-        if apt.sprite == nil or apt.sprite.texture ~= texture then
-            apt.sprite = Sprite{texture = texture,frames = texture.height/capeImageSize,pivot = vector(0.5,0.5)}
+        if apt.sprite[p.idx] == nil or apt.sprite[p.idx].texture ~= texture then
+            apt.sprite[p.idx] = Sprite{texture = texture,frames = texture.height/capeImageSize,pivot = vector(0.5,0.5)}
         end
 
 
-        local direction = player.direction
-        if player:getFrame() < 0 then
+        local direction = p.direction
+        if p:getFrame() < 0 then
             direction = -direction
         end
 
         local shader,uniforms
         local color = Color.white
-        if player.hasStarman then
+        if p.hasStarman then
             shader = starmanShader
             uniforms = {time = lunatime.tick()*2}
         elseif Defines.cheat_shadowmario then
@@ -937,15 +956,15 @@ do
         --position = vector(round(position.x),round(position.y))
 
 
-        apt.sprite.texpivot = vector((-direction+1)*0.5,0)
-        apt.sprite.width = texture.width*direction
+        apt.sprite[p.idx].texpivot = vector((-direction+1)*0.5,0)
+        apt.sprite[p.idx].width = texture.width*direction
 
-        apt.sprite.position = position or getPosition()
+        apt.sprite[p.idx].position = position or getPosition(p)
 
-        apt.sprite:draw{
-            frame = apt.capeFrame or 1,
+        apt.sprite[p.idx]:draw{
+            frame = apt.capeFrame[p.idx] or 1,
             color = color,shader = shader,uniforms = uniforms,
-            priority = priority or getCapePriority(),sceneCoords = (sceneCoords ~= false),target = target,
+            priority = priority or getCapePriority(p),sceneCoords = (sceneCoords ~= false),target = target,
         }
     end
 
@@ -987,39 +1006,40 @@ do
     end)
 
 
-    function apt.onDraw(library)
-        if not canDrawCape() or (apt.capeFrame ~= nil and apt.capeFrame < 1) then return end
+    function apt.onDraw(library,p)
+        if not canDrawCape(p) or (apt.capeFrame[p.idx] ~= nil and apt.capeFrame[p.idx] < 1) then return end
         
-
+		local capeBuffer = Graphics.CaptureBuffer(capeImageSize,capeImageSize)
+		
         local bufferSize = vector(capeBuffer.width,capeBuffer.height)
 
         -- First, draw the cape to a buffer
         capeBuffer:clear(-100)
 
-        drawCape(library.capeSpritesheets,bufferSize/2,-100,false,capeBuffer)
+        drawCape(library.capeSpritesheets,bufferSize/2,-100,false,capeBuffer,p)
 
         -- Then draw that to the screen (but cut off if going through a pipe)
-        local position = getPosition()-(bufferSize/2)
-        local priority = getCapePriority()
+        local position = getPosition(p)-(bufferSize/2)
+        local priority = getCapePriority(p)
 
         local sourcePosition = vector.zero2
         local sourceSize = vector(capeBuffer.width,capeBuffer.height)
 
 
-        if player.forcedState == 3 then
-            local warp = Warp(player:mem(0x15E,FIELD_WORD)-1)
+        if p.forcedState == 3 then
+            local warp = Warp(p:mem(0x15E,FIELD_WORD)-1)
 
-            if player.forcedTimer == 0 then
+            if p.forcedTimer == 0 then
                 local warpPosition = vector(warp.entranceX    ,warp.entranceY     )
                 local warpSize     = vector(warp.entranceWidth,warp.entranceHeight)
 
                 position,sourcePosition,sourceSize = pipeCutoffRules[warp:mem(0x80,FIELD_WORD)](position,sourcePosition,sourceSize,warpPosition,warpSize)
-            elseif player.forcedTimer == 2 then
+            elseif p.forcedTimer == 2 then
                 local warpPosition = vector(warp.exitX    ,warp.exitY     )
                 local warpSize     = vector(warp.exitWidth,warp.exitHeight)
 
                 position,sourcePosition,sourceSize = pipeCutoffRules[warp:mem(0x82,FIELD_WORD)](position,sourcePosition,sourceSize,warpPosition,warpSize)
-            elseif player.forcedTimer == 1 or player.forcedTimer >= 100 then
+            elseif p.forcedTimer == 1 or p.forcedTimer >= 100 then
                 sourceSize = vector.zero2
             end            
         end
@@ -1049,20 +1069,20 @@ do
     apt.cameraY = nil
     apt.cameraMovementStartSection = nil
 
-
     function apt.onCameraUpdate()
-        if apt.cameraMovementStartSection ~= nil and apt.cameraMovementStartSection ~= player.section then
+		local p = player
+        if apt.cameraMovementStartSection ~= nil and apt.cameraMovementStartSection ~= p.section then
             -- Stop the custom camera stuff if the player changed sections
             apt.cameraY = nil
             apt.cameraMovementStartSection = nil
-        elseif apt.flyingState ~= nil and not apt.flightSettings.normalFlyingCamera then
+        elseif apt.flyingState[p.idx] ~= nil and not apt.flightSettings.normalFlyingCamera and Player.count() <= 1 then
             -- Stop the camera from going higher during flight
             if apt.cameraY == nil then
                 apt.cameraY = camera.y
-                apt.cameraMovementStartSection = player.section
+                apt.cameraMovementStartSection = p.section
             end
 
-            apt.cameraY = math.max(apt.cameraY,player.y+player.height-(camera.height/2))
+            apt.cameraY = math.max(apt.cameraY,p.y+p.height-(camera.height/2))
         elseif apt.cameraY ~= nil then
             -- Return the camera to its normal position
             local distance = (camera.y-apt.cameraY)
@@ -1077,13 +1097,11 @@ do
 
 
         if apt.cameraY ~= nil then
-            local bounds = player.sectionObj.boundary
+            local bounds = p.sectionObj.boundary
             apt.cameraY = math.clamp(apt.cameraY,bounds.top,bounds.bottom-camera.height)
 
             camera.y = apt.cameraY
         end
-
-
 
         -- Custom screenshake effect
         if apt.screenShake > 0 then
@@ -1093,7 +1111,6 @@ do
         end
     end
 end
-
 
 do
     local function dropItem(id)
@@ -1168,6 +1185,14 @@ end]]
 
 -- SETTINGS
 
+local defaults = {
+	runTime = 35,
+	runFrames = {16,17,18,19,19},
+	normalFrames = {1 ,2 ,3 ,4 ,5 },
+	flightFrames = {37,38,39,47,48,49},
+}
+
+
 apt.slowFallSettings = {
     -- How fast the player falls when holding jump.
     speed = 1.872,
@@ -1187,11 +1212,32 @@ apt.spinAttackSettings = {
 
 apt.flightSettings = {
     -- How long the player needs to run at full speed in order to get P-Speed.
-    neededRunTime = {35,40,50,50,10,35,35},
+    neededRunTime = {
+		[CHARACTER_MARIO] = 35,
+		[CHARACTER_LUIGI] = 40,
+		[CHARACTER_PEACH] = 50,
+		[CHARACTER_TOAD]  = 50,
+		[CHARACTER_LINK]  = 10,
+		[CHARACTER_WARIO] = 35,
+	},
     
     -- The frames used when running with and without P-Speed. The frames go: walking 1, walking 2, walking 3, jumping, and falling.
-    runningFrames = {16,17,18,19,19},
-    normalFrames  = {1 ,2 ,3 ,4 ,5 },
+    runningFrames = {
+		[CHARACTER_MARIO] = defaults.runFrames,
+		[CHARACTER_LUIGI] = defaults.runFrames,
+		[CHARACTER_PEACH] = defaults.runFrames,
+		[CHARACTER_TOAD]  = defaults.runFrames,
+		[CHARACTER_LINK]  = defaults.runFrames,
+		[CHARACTER_WARIO] = defaults.runFrames,
+	},
+    normalFrames = {
+		[CHARACTER_MARIO] = defaults.normalFrames,
+		[CHARACTER_LUIGI] = defaults.normalFrames,
+		[CHARACTER_PEACH] = defaults.normalFrames,
+		[CHARACTER_TOAD]  = defaults.normalFrames,
+		[CHARACTER_LINK]  = defaults.normalFrames,
+		[CHARACTER_WARIO] = defaults.normalFrames,
+	},
 
     -- The longest and shortest times that the player can ascend for.
     maximumAscentTime = 84,
@@ -1224,7 +1270,15 @@ apt.flightSettings = {
 
 
     -- The frames used when flying.
-    frames = {37,38,39,47,48,49},
+    frames = {
+		[CHARACTER_MARIO] = defaults.flightFrames,
+		[CHARACTER_LUIGI] = defaults.flightFrames,
+		[CHARACTER_PEACH] = defaults.flightFrames,
+		[CHARACTER_TOAD]  = defaults.flightFrames,
+		[CHARACTER_LINK]  = defaults.flightFrames,
+		[CHARACTER_WARIO] = defaults.flightFrames,
+	},
+	
     -- The sound played when catching air.
     catchAirSFX = SFX.open(Misc.resolveSoundFile("powerups/cp_cape_fly")),
 
@@ -1233,7 +1287,7 @@ apt.flightSettings = {
     hitSFX = 35,
 
     -- If true, the camera will not be restricted when flying.
-    normalFlyingCamera = true,
+    normalFlyingCamera = false,
 }
 
 
