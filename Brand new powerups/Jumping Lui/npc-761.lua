@@ -68,7 +68,6 @@ function jumper.onTickNPC(v)
 	
 	if v.collidesBlockBottom and not v.dontMove then 
 		v.speedY = -9
-		SFX.play(9, 0.5)
 	end
 	
 end
