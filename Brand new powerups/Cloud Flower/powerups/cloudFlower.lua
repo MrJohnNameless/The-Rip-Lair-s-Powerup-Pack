@@ -38,6 +38,7 @@ function cloudFlower.onInitPowerupLib()
 		cloudFlower:registerAsset(2, "luigi-cloudFlower.png"),
 		cloudFlower:registerAsset(3, "peach-cloudFlower.png"), -- "ask sleepy for peach sprites, not me"	 -MrNameless
 		cloudFlower:registerAsset(4, "toad-cloudFlower.png"),
+		cloudFlower:registerAsset(5, "link-cloudFlower.png"),
 	}
 
 	cloudFlower.iniFiles = {
@@ -45,6 +46,7 @@ function cloudFlower.onInitPowerupLib()
 		cloudFlower:registerAsset(2, "luigi-cloudFlower.ini"),
 		cloudFlower:registerAsset(3, "peach-cloudFlower.ini"),
 		cloudFlower:registerAsset(4, "toad-cloudFlower.ini"),
+		cloudFlower:registerAsset(5, "link-cloudFlower.ini"),
 	}
 end
 
