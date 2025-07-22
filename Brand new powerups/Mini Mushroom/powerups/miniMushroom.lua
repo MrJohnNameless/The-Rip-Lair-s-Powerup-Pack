@@ -21,9 +21,6 @@
 
 local cp = require("customPowerups")
 
-local wasMuted1 = false
-local wasMuted2 = false
-
 local miniMush = {}
 
 -- reserved variable names are "name", "items", "id", "collectSounds", "basePowerup", "spritesheets" and "iniFiles"
@@ -99,6 +96,10 @@ end
 local function handleJumping(p,allowSpin,forceJump,playSFX,inputCheck) -- "replaces" the default SMBX jump with a replica that allows adjustable jumpheight
 	if p.deathTimer > 0 then return end
 	if not p.keys.jump and not p.keys.altJump then return end
+	
+	local wasMuted1 = Audio.sounds[1].muted
+	local wasMuted2 = Audio.sounds[33].muted
+	
 	local shouldJump = false
 	local holdingJump = p.keys.jump or p.keys.altJump
 	local tappingJump = p.keys.jump == KEYS_PRESSED or p.keys.altJump == KEYS_PRESSED

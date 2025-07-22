@@ -52,8 +52,6 @@ local spawnedBlocks = {}
 local lavaBlacklist = table.map{405, 406, 420, 467, 468, 469, 470, 471, 473, 475, 477, 478, 481, 483, 484, 487}
 
 local oldWeakLava = nil
-local oldRunSpeed = nil
-
 
 local GP
 pcall(function() GP = require("GroundPound") end)
@@ -297,16 +295,18 @@ local function onTickIceBlock(v, data)
 
     data.timer = data.timer + 1
 
-    if data.timer <= config.lifetime or data.reset then
-        data.scaleTimer = data.scaleTimer + 1
+	for _,p in ipairs(Player.get()) do
+		if data.timer <= config.lifetime or data.reset then
+			data.scaleTimer = data.scaleTimer + 1
 
-    elseif getCollidingSide(v, player) == 0 and not data.reset then
-        data.scaleTimer = math.max(data.scaleTimer - 1, 0)
+		elseif playerData[p.idx] and  getCollidingSide(v, p) == 0 and not data.reset then
+			data.scaleTimer = math.max(data.scaleTimer - 1, 0)
 
-        if data.scaleTimer == 0 then
-            data.canRemove = true
-        end
-    end
+			if data.scaleTimer == 0 then
+				data.canRemove = true
+			end
+		end
+	end
 
     data.scale = math.min(data.scaleTimer, 8)/8
     data.reset = nil
@@ -599,8 +599,6 @@ function iceFlower.onTickPowerup(p)
     if canSkate(p) and p:isOnGround() and p.keys.altRun == KEYS_PRESSED and not data.skating and (not aw or aw.isWallSliding(p) == 0) then
         data.skating = true
         p.speedX = math.max(math.abs(p.speedX), Defines.player_walkspeed) * p.direction
-        oldRunSpeed = Defines.player_runspeed
-        Defines.player_runspeed = 8
         data.initialDirection = p.direction
     end
 
@@ -611,8 +609,8 @@ function iceFlower.onTickPowerup(p)
             data.animTimer = data.animTimer + 1
             data.currentFrame = (math.floor(data.animTimer/iceFlower.skateFramespeed) % #animFrames) + 1
 
-            p.speedX = math.clamp(math.abs(p.speedX), data.animTimer, Defines.player_runspeed) * player.direction
-            player.keys.run = false
+            p.speedX = math.clamp(math.abs(p.speedX), data.animTimer, 8) * p.direction
+            p.keys.run = false
         else
             data.animTimer = 0
             data.currentFrame = 0
@@ -641,7 +639,6 @@ function iceFlower.onTickPowerup(p)
             data.skating = false
             data.currentFrame = 0
             data.animTimer = 0
-            Defines.player_runspeed = oldRunSpeed
         end
     end
 

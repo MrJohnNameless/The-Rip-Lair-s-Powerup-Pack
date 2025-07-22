@@ -54,18 +54,6 @@ npcManager.setNpcSettings(powerupSettings)
 npcManager.registerHarmTypes(npcID,{HARM_TYPE_OFFSCREEN},{})
 
 function powerup.onInitAPI()
-	Cheats.register("needasuperball",{
-		isCheat = true,
-		activateSFX = 12,
-		aliases = powerupLib.aliases,
-		onActivate = (function() 
-			for i,p in ipairs(Player.get()) do
-				p.reservePowerup = npcID
-			end
-			
-			return true
-		end)
-	})
 end
 
 return powerup

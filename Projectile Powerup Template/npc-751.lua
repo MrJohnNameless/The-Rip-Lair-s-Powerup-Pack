@@ -65,7 +65,7 @@ function template.onNPCHarm(token,v,harm,c)
 	
 	if harm ~= HARM_TYPE_TAIL and harm ~= HARM_TYPE_FROMBELOW then return end
 	v.speedY = -6
-	SFX.play(9)
+	SFX.play(2)
 	token.cancelled = true
 end
 

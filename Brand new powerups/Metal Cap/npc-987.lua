@@ -1,10 +1,28 @@
 local npcManager = require("npcManager")
+
 local metalShader = Shader()
 metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag"))
-local template = {}
+
+local metalCap = {}
 local npcID = NPC_ID
 
-local templateSettings = {
+metalCap.settings = {
+	duration = 20,
+	music = "metalMario.ogg",
+
+	playerMaxJumpForce = {
+		[CHARACTER_MARIO] = 12,
+		[CHARACTER_LUIGI] = 14,
+		[CHARACTER_PEACH] = 12,
+		[CHARACTER_TOAD] = 10,
+	},
+
+	playerMaxSpeed = 3,
+	playerMaxJumpForce = 12,
+	playerGravity = 0.2,
+}
+
+local metalCapNPCSettings = {
 	id = npcID,
 	gfxheight = 16,
 	gfxwidth = 32,
@@ -40,7 +58,7 @@ local templateSettings = {
 	notcointransformable = true,
 }
 
-npcManager.setNpcSettings(templateSettings)
+npcManager.setNpcSettings(metalCapNPCSettings)
 npcManager.registerHarmTypes(npcID,
 	{
 		HARM_TYPE_FROMBELOW,
@@ -56,15 +74,15 @@ npcManager.registerHarmTypes(npcID,
 
 local sm64_star = Misc.resolveFile("sm64_star.wav")
 
-function template.onInitAPI()
-	npcManager.registerEvent(npcID, template, "onTickNPC")
-	registerEvent(template, "onTick")
-	registerEvent(template, "onDraw")
-	registerEvent(template, "onTickEnd")
-	registerEvent(template, "onNPCHarm")
-	registerEvent(template, "onNPCCollect")
-	registerEvent(template, "onExit")
-	registerEvent(template, "onPlayerKill")
+function metalCap.onInitAPI()
+	registerEvent(metalCap, "onTick")
+	registerEvent(metalCap, "onDraw")
+	registerEvent(metalCap, "onTickEnd")
+	registerEvent(metalCap, "onNPCHarm")
+	registerEvent(metalCap, "onNPCCollect")
+	registerEvent(metalCap, "onExit")
+	registerEvent(metalCap, "onPlayerKill")
+
 	Cheats.register("needametalcap",{
 		isCheat = true,
 		activateSFX = 12,
@@ -77,62 +95,60 @@ function template.onInitAPI()
 	})
 end
 
-function template.onPlayerKill(e,p)
-	if not p.data.metalcapPowerupcapTimer then return end
-	Audio.resetMciSections()
+local function deInitDataForCap(p)
 	p.data.frogOrPenguinSuitDisableWater = nil
+
 	p.data.metalcapPowerupsubmerged = nil
 	p.data.metalcapPowerupcapTimer = nil
 	p.data.metalcapPowerupstoredJumpTimer = nil
 	p.data.metalcapPowerupflashTimer = nil
 	p.data.metalcapPowerupstartMusic = nil
 	p.data.metalcapisMetalCap = nil
+	p.data.metalcapQuakeTimer = nil
 end
 
-function template.onExit()
+function metalCap.onPlayerKill(e,p)
+	if not p.data.metalcapPowerupcapTimer then return end
+
+	Audio.resetMciSections()
+	deInitDataForCap(p)
+end
+
+function metalCap.onExit()
 	for i,p in ipairs(Player.get()) do
-		p.data.frogOrPenguinSuitDisableWater = nil
-		p.data.metalcapPowerupsubmerged = nil
-		p.data.metalcapPowerupcapTimer = nil
-		p.data.metalcapPowerupstoredJumpTimer = nil
-		p.data.metalcapPowerupflashTimer = nil
-		p.data.metalcapPowerupstartMusic = nil
-		p.data.metalcapisMetalCap = nil
+		deInitDataForCap(p)
 	end
 end
 
-local restrictMovement = false
+local restrictMovement = {}
 
-function template.onTick(p)
-	
+function metalCap.onTick()
 	for i,p in ipairs(Player.get()) do
 		if not p.data.metalcapPowerupcapTimer then return end
 
 		local data = p.data
+		local config = metalCap.settings
 		
 		if data.metalcapPowerupcapTimer == 0 and data.metalcapPowerupstartMusic then
 			Audio.SeizeStream(-1)
 			Audio.MusicStopFadeOut(300)
+
 			data.metalcapPowerupstartMusic = false
 		elseif data.metalcapPowerupcapTimer == 30 then
-			Audio.MusicOpen("metalMario.ogg")
+			Audio.MusicOpen(config.music)
 			Audio.MusicPlay()
-		elseif data.metalcapPowerupcapTimer == 1150 then
+		elseif data.metalcapPowerupcapTimer == (lunatime.toTicks(config.duration) - 100) then
 			Audio.MusicStopFadeOut(1000)
+
 			if metalcapPowerupflashTimer == 0 then
 				metalcapPowerupflashTimer = 1
 			else
 				metalcapPowerupflashTimer = 0
 			end
-		elseif data.metalcapPowerupcapTimer == 1250 then
+		elseif data.metalcapPowerupcapTimer == lunatime.toTicks(config.duration) then
 			Audio.resetMciSections()
-			p.data.frogOrPenguinSuitDisableWater = nil
-			p.data.metalcapPowerupsubmerged = nil
-			p.data.metalcapPowerupcapTimer = nil
-			p.data.metalcapPowerupstoredJumpTimer = nil
-			p.data.metalcapPowerupflashTimer = nil
-			p.data.metalcapPowerupstartMusic = nil
-			p.data.metalcapisMetalCap = nil
+			deInitDataForCap(p)
+
 			return
 		end
 		
@@ -146,6 +162,17 @@ function template.onTick(p)
 		
 		for _,v in ipairs(Colliders.getColliding{a = p, b = NPC.HITTABLE, btype = Colliders.NPC, filter = starmanFilter, collisionGroup = p.collisionGroup}) do
 			v:harm(HARM_TYPE_EXT_HAMMER);
+		end
+
+		-- Break blocks
+
+		for _,b in ipairs(Block.getIntersecting(p.x + (p.speedX * 0.5), p.y + (p.speedY * 0.75), p.x + p.width + (p.speedX * 0.5), p.y + p.height + (p.speedY * 0.685))) do
+                    	if not b.isHidden and not b.layerObj.isHidden and b.layerName ~= "Destroyed Blocks" and b:mem(0x5A, FIELD_WORD) ~= -1 then 
+				if Block.MEGA_SMASH_MAP[b.id] then 
+			        	b:remove(true)
+                                	SFX.play(3)
+				end
+			end
 		end
 
 		if p:mem(0x36, FIELD_BOOL) and p:mem(0x34, FIELD_WORD) == 2 then 
@@ -190,23 +217,72 @@ function template.onTick(p)
 					p:mem(0x11C, FIELD_WORD, 0)
 				end
 			end
+
+			-- Make the player bulky
+
+			local onGround = p:isOnGround()
+
+			if p.forcedState == FORCEDSTATE_NONE and p.deathTimer == 0 then
+				if p:mem(0x11C,FIELD_WORD) > config.playerMaxJumpForce[p.character] then
+					p:mem(0x11C,FIELD_WORD, config.playerMaxJumpForce[p.character])
+				end
+
+				if p.keys.right then
+					p.speedX = p.speedX - 0.02
+				elseif p.keys.left then
+					p.speedX = p.speedX + 0.02
+				end
+
+				p.speedX = math.clamp(p.speedX,-config.playerMaxSpeed, config.playerMaxSpeed)
+
+				p:mem(0x00,FIELD_BOOL,false) -- disable tanooki toad's double jump
+				p:mem(0x168,FIELD_FLOAT,0) -- p-speed
+				p:mem(0x16C,FIELD_BOOL,false) -- has p-speed
+				p:mem(0x16E,FIELD_BOOL,false) -- is flying
+
+				if not onGround and p.speedY > 0 then
+					p.speedY = p.speedY + config.playerGravity
+				end
+
+				-- Quake effects
+
+        			if not onGround then
+					p.data.metalcapQuakeTimer = p.data.metalcapQuakeTimer + 1
+        			end
+
+        			if p.data.metalcapQuakeTimer >= 12 and onGround then
+					p.data.metalcapQuakeTimer = 0
+
+					Defines.earthquake = math.max(Defines.earthquake, 4)
+        				SFX.play(Misc.resolveSoundFile("bowlingball"), 2)
+
+					local s = Effect.spawn(10, p.x + p.width * 0.5, p.y + p.height)
+					s.x = s.x - s.width * 0.5
+					s.y = s.y - s.height * 0.5
+					s.speedX = -3	
+
+					local s = Effect.spawn(10, p.x + p.width * 0.5, p.y + p.height)
+					s.x = s.x - s.width * 0.5
+					s.y = s.y - s.height * 0.5
+					s.speedX = 3	
+        			end
+			end
+		end
+
+		if restrictMovement[p.idx] then
+			p.keys.up = nil
+			p.keys.left = nil
+			p.keys.right = nil
+			p.keys.down = nil
+			p.keys.run = nil
+			p.keys.jump = nil
+			p.keys.altRun = nil
+			p.keys.altJump = nil
 		end
 	end
-	
-	if restrictMovement then
-		player.keys.up = nil
-		player.keys.left = nil
-		player.keys.right = nil
-		player.keys.down = nil
-		player.keys.run = nil
-		player.keys.jump = nil
-		player.keys.altRun = nil
-		player.keys.altJump = nil
-	end
-	
 end
 
-function template.onTickEnd(p)
+function metalCap.onTickEnd(p)
 	for i,p in ipairs(Player.get()) do
 		if not p.data.metalcapPowerupcapTimer then return end
 
@@ -216,7 +292,7 @@ function template.onTickEnd(p)
 			if p.speedY < 0 then
 				p:setFrame(4)
 			else
-				p:setFrame(3)
+				p:setFrame(5)
 			end
 		end
 		
@@ -240,7 +316,7 @@ function template.onTickEnd(p)
 	end
 end
 
-function template.onNPCHarm(token,v,harm,c)
+function metalCap.onNPCHarm(token,v,harm,c)
 	if v.id ~= npcID then return end
 	
 	if harm ~= HARM_TYPE_TAIL and harm ~= HARM_TYPE_FROMBELOW then return end
@@ -249,7 +325,7 @@ function template.onNPCHarm(token,v,harm,c)
 	token.cancelled = true
 end
 
-function template.onNPCCollect(eventObj, v, p)
+function metalCap.onNPCCollect(eventObj, v, p)
 	if npcID ~= v.id or v.isGenerator then return end
 	
 	SFX.play(sm64_star)
@@ -262,25 +338,31 @@ function template.onNPCCollect(eventObj, v, p)
 	if p.data.metalcapPowerupcapTimer and p.data.metalcapPowerupcapTimer > 0 then
 		p.data.metalcapPowerupcapTimer = 0
 	else
+		-- Init data values!!!
+	
 		p.data.metalcapPowerupsubmerged = false
 		p.data.metalcapPowerupcapTimer = 0
 		p.data.metalcapPowerupstoredJumpTimer = 0
 		p.data.metalcapPowerupflashTimer = 0
 		p.data.metalcapPowerupstartMusic = true
+		p.data.metalcapQuakeTimer = 0
 	end
-	
 end
 
-function template.onDraw(p)
+function metalCap.onDraw(p)
 	for i,p in ipairs(Player.get()) do
+
 		local enabled = 0
 		local speed = 0
+
+		local config = metalCap.settings
+
 		if not p.data.metalcapPowerupcapTimer then return end
 		
 		if p.data.metalcapPowerupcapTimer < 60 then speed = 8 else speed = 4 end
 		
-		if (p.data.metalcapPowerupcapTimer < 60 and not p.data.metalcapisMetalCap) or p.data.metalcapPowerupcapTimer >= 1122 then
-			enabled = math.floor(lunatime.tick() / speed) % 2
+		if (p.data.metalcapPowerupcapTimer < 60 and not p.data.metalcapisMetalCap) or p.data.metalcapPowerupcapTimer >= (lunatime.toTicks(config.duration) - 128) then
+			enabled = math.floor(p.data.metalcapPowerupcapTimer / speed) % 2
 		else
 			enabled = 1
 			p.data.metalcapisMetalCap = true
@@ -289,12 +371,12 @@ function template.onDraw(p)
 		--Stop the player's movement like they're transforming
 		if not p.data.metalcapisMetalCap then
 			if speed == 8 then
-				restrictMovement = true
+				restrictMovement[p.idx] = true
 				p.speedX = 0
 			end
 		end
 		
-		if p.data.metalcapPowerupcapTimer == 61 then restrictMovement = false end
+		if p.data.metalcapPowerupcapTimer == 61 then restrictMovement[p.idx] = false end
 		
 		p:render{
 			x = p.x,
@@ -306,4 +388,4 @@ function template.onDraw(p)
 	end
 end
 
-return template
+return metalCap

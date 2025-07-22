@@ -1,14 +1,7 @@
---[[
-	This template can be used to make your own custom NPCs!
-	Copy it over into your level or episode folder and rename it to use an ID between 751 and 1000. For example: npc-751.lua
-	Please pay attention to the comments (lines with --) when making changes. They contain useful information!
-	Refer to the end of onTickNPC to see how to stop the NPC talking to you.
-]]
-
 
 --NPCManager is required for setting basic NPC properties
 local npcManager = require("npcManager")
-local builderSuit = require("powerups/builderSuit")
+local utils = require("npcs/npcutils")
 local vectr = require("vectr")
 --Create the library table
 local crate = {}
@@ -173,18 +166,31 @@ function crate.onTickEndNPC(v)
 	else
 		v.animationFrame = 0
 	end
+	
+	if (v.collidesBlockLeft or v.collidesBlockRight or v.collidesBlockBottom) and v.isProjectile then
+		v.speedX = 0
+		v.speedY = math.max(v.speedY,-4)
+	end
 
 	local velocity = vectr.v2(v.speedX, v.speedY)
 	if v.underwater then
-	local isSinking = v.speedY > 0
-	local multiplier = 1
-	   if isSinking then
-	   multiplier = 2
-	   end
-	local buoyancyAmount = 1.25 * multiplier * Defines.npc_grav
-	velocity.y = math.max(velocity.y - buoyancyAmount, -0.5)
-	v.speedY = math.max(v.speedY - buoyancyAmount, -3.5)
+		local isSinking = v.speedY > 0
+		local multiplier = 1
+		if isSinking then
+			multiplier = 2
+		end
+		local buoyancyAmount = 1.25 * multiplier * Defines.npc_grav
+		velocity.y = math.max(velocity.y - buoyancyAmount, -0.5)
+		v.speedY = math.max(v.speedY - buoyancyAmount, -3.5)
 	end
+	
+	local p = utils.getNearestPlayer(v)
+	if v:mem(0x156,FIELD_WORD) <= 0 and (Colliders.slash(p,v) or Colliders.downSlash(p,v)) then
+		v:kill(9)
+		Effect.spawn(1,v)
+		SFX.play(4)
+	end
+	
 end
 
 --Gotta return the library table!

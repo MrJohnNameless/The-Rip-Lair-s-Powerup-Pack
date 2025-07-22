@@ -131,8 +131,6 @@ function ptooie.onDisable(p)
 	p.data.ptooieSuit = nil
 end
 
-function ptooie.onTickPowerup(p) return end
-
 function ptooie.handlePlayer(p) 
 	if not p.data.ptooieSuit then return end -- check if the powerup is currenly active
 	local data = p.data.ptooieSuit
@@ -166,7 +164,7 @@ function ptooie.handlePlayer(p)
 		v:mem(0x130, FIELD_WORD, p.idx)
 		SFX.play(18)
 		
-		data.blowing=false
+		data.blowing = false
 		data.recalc = false
 		data.duckTimer = 0
 		data.ballNPC = v
@@ -199,7 +197,7 @@ function ptooie.handlePlayer(p)
 				data.ballNPC.speedY = p.speedY
 				data.ballNPC = nil
 			elseif (p.keys.left == KEYS_PRESSED and p.direction == -1) or (p.keys.right == KEYS_PRESSED and p.direction == 1) then
-				n.speedX = (settings.spitSpeedX * p.direction) + p.speedX/2
+				n.speedX = (settings.spitSpeedX * p.direction) + p.speedX/1.5
 				n.speedY = math.min(n.speedY,settings.spitSpeedY) + math.min(speedY/3,0)
 				data.ballNPC = nil
 			end

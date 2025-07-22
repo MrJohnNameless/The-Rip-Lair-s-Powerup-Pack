@@ -4,7 +4,9 @@ local boomerangFlower = {}
 -- everything except "name" and "id" can be safely modified
 
 boomerangFlower.projectileID = 760
+boomerangFlower.projectileCap = 1
 boomerangFlower.basePowerup = PLAYER_HAMMER
+boomerangFlower.cheats = {"needaboomerangflower","tythetiger"}
 
 function boomerangFlower.onInitPowerupLib()
     boomerangFlower.spritesheets = {
@@ -13,20 +15,16 @@ function boomerangFlower.onInitPowerupLib()
         boomerangFlower:registerAsset(3, "boomflower-peach.png"),
         boomerangFlower:registerAsset(4, "boomflower-toad.png"),
     }
-
     boomerangFlower.iniFiles = {
 		boomerangFlower:registerAsset(1, "boomflower-mario.ini"),
 		boomerangFlower:registerAsset(2, "boomflower-luigi.ini"),
 		boomerangFlower:registerAsset(3, "boomflower-peach.ini"),
 		boomerangFlower:registerAsset(4, "boomflower-toad.ini"),
 	}
-
-
 end
 
-local animFrames = {11, 11, 11, 11, 12, 12, 12, 12}
-local projectileTimerMax = {30, 60, 60, 25, 25}
-local projectileTimer = {}
+-- Link, Snake, and Samus respectively
+local linkChars = table.map{5,12,16}
 
 local GP
 pcall(function() GP = require("GroundPound") end)
@@ -38,14 +36,14 @@ pcall(function() aw = aw or require("aw") end)
 local function canPlayShootAnim(p)
     return (
         p.forcedState == 0
-        and p.deathTimer == 0
-        and p.mount < 2
+        and p.deathTimer == 0 -- not dead
+        and (p.mount == 0 or p.mount == MOUNT_BOOT)
         and not p.climbing
         and not p.holdingNPC
         and not p.inLaunchBarrel
         and not p.inClearPipe
         and p:mem(0x26,FIELD_WORD) <= 0 -- pulling objects from top
-        and not p:mem(0x12E, FIELD_BOOL) -- ducking
+        and (not p:mem(0x12E, FIELD_BOOL) or linkChars[p.character]) -- ducking and is not link/snake/samus
         and not p:mem(0x3C,FIELD_BOOL) -- sliding
         and not p:mem(0x44,FIELD_BOOL) -- shell surfing
         and not p:mem(0x4A,FIELD_BOOL) -- statue
@@ -56,97 +54,86 @@ local function canPlayShootAnim(p)
     )
 end
 
+function boomerangFlower.onInitAPI()
+	registerEvent(boomerangFlower,"onNPCKill")
+end
+
 function boomerangFlower.onEnable(p)
-    projectileTimer[p.idx] = 0
+	p.data.boomerangFlower = {
+		thrownBoomerangs = {}
+	}
+	p:mem(0x162,FIELD_WORD,5) -- prevents link from shooting a base projectile whenever collecting the powerup with his sword
 end
 
 function boomerangFlower.onDisable(p)
+	p.data.boomerangFlower = nil
 end
 
 function boomerangFlower.onTickPowerup(p)
-    projectileTimer[p.idx] = math.max(projectileTimer[p.idx] - 1, 0)
-    
-    if p.mount < 2 then
-        p:mem(0x160, FIELD_WORD, 2)
-    end
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+    if not p.data.boomerangFlower then return end
+	local data = p.data.boomerangFlower
+	
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,5)
+	else
+		p:mem(0x160, FIELD_WORD,5)
+	end
+	
+	local flamethrowerActive = Cheats.get("flamethrower").active
+	local tryingToShoot = (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and not p.isSpinJumping
+	
+	if #data.thrownBoomerangs >= boomerangFlower.projectileCap and not flamethrowerActive then return end
+    if p.isSpinJumping and p:isOnGround() then return end
+	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive and lunatime.tick() % 8 == 0 then 
+		tryingToShoot = true
+	end
 
-    if projectileTimer[p.idx] > 0 or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE or restrictMovement then return end
+    if (tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
+		local dir = p.direction
 
-    local count = 1
+		local v = NPC.spawn(
+				boomerangFlower.projectileID,
+				p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
+				p.y + p.height/2 + p.speedY, p.section, false, true
+		)
 
-    if p:mem(0x50, FIELD_BOOL) then
-        count = 2
+		v.direction = p.direction
 
-        if p:isOnGround() then
-            return
-        end
-    end
-
-    if ((p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and not (p:mem(0x50, FIELD_BOOL) and p:mem(0x11C, FIELD_WORD) == 0) and not p:mem(0x50, FIELD_BOOL)) and not p.data.stopThrowingBoomerangs then
-        local mod = 1
-
-        for i = 1, count do
-            local dir = p.direction
-
-            if p:mem(0x50, FIELD_BOOL) then
-                dir = math.sign(i - 1.5)
-                mod = 1.2
-            end
-
-            local v = NPC.spawn(
-                    boomerangFlower.projectileID,
-                    p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
-                    p.y + p.height/2 + p.speedY, p.section, false, true
-                )
-
-			v.direction = p.direction
-			
-            if boomerangFlower.projectileID == 292 then
-                v.speedX = 50 * v.direction + v.speedX
-                v.speedY = -5
-                v.ai5 = 1
-            else
-                v.speedX = 10 * v.direction
-			    v.data.owner = p
-            end
-            p.data.stopThrowingBoomerangs = true
-            
-        end
-
-        SFX.play(18)
-        projectileTimer[p.idx] = projectileTimerMax[p.character] * mod
-    end
-
-    if boomerangFlower.projectileID == 292 then
-        local BoomerangCheck = NPC.get(292,-1)
-	    if table.getn(BoomerangCheck) == 0 then
-		    p.data.stopThrowingBoomerangs = false
+		if boomerangFlower.projectileID == 292 then
+			v.x = v.x - (32 * dir)
+			v.speedX = 50 * v.direction + v.speedX
+			v.speedY = -5
+			v.ai5 = 1
 		else
-			p.data.stopThrowingBoomerangs = true
+			v.speedX = 10 * v.direction
+			v.data.owner = p
+		end
+		table.insert(data.thrownBoomerangs,v) -- makes the player "own" the laser they shot
+		
+		if linkChars[p.character] then
+			SFX.play(82)
+		else
+			p:mem(0x118, FIELD_FLOAT,110)
+			SFX.play(18)
 		end
     end
 end
 
-function boomerangFlower.onTickEndPowerup(p)
-
-	if player.character == CHARACTER_PEACH then
-	
-		animFrames = {
-		10,10,10,9,9,9,9,9,9,
-		}
-	
+function boomerangFlower.onNPCKill(token,v,harm,c)
+	if v.id ~= boomerangFlower.projectileID then return end
+	for _,p in ipairs(Player.get()) do
+		if p.data.boomerangFlower then
+			local data = p.data.boomerangFlower
+			for i,n in ipairs(data.thrownBoomerangs) do
+				if n.isValid and n == v then
+					table.remove(data.thrownBoomerangs, i) -- makes the player "disown" the boomerang they thrown
+					break
+				end
+			end
+		end
 	end
-
-    local curFrame = animFrames[projectileTimerMax[p.character] - projectileTimer[p.idx]]
-    local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL)
-
-    if projectileTimer[p.idx] > 0 and canPlay and curFrame then
-        p:setFrame(curFrame)
-    end
-end
-
-function boomerangFlower.onDrawPowerup(p)
-    --Text.print(boomerangFlower.name,100,100)
 end
 
 return boomerangFlower

@@ -63,13 +63,6 @@ bigShroom.settings = {
 
 local pauseFix = 0 -- needed to fix an issue regarding pausing with the editor's test menu
 
-local mountNPCs = 
-		{
-		{35,191,193},
-		56,
-		{95,98,99,100,148,149,150,228}
-		}
-
 bigShroom.breakableBlocks = {2, 4, 5, 60, 88, 89, 90, 115, 186, 188, 192, 193, 224, 225, 226, 293, 526, 668, 682, 683, 694, 457, 280, 1375, 1374} -- list of breakable blocks
 
 registerEvent(bigShroom, "onBlockHit", "onBlockHit")
@@ -100,26 +93,11 @@ local function canBreakBlocks(p)
         and not p:mem(0x0C, FIELD_BOOL) -- fairy
         and (not GP or not GP.isPounding(p))
         and (not aw or aw.isWallSliding(p) == 0)
-		and p.data.canBreakBlocksAsBigMario
+	and p.data.canBreakBlocksAsBigMario
     )
 end
 
 function bigShroom.onEnable(p)
-	if (p:mem(0x108,FIELD_WORD) > 0) then --has a mount
-		local mttype = mountNPCs[p:mem(0x108,FIELD_WORD)];
-		if (p:mem(0x108,FIELD_WORD) ~= 2) then
-			mttype = mttype[p:mem(0x10A,FIELD_WORD)];
-		end
-		local n = NPC.spawn(mttype, p.x + p.width, p.y + p.height, p.section) -- eject the player if wearing a shoe or a yoshi
-		n.x = n.x-n.width*0.5;
-		n.y = n.y-n.height*0.5;
-		n.direction = p.direction
-		p.speedY = -6
-		p.x = p.x+n.width*0.5;
-		p:mem(0x108,FIELD_WORD,0)
-		p:mem(0x144,FIELD_WORD,1) 
-	end
-
 	p.data.bigShroom = {
 		originalCoords = vector(p.x,p.y), -- for fixing an annoying issue regarding pausing with the editor's test menu
 		weightGain = p:attachWeight(2), -- makes the player get more weight
@@ -129,7 +107,7 @@ function bigShroom.onEnable(p)
 		p.y = p.data.bigShroom.originalCoords.y + p.height
 	end
 	
-	p.data.brickCollider = Colliders.Box(p.x, p.y, player:getCurrentPlayerSetting().hitboxWidth, player:getCurrentPlayerSetting().hitboxHeight)
+	p.data.brickCollider = Colliders.Box(p.x, p.y, p:getCurrentPlayerSetting().hitboxWidth, p:getCurrentPlayerSetting().hitboxHeight)
 	p.data.brickColliderOffset = vector.zero2
 	p.data.canBreakBlocksAsBigMario = false
 	p.data.canDoSmallHop = false
@@ -177,15 +155,15 @@ function bigShroom.onTickPowerup(p)
 
         --Kill stomped npcs in one hit
         if canBreakBlocks(p) then
-           for _,n in ipairs(NPC.getIntersecting(p.x - 32, p.y - 32, p.x + p.width + 32, p.y + p.height + 32)) do
-		if Colliders.bounce(p, n) and Misc.canCollideWith(p, n) then
-                    if not n.isHidden and not n.friendly and NPC.HITTABLE_MAP[n.id] and not NPC.config[n.id].jumphurt then
-     	            	n:harm(HARM_TYPE_NPC)
-			p:mem(0x11C, FIELD_WORD, Defines.jumpheight)
-			p.speedY = -6
-                    end
-                end
-            end
+           	for _,n in ipairs(NPC.getIntersecting(p.x - 32, p.y - 32, p.x + p.width + 32, p.y + p.height + 32)) do
+			if Colliders.bounce(p, n) and Misc.canCollideWith(p, n) then
+                    		if not n.isHidden and not n.friendly and NPC.HITTABLE_MAP[n.id] and not NPC.config[n.id].jumphurt then
+     	            			n:harm(HARM_TYPE_NPC)
+					p:mem(0x11C, FIELD_WORD, Defines.jumpheight)
+					p.speedY = -6
+                   		end
+                	end
+            	end
         end
 
 	p.data.brickCollider.x = p.x + p.data.brickColliderOffset.x
@@ -218,7 +196,7 @@ function bigShroom.onTickPowerup(p)
 	end
 
 	--Text.print(p.data.canBreakBlocksAsBigMario,0,0)
-	--Text.print(p.data.canBreakBlocksAsBigMarioTimer,0,32) --debug code
+	--Text.print(p.data.canBreakBlocksAsBigMarioTimer,0,32) -- Debug code
 
 	if canBreakBlocks(p) then
 		--The block of code to break blocks that you come into contact with

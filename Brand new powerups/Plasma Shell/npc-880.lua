@@ -211,6 +211,8 @@ function sampleNPC.onTickNPC(v)
   		   data.colour = Color(1, 0.1 ,0.5)
 		elseif v.ai1 == 4 then
   		   data.colour = Color(0.2,0.2,1)
+		elseif v.ai1 == 5 then
+		   data.colour = Color.fromHexRGB(0x6DA800)
 		else
  		   data.colour = Color.white	-- default colour is white
 		end

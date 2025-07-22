@@ -47,7 +47,7 @@ local goldBallSettings = {
 
 	sparkleEffect = npcID,
 	trailEffect = npcID + 1,
-	variants = 4,
+	variants = 5,
 	collisionGroup = "npc-" .. npcID,
 }
 

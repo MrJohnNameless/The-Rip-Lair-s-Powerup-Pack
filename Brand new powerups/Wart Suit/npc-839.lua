@@ -10,12 +10,12 @@
 local npcManager = require("npcManager")
 
 --Create the library table
-local sampleNPC = {}
+local bubble = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local bubbleSettings = {
 	id = npcID,
 
 	-- ANIMATION
@@ -39,9 +39,9 @@ local sampleNPCSettings = {
 	--Movement speed. Only affects speedX by default.
 	speed = 4,
 	luahandlesspeed = true, -- If set to true, the speed config can be manually re-implemented
-	nowaterphysics = false,
+	nowaterphysics = true,
 	cliffturn = false, -- Makes the NPC turn on ledges
-	staticdirection = false, -- If set to true, built-in logic no longer changes the NPC's direction, and the direction has to be changed manually
+	staticdirection = true, -- If set to true, built-in logic no longer changes the NPC's direction, and the direction has to be changed manually
 
 	--Collision-related
 	npcblock = false, -- The NPC has a solid block for collision handling with other NPCs.
@@ -109,7 +109,7 @@ local sampleNPCSettings = {
 }
 
 --Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
+npcManager.setNpcSettings(bubbleSettings)
 
 --Register the vulnerable harm types for this NPC. The first table defines the harm types the NPC should be affected by, while the second maps an effect to each, if desired.
 npcManager.registerHarmTypes(npcID,
@@ -122,7 +122,7 @@ npcManager.registerHarmTypes(npcID,
 		--HARM_TYPE_HELD,
 		--HARM_TYPE_TAIL,
 		--HARM_TYPE_SPINJUMP,
-		--HARM_TYPE_OFFSCREEN,
+		HARM_TYPE_OFFSCREEN,
 		--HARM_TYPE_SWORD
 	}, 
 	{
@@ -143,51 +143,34 @@ npcManager.registerHarmTypes(npcID,
 
 
 --Register events
-function sampleNPC.onInitAPI()
-	npcManager.registerEvent(npcID, sampleNPC, "onTickNPC")
-	--npcManager.registerEvent(npcID, sampleNPC, "onTickEndNPC")
-	--npcManager.registerEvent(npcID, sampleNPC, "onDrawNPC")
-	--registerEvent(sampleNPC, "onNPCKill")
+function bubble.onInitAPI()
+	npcManager.registerEvent(npcID, bubble, "onTickEndNPC")
+	--npcManager.registerEvent(npcID, bubble, "onTickEndNPC")
+	--npcManager.registerEvent(npcID, bubble, "onDrawNPC")
+	--registerEvent(bubble, "onNPCKill")
 end
 
-function sampleNPC.onTickNPC(v)
+function bubble.onTickEndNPC(v)
 	--Don't act during time freeze
 	if Defines.levelFreeze then return end
 	
 	local data = v.data
 	
-	--If despawned
 	if v.despawnTimer <= 0 then
-		--Reset our properties, if necessary
-		data.initialized = false
 		return
-	end
-
-	--Initialize
-	if not data.initialized then
-		--Initialize necessary data.
-		data.initialized = true
-		--v.isProjectile = true
-	end
-
-	--Depending on the NPC, these checks must be handled differently
-	if v.heldIndex ~= 0 --Negative when held by NPCs, positive when held by players
-	or v.isProjectile   --Thrown
-	or v.forcedState > 0--Various forced states
-	then
-		-- Handling of those special states. Most NPCs want to not execute their main code when held/coming out of a block/etc.
-		-- If that applies to your NPC, simply return here.
-		-- return
 	end
 	
 	v.speedY = v.speedY + 0.05
 	
-	for _,n in ipairs(NPC.get()) do
-		if Colliders.collide(n, v) and n:mem(0x12A, FIELD_WORD) > 0 and n:mem(0x138, FIELD_WORD) == 0 and v:mem(0x138, FIELD_WORD) == 0 and (not pnisHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and n.idx ~= v.idx and v:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
+	for _,n in NPC.iterateIntersecting(v.x - 2,v.y - 2,v.x + v.width + 2,v.y + v.height + 2) do
+		if n:mem(0x12A, FIELD_WORD) > 0 and n:mem(0x138, FIELD_WORD) == 0 and v:mem(0x138, FIELD_WORD) == 0 
+		and (not pnisHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and n.idx ~= v.idx 
+		and v:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
 			n:harm(3)
 		end
 	end
+	
 end
 
 --Gotta return the library table!
-return sampleNPC
+return bubble

@@ -8,6 +8,7 @@ doctor.projectileID = 971
 doctor.forcedStateType = 1 -- 0 for instant, 2 for normal/flickering, 3 for poof/raccoon
 doctor.basePowerup = PLAYER_FIREFLOWER
 doctor.cheats = {"anappleaday","needasuperbottle","whoneedsamedicaldegree","normalpills","doctorsorders","oktoberfest",}
+doctor.shootSFX = SFX.open(Misc.resolveSoundFile("powerups/pillthrow.ogg"))
 
 -- runs when customPowerups is done initializing the library
 function doctor.onInitPowerupLib()
@@ -45,9 +46,6 @@ local smb2Chars = table.map{3,4,6,9,10,11,16}
 -- Link, Snake, and Samus respectively
 local linkChars = table.map{5,12,16}
 
-local animFrames = {11, 11, 11, 11, 12, 12, 12, 12} -- the animation frames for shooting a fireball
-
-
 -- Projectile cooldown timers for Mario, Luigi, Peach, Toad, and Link respectively
 local projectileTimerMax = {55, 55, 55, 50, 45}
 
@@ -84,7 +82,7 @@ end
 -- runs once when the powerup gets activated, passes the player
 function doctor.onEnable(p)	
 	p.data.doctor = {
-		projectileTimer = 0, -- don't remove this
+		lastDirection = p.direction * -1, -- don't remove this unless you know what you're doing
 	}
 end
 
@@ -95,62 +93,61 @@ end
 
 -- runs when the powerup is active, passes the player
 function doctor.onTickPowerup(p) 
-	if not p.data.doctor then return end -- check if the powerup is currenly active
+	if not p.data.doctor then return end
 	local data = p.data.doctor
 	
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
-    
-    if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-        p:mem(0x160, FIELD_WORD, 2)
-	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
-    end
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	if p.isSpinJumping and p:isOnGround() then return end
+	 
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
+		if p:mem(0x162,FIELD_WORD) > 2 then return end
+	else
+		if p:mem(0x160, FIELD_WORD) > 0 then return end
+	end
 
-   if data.projectileTimer > 0 or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-
-    if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end -- if spinjumping while on the ground
+	local flamethrowerActive = Cheats.get("flamethrower").active
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p.isSpinJumping) 
 	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
+		tryingToShoot = true
+	end
 	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if ((p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) and not linkChars[p.character]) or player:mem(0x14, FIELD_WORD) == 2 then
+    if (tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
         local dir = p.direction
-		
-		-- handles projectile shooting while spinjumping
-		if p:mem(0x50, FIELD_BOOL) and p.holdingNPC == nil then
-			-- put your own code here!
-		end
 		
 		-- spawns the projectile itself
         local v = NPC.spawn(
 			doctor.projectileID,
-			p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
+			p.x + p.width/2 + (p.width/2) * dir + p.speedX,
 			p.y + p.height/2 + p.speedY, p.section, false, true
         )
-		
-		-- handles making the projectile be held if the player pressed altRun & is a SMB2 character
-		if p.keys.altRun and smb2Chars[p.character] and p.holdingNPC == nil then
-			-- this sets the npc to be held by the player
-			v.speedY = 0
-			v.heldIndex = p.idx
-			p:mem(0x154, FIELD_WORD, v.idx+1)
-			SFX.play("powerups/pillthrow.ogg")
-			
-			-- put your own code here!
-			
-		elseif linkChars[p.character] then -- handles shooting as link/snake/samus
-			if p:mem(0x12E,FIELD_BOOL) then -- if ducking, have the npc not rise higher
+		v.direction = dir
+		v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/3.5
+		SFX.play(doctor.shootSFX)
+		-- handles shooting as link/snake/samus
+		if linkChars[p.character] then 
+			-- shoot less higher when ducking
+			if p.isDucking then
 				v.speedY = -2
 			else
 				v.speedY = -5
 			end
-			v.x = v.x + (16 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
-			
-			-- put your own code here!
-			
-			SFX.play("powerups/pillthrow.ogg")
+			v.x = v.x + (16 * dir)
+			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
+			if flamethrowerActive then
+				p:mem(0x162, FIELD_WORD,2)
+			end
+			return
+		end
+		-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
+		if smb2Chars[p.character] and p.holdingNPC == nil and p.keys.altRun then 
+			v.speedY = 0
+			v.heldIndex = p.idx
+			p:mem(0x154, FIELD_WORD, v.idx+1)
 		else -- handles normal shooting
 			if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-				local speedYMod = p.speedY * 0.1
+				local speedYMod = p.speedY * 0.1 -- adds extra vertical speed depending on how fast you were going vertically
 				if p.standingNPC then
 					speedYMod = p.standingNPC.speedY * 0.1
 				end
@@ -158,32 +155,22 @@ function doctor.onTickPowerup(p)
 			else
 				v.speedY = -4
 			end
-			
-			dir = p.direction
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
-			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
-			
-			-- put your own code here!
-			
-			SFX.play("powerups/pillthrow.ogg")
+			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 		end
-        data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
+		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+		if flamethrowerActive then
+			p:mem(0x160, FIELD_WORD,30)
+		end
     end
 end
 
 function doctor.onTickEndPowerup(p)
-	if not p.data.doctor then return end -- check if the powerup is currently active
-	
+	if not p.data.doctor then return end
 	local data = p.data.doctor
-	
-	-- put your own code here!
-	
-    local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
-    local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
-
-    if data.projectileTimer > 0 and canPlay and curFrame then
-        p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
-    end
+	if not p.isSpinJumping then
+		data.lastDirection = p.direction * -1
+	end
+	p:mem(0x54,FIELD_WORD,data.lastDirection) -- prevents a base powerup's projectile from shooting while spinjumping
 end
 
 return doctor

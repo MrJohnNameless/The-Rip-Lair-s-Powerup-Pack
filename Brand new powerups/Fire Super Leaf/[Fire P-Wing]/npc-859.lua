@@ -108,7 +108,9 @@ function pwing.onTickEnd()
 		end
 
 		if p.powerup == 4 or p.powerup == 5 then
-			p:mem(0x170, FIELD_WORD, 999)
+			if (not isOnGroundRedigit(p) and p.keys.jump) or p.character ~= CHARACTER_LINK then
+				p:mem(0x170, FIELD_WORD, 999)
+			end
 			--player:mem(0x02, FIELD_WORD, 20)
 			
 			--Disable sparkles while on the ground

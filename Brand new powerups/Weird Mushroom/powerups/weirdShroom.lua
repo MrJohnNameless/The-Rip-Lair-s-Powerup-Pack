@@ -21,9 +21,6 @@
 
 local cp = require("customPowerups")
 
-local wasMuted1 = false
-local wasMuted2 = false
-
 local weirdShroom = {}
 
 weirdShroom.basePowerup = PLAYER_FIRE
@@ -69,6 +66,10 @@ end
 
 local function handleJumping(p,allowSpin,forceJump,playSFX,inputCheck) -- "replaces" the default SMBX jump with a replica that allows adjustable jumpheight
 	if not p.keys.jump and not p.keys.altJump then return end
+	
+	local wasMuted1 = Audio.sounds[1].muted
+	local wasMuted2 = Audio.sounds[33].muted
+	
 	local shouldJump = false
 	local holdingJump = p.keys.jump or p.keys.altJump
 	local tappingJump = p.keys.jump == KEYS_PRESSED or p.keys.altJump == KEYS_PRESSED
@@ -111,10 +112,7 @@ end
 
 -- runs once when the powerup gets activated, passes the player
 function weirdShroom.onEnable(p)
-	local wasMuted1 = Audio.sounds[1].muted
-	local wasMuted2 = Audio.sounds[33].muted
-	p.data.weirdShroom = {
-	}
+	p.data.weirdShroom = {}
 end
 
 -- runs once when the powerup gets deactivated, passes the player

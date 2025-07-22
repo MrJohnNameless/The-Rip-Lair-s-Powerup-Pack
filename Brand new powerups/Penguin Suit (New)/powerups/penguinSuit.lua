@@ -1,7 +1,7 @@
 --[[
 			 penguinSuit.lua by John Nameless
 		A remake of Capt.Monochrome's original Penguin Suit
-			script made for anotherpowerup.lua
+		  script made originally for anotherpowerup.lua
 			
 	CREDITS:
 	Capt.Monochrome - made the original Penguin Suit powerup script which was occasionally referenced for this (https://www.smbxgame.com/forums/viewtopic.php?t=27675)
@@ -152,15 +152,6 @@ local function stopSlide(p)
 	end
 end
 
-local STATE_NORMAL = 0
-local STATE_SLIDE = 1
-local STATE_SWIM = 2
-
-function penguinSuit.onInitAPI()
-	-- register your events here!
-	--registerEvent(penguinSuit,"onNPCHarm")
-end
-	
 -- runs once when the powerup gets activated, passes the player
 function penguinSuit.onEnable(p)	
 	p.data.penguinSuit = {
@@ -255,17 +246,6 @@ function penguinSuit.onTickPowerup(p)
 			horizontalSpeed = horizontalSpeed * 4
 			verticalSpeed = verticalSpeed * 4
 		end
-		-- handles swimming left or right
-		if (p.keys.left and p.direction == -1) or (p.keys.right and p.direction == 1) then
-			p.speedX = horizontalSpeed * p.direction
-			p.speedX = math.clamp(p.speedX,-speedcap,speedcap)
-			p:mem(0x138, FIELD_FLOAT, p.speedX)
-			p.speedX = 0
-			data.curAnim = "swimHorizontal"
-			isMoving = true
-		else
-			p.speedX = p.speedX * 0.85
-		end
 		-- handles swimming up or down
 		if p.keys.up then
 			if p:mem(0x14A,FIELD_WORD) == 0 then
@@ -283,6 +263,17 @@ function penguinSuit.onTickPowerup(p)
 			else
 				p.speedY = p.speedY * 0.9
 			end
+		end
+		-- handles swimming left or right
+		if (p.keys.left and p.direction == -1) or (p.keys.right and p.direction == 1) then
+			p.speedX = horizontalSpeed * p.direction
+			p.speedX = math.clamp(p.speedX,-speedcap,speedcap)
+			p:mem(0x138, FIELD_FLOAT, p.speedX)
+			p.speedX = 0
+			data.curAnim = "swimHorizontal"
+			isMoving = true
+		else
+			p.speedX = p.speedX * 0.85
 		end
 		
 		if isMoving then 

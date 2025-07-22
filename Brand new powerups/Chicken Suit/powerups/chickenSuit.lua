@@ -1,9 +1,9 @@
 
 --[[
-			chickenSuit.lua by MrNameless & Sleepy
+				chickenSuit.lua by MrNameless & Sleepy
 				
-			A customPowerups chickenSuit script that helps to
-		streamline the process of making projectile throwing powerups
+		A customPowerups script that revives the scrapped chicken powerup
+		  from NSMBWii that allows shooting & double jumping of eggs.
 			
 	CREDITS:
 	Emral & Marioman2007 - created customPowerups framework which this script used as a base here (https://www.smbxgame.com/forums/viewtopic.php?t=29435&sid=09762126985be58594941d2479968bbf)
@@ -13,9 +13,10 @@
 	Sleepy - Created the sprites for the chicken suit for Mario & Luigi, & Link.
 	Sara/DeltomX3 - Created the up/down thrust sprites for Link.
 	
-	Version 1.0.0
+	Version 1.5.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
+	
 ]]--
 
 local cp = require("customPowerups")
@@ -92,7 +93,6 @@ local function canPlayShootAnim(p)
     return (
         p.forcedState == 0
         and p.deathTimer == 0 -- not dead
-        and (p.mount == 0 or p.mount == MOUNT_BOOT)
         and not p.climbing
         and not p.holdingNPC
         and not p.inLaunchBarrel
@@ -119,15 +119,10 @@ local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scr
 	)
 end
 
-function chickenSuit.onInitAPI()
-	-- register your events here!
-	--registerEvent(chickenSuit,"onNPCHarm")
-end
-
 -- runs once when the powerup gets activated, passes the player
 function chickenSuit.onEnable(p)	
 	p.data.chickenSuit = {
-		projectileTimer = 0, -- don't remove this unless you know what you're doing
+		lastDirection = p.direction - 1, -- don't remove this unless you know what you're doing
 		matildaTimer = 0, -- projectileTimer again but for the egg double jump
 		touchedGround = true,
 	}
@@ -144,15 +139,8 @@ function chickenSuit.onTickPowerup(p)
 	local data = p.data.chickenSuit
 	local settings = chickenSuit.settings
 	
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
 	data.matildaTimer = math.max(data.matildaTimer - 1, 0) -- decrement the "Matilda" timer/cooldown
-	
-    if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-        p:mem(0x160, FIELD_WORD, 2)
-	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
-    end
-	
+
 	-- lose the powerup whenever the player touches water
 	if p:mem(0x36,FIELD_BOOL) and settings.loseInWater then
 		cp.setPowerup(2, p, false)
@@ -161,9 +149,16 @@ function chickenSuit.onTickPowerup(p)
 		return
 	end
 
-	if p:mem(0x50, FIELD_BOOL) then return end	
+	if p:mem(0x50, FIELD_BOOL) then
+		p:mem(0x160, FIELD_WORD,1)
+		return 
+	end	
 	
-	if p.keys.jump == KEYS_PRESSED and not isOnGround(p) and p.mount ~= MOUNT_CLOWNCAR and data.touchedGround then
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	
+	local flamethrowerActive = Cheats.get("flamethrower").active
+
+	if p.keys.jump == KEYS_PRESSED and not isOnGround(p) and p.mount ~= MOUNT_CLOWNCAR and (data.touchedGround or flamethrowerActive) then
         local egg = NPC.spawn(
 			chickenSuit.projectileID,
 			p.x + p.width/2 + p.speedX,
@@ -175,74 +170,92 @@ function chickenSuit.onTickPowerup(p)
 		egg.isProjectile = true
 		p.speedY = settings.matildaJumpHeight
 		SFX.play(settings.matildaJumpSFX)
-		data.touchedGround = false --data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
+		data.touchedGround = false
 		data.matildaTimer = projectileTimerMax[p.character]
 		return
-	elseif p:isOnGround(p) then
+	elseif isOnGround(p) then
 		data.touchedGround = true
 	end
 
-   if data.projectileTimer > 0 or not data.touchedGround or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
+		if p:mem(0x162,FIELD_WORD) > 2 then return end
+	else
+		if p:mem(0x160, FIELD_WORD) > 0 then return end
+	end
+
+	
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) 
+	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
+		tryingToShoot = true
+	end
+	
 	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if ((p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED) and not linkChars[p.character]) or player:mem(0x14, FIELD_WORD) == 2 then
+    if ((tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2) and (p.mount == 0 or p.mount == MOUNT_BOOT) then
         local dir = p.direction
+		
 		-- spawns the projectile itself
         local v = NPC.spawn(
 			chickenSuit.projectileID,
 			p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
 			p.y + p.height/2 + p.speedY, p.section, false, true
         )
-		-- handles making the projectile be held if the player pressed altRun & is a SMB2 character
-		if p.keys.altRun and not linkChars[p.character] and p.holdingNPC == nil and p.mount == 0 then
-			-- this sets the npc to be held by the player
-			v.speedY = 0
-			v.heldIndex = p.idx
-			p:mem(0x154, FIELD_WORD, v.idx+1)
-			SFX.play(18)
-		elseif linkChars[p.character] then -- handles shooting as link/snake/samus
-			if p:mem(0x12E,FIELD_BOOL) then -- if ducking, have the npc not rise higher
+		
+		-- handles shooting as link/snake/samus
+		if linkChars[p.character] then 
+			-- shoot less higher when ducking
+			if p:mem(0x12E,FIELD_BOOL) then
 				v.speedY = -2
 			else
 				v.speedY = -5
 			end
-			v.x = v.x + (24 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
-			v.direction = -dir -- make it so that the egg keeps bouncing straight ahead at least once
-			v.speedX = (NPC.config[v.id].speed * dir) + p.speedX/3.5
+			v.x = v.x + (16 * dir)
+			v.isProjectile = true
+			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
+			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
 			SFX.play(82)
-		else -- handles normal shooting
-			if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-				local speedYMod = p.speedY * 0.1
-				if p.standingNPC then
-					speedYMod = p.standingNPC.speedY * 0.1
-				end
-				v.speedY = -6 + speedYMod
-			else
-				v.speedY = -4
+			if flamethrowerActive then
+				p:mem(0x162, FIELD_WORD,2)
 			end
-			v.direction = dir	
-			v.speedX = (NPC.config[v.id].speed * dir) + p.speedX/2
+		else
+			-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
+			if smb2Chars[p.character] and p.holdingNPC == nil and p.keys.altRun then 
+				v.speedY = 0
+				v.heldIndex = p.idx
+				p:mem(0x154, FIELD_WORD, v.idx+1)
+			else -- handles normal shooting
+				if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
+					local speedYMod = p.speedY * 0.1 -- adds extra vertical speed depending on how fast you were going vertically
+					if p.standingNPC then
+						speedYMod = p.standingNPC.speedY * 0.1
+					end
+					v.speedY = -6 + speedYMod
+				else
+					v.speedY = -4
+				end
+				v.isProjectile = true
+				v.direction = dir
+				v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
+				p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
+			end
 			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
 			SFX.play(18)
+	
+			if flamethrowerActive then
+				p:mem(0x160, FIELD_WORD,30)
+			end
 		end
-        v.isProjectile = true
-		data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
     end
 end
 
 function chickenSuit.onTickEndPowerup(p)
 	if not p.data.chickenSuit then return end
 	local data = p.data.chickenSuit
-	
-    local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
-    local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
-
-	if p.speedY < -Defines.player_grav and data.touchedGround == false and data.matildaTimer > 0 then
-		curFrame = 24
-	end
-
-    if (data.projectileTimer > 0 or data.matildaTimer > 0) and canPlay and curFrame then
-        p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
-    end
+    if not canPlayShootAnim(p) or p.mount ~= 0 or p:mem(0x50,FIELD_BOOL) or linkChars[p.character] then return end
+	if p.speedY >= -Defines.player_grav or data.touchedGround or data.matildaTimer <= 0 then return end
+	p:setFrame(24) 
 end
 
 function chickenSuit.onDrawPowerup(p)

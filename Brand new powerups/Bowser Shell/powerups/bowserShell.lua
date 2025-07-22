@@ -1,19 +1,21 @@
 
 --[[
-	bowsershell.lua by MrNameless
+	bowsershell.lua by MegaDood
 			
 	CREDITS:
 	Marioman2007 - created customPowerups framework which this script used as a base here (https://www.smbxgame.com/forums/viewtopic.php?t=29435&sid=09762126985be58594941d2479968bbf)
 	MrDoubleA - Provided the Uniformed Player Offsets used as a base here (https://www.smbxgame.com/forums/viewtopic.php?t=26127)
 	Del & 38A/5438a38a - made the original blue shell npc & playable sprites used here (https://mfgg.net/index.php?act=resdb&param=02&c=1&id=20947)
 	
-	Version 1.0.0
+	Version 2.0.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 ]]--
 
 local cp = require("customPowerups")
-local pm = require("playerManager")
+
+local bumper = require("npcs/ai/bumper")
+local springs = require("npcs/ai/springs")
 
 local bowsershell = {}
 
@@ -41,6 +43,10 @@ bowsershell.collectSounds = {
     upgrade = 6,
     reserve = 12,
 }
+bowsershell.cheats = {"needabowsershell","kingofthekoopas"}
+
+-- animation for spinning in the blue shell
+local defaultAnimation = {36,37,38,39}
 
 bowsershell.settings = {
 	enableSwimAccel = true,
@@ -53,25 +59,23 @@ bowsershell.settings = {
 			-- or (p.keys.down)
 		)
 	end,
-	aliases = {"kingofthekoopas"},
+	shellAnimations = {
+		[CHARACTER_MARIO] = defaultAnimation,
+		[CHARACTER_LUIGI] = defaultAnimation,
+		[CHARACTER_PEACH] = defaultAnimation,
+		[CHARACTER_TOAD] = defaultAnimation,
+		[CHARACTER_LINK] = defaultAnimation,
+	}
 }
 
-bowsershell.powerupID = 871
-bowsershell.projectileID = 788
-
-bowsershell.bumperNPCs = table.map{458,582,583,584,585,594,595,596,597,598,599,604,605}
+bowsershell.powerupID = 788
+bowsershell.projectileID = 789
 bowsershell.alwaysHarmNPCs = table.map{12,37,180,179,295,357,413,432,435,437,589,590,641,643}
-
-function bowsershell.registerShellDropper(id,variant)
-	transformableNPCs[id] = true
-	shellVariant[id] = variant
-end
 
 -- Link, Snake, and Samus respectively
 local linkChars = table.map{5,12,16}
 
--- animation for spinning in the blue shell
-local animation = {36,37,38,39}
+local projectileTimerMax = {64,64,64,64,64}
 
 local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scripts
 	return (
@@ -82,32 +86,61 @@ local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scr
 	)
 end
 
+local function isUnoccupied(p)
+    return (
+        p.forcedState == 0
+        and p.deathTimer == 0 -- not dead
+        and (p.mount == 0 or p.mount == MOUNT_BOOT)
+        and not p.climbing
+        and not p.holdingNPC
+        and not p.inLaunchBarrel
+        and not p.inClearPipe
+        and p:mem(0x26,FIELD_WORD) <= 0 -- pulling objects from top
+        and (not p:mem(0x12E, FIELD_BOOL) or linkChars[p.character]) -- ducking and is not link/snake/samus
+        and not p:mem(0x3C,FIELD_BOOL) -- sliding
+        and not p:mem(0x44,FIELD_BOOL) -- shell surfing
+        and not p:mem(0x4A,FIELD_BOOL) -- statue
+        and p:mem(0x164,FIELD_WORD) == 0 -- tail attack
+        and not p:mem(0x0C, FIELD_BOOL) -- fairy
+        and (not GP or not GP.isPounding(p))
+        and (not aw or aw.isWallSliding(p) == 0)
+    )
+end
+
 local function canBeShell(p)
 	return p.mount == 0 
 	and p.holdingNPC == nil 
 	and bowsershell.settings.inputsNeeded(p) 
 end
 
+local function hittingBumper(p,npc) -- handles changing direction upon hitting a bumper or a sideway spring
+	return ( 
+		(springs.ids[npc.id] == springs.TYPE.SIDE and p:collide(npc)) 
+		or 
+		(
+			bumper.ids[npc.id] and NPC.config[npc.id].bounceplayer 
+			and p:collide(npc.data._basegame.hitbox) 
+			and (p.y+p.height > npc.y+10 and p.y < npc.y + npc.height-10)
+		)
+	)
+end
+
 function bowsershell.onInitAPI()
 	registerEvent(bowsershell,"onPlayerHarm")
-	registerEvent(bowsershell,"onNPCTransform")
 end
 
 -- runs once when the powerup gets activated, passes the player
 function bowsershell.onEnable(p)
 	if p.data.bowsershell then return end
-	
-	local originalSettings = PlayerSettings.get(pm.getBaseID(p.character) , bowsershell.basePowerup)
 	p.data.bowsershell = {
 		isInShell = false,
 		shellCombo = 0,
 		comboTimer = 0,
 		animTimer = 0,
-		unduckHeight = originalSettings.hitboxHeight, 
 		lockedDirection = p.direction,
+		lastDirection = p.direction * -1,
 		lockedSpeed = p.speedX,
 		hurtCollider = 0,
-		isShooting = false,
 		shootTimer = 0,
 	}
 end
@@ -130,21 +163,16 @@ function bowsershell.onTickPowerup(p)
 	
 	local data = p.data.bowsershell 
 	local settings = bowsershell.settings
-	local playerSettings = p:getCurrentPlayerSetting()
 	
 	if p.forcedState > 0 or p.deathTimer > 0 or p:mem(0x0C, FIELD_BOOL) then
 		data.isInShell = false
+		data.shootTimer = 0
 		p:mem(0x3C,FIELD_BOOL,false)
 		p:mem(0x12E,FIELD_WORD,0)
 		p:mem(0x154,FIELD_WORD,0)
-	return end
-	
-    if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-        p:mem(0x160, FIELD_WORD, 2)
-	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
-    end
-	
+		return 
+	end
+
 	if data.hurtCollider == 0 then
 		data.hurtCollider = Colliders.Box(p.x, p.y, 16, 32)
 	end
@@ -157,38 +185,6 @@ function bowsershell.onTickPowerup(p)
 			if Colliders.collide(data.hurtCollider, n) and n:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
 				n:harm()
 			end
-		end
-	end
-	
-	data.shootTimer = data.shootTimer - 1
-	
-	if (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and not data.isShooting and data.shootTimer <= 0 and not data.isInShell and not p:mem(0x50, FIELD_BOOL) and not p:mem(0x12E, FIELD_BOOL) and p.mount ~= 3 then
-		data.shootTimer = 24
-		data.isShooting = true
-		SFX.play(42)
-		
-		local dir = p.direction
-		
-		-- reverses the direction the projectile goes when the player is spinjumping to make it be shot """in front""" of the player 
-		if p:mem(0x50, FIELD_BOOL) and p.holdingNPC == nil then
-			dir = p.direction * -1
-		end
-		
-		-- spawns the projectile itself
-        local v = NPC.spawn(
-			bowsershell.projectileID,
-			p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
-			p.y + p.height/2 + p.speedY, p.section, false, true
-        )
-		
-		v.speedX = NPC.config[v.id].speed * dir
-		
-	end
-	
-	if data.isShooting then
-		if data.shootTimer <= 0 then
-			data.shootTimer = 64
-			data.isShooting = false
 		end
 	end
 	
@@ -218,16 +214,13 @@ function bowsershell.onTickPowerup(p)
 		data.isInShell = true
 	elseif (p.speedX == 0 or not canBeShell(p)) and data.isInShell then -- handles exiting a shell
 		data.isInShell = false
-		data.shootTimer = 24
 		p:mem(0x3C,FIELD_BOOL,false)
 		p:mem(0x12E,FIELD_WORD,0) -- unducks the player
 		p:mem(0x154,FIELD_WORD,0) -- lets the player hold items again
 	end
 	
-	-- handles moving around in a shell
 	if data.isInShell then
-		--playerSettings.hitboxHeight = playerSettings.hitboxDuckHeight -- manually shrink the hitbox height to be as if the player was ducking
-		
+		data.shootTimer = 0
 		p.keys.left = KEYS_UP -- stops the player from skidding
 		p.keys.right = KEYS_UP -- stops the player from skidding
 		p.keys.down = KEYS_UP -- stops the player from sliding
@@ -237,7 +230,72 @@ function bowsershell.onTickPowerup(p)
 		
 		p:mem(0x120,FIELD_BOOL,false) -- prevent spinjumping
 		p:mem(0x3C,FIELD_BOOL,false) -- stops the player from sliding
+	end
+	
+	if p:mem(0x50, FIELD_BOOL) then
+		data.shootTimer = 0
+		p:mem(0x160, FIELD_WORD,math.max(p:mem(0x160, FIELD_WORD),1))
+		if isOnGround(p) then return end
+	end
+	
+	data.shootTimer = math.max(data.shootTimer - 1,0)
+	
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
+		if p:mem(0x162,FIELD_WORD) > 2 then return end
+	else
+		if p:mem(0x160, FIELD_WORD) > 0 then return end
+	end
+	
+	if not isUnoccupied(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	
+	local flamethrowerActive = Cheats.get("flamethrower").active
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED) and not p:mem(0x50, FIELD_BOOL) 
+	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
+		tryingToShoot = true
+	end
+	
+	if ((tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2) 
+	and not (p:mem(0x12E, FIELD_BOOL) and not linkChars[p.character]) and not data.isInShell and p.mount < 3 then
+		local dir = p.direction
+		
+		-- spawns the projectile itself
+        local v = NPC.spawn(
+			bowsershell.projectileID,
+			p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
+			p.y + p.height/2 + p.speedY, p.section, false, true
+        )
+		v.direction = dir
+		v.speedX = NPC.config[v.id].speed * dir
+		if linkChars[p.character] then 
+			if not p:mem(0x12E,FIELD_BOOL) then -- if ducking, have the npc not rise higher
+				v.y = v.y - 12
+			end
+			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
+			if flamethrowerActive then
+				p:mem(0x162, FIELD_WORD,2)
+			end
+		else
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+			if p.mount == 0 then
+				data.shootTimer = 64
+			end
+			if flamethrowerActive then
+				p:mem(0x160, FIELD_WORD,30)
+			end
+		end
+		SFX.play(42)
+	end
+end
 
+-- runs when the powerup is active, passes the player
+function bowsershell.onTickEndPowerup(p)
+	if not p.data.bowsershell then return end
+	local data = p.data.bowsershell
+	local settings = bowsershell.settings
+	-- handles moving around in a shell
+	if data.isInShell then
 		p.direction = data.lockedDirection
 		p.speedX = data.lockedSpeed * data.lockedDirection
 
@@ -277,6 +335,11 @@ function bowsershell.onTickPowerup(p)
 			end
 		end
 		
+		local bounds = p.sectionObj.boundary
+		if (p.x - 2 <= bounds.left) or (p.x + p.width + 2 >= bounds.right) then
+			bumpedBlock = true
+		end
+		
 		-- handles hitting NPCs
 		local bumpedNPC = false
 		for _, npc in NPC.iterateIntersecting(left, (top + upwardsOffset) + p.speedY, right, (bottom + p.height/2.5 + 10) + downwardsOffset) do 
@@ -293,16 +356,12 @@ function bowsershell.onTickPowerup(p)
 						data.comboTimer = settings.shellComboTime
 						data.shellCombo = math.min(data.shellCombo + 1, 8)		
 					end
-				elseif ((bowsershell.bumperNPCs[npc.id] -- if the npc's a bumper & the player is closer to it's center
-				and p.x + p.width + rightOffset >= npc.x + 8 
-				and p.x + leftOffset <= (npc.x + npc.width) - 8) 
-				or NPC.PLAYERSOLID_MAP[npc.id]) -- or if the npc's playersolid
-				and p.y < npc.y + npc.height - 4 
-				and p.y + p.height - 2 > npc.y + 4 + downwardsOffset then-- if the npc is a bumper, or a playerblock npc, turn the playeraround
+				elseif (hittingBumper(p,npc) or NPC.PLAYERSOLID_MAP[npc.id])
+				and p.y < npc.y + npc.height - 4 and p.y + p.height - 2 > npc.y + 4 + downwardsOffset then
 					bumpedNPC = true
-					if npc.id ~= 458 and not NPC.PLAYERSOLID_MAP[npc.id] then  -- if hitting a bumper NPC
+					if npc.data._basegame.hitbox and type(npc.data._basegame.hitbox) == "BoxCollider" then  -- if hitting a bumper NPC
 						SFX.play(Misc.resolveSoundFile("bumper")) 
-					elseif not bowsershell.bumperNPCs[npc.id] then -- if hitting a playersolid NPC
+					elseif not hittingBumper(p,npc) then -- if hitting a playersolid NPC
 						SFX.play(3)
 					end
 					break
@@ -312,7 +371,14 @@ function bowsershell.onTickPowerup(p)
 	
 		-- turns the player around
 		if bumpedBlock or bumpedNPC then	
-			if bumpedBlock then SFX.play(3) end
+			if bumpedBlock then 
+				local e = Effect.spawn(
+					133,
+					(p.x + p.width*0.5) + (16*data.lockedDirection),
+					p.y+p.height*0.5
+				)
+				SFX.play(3) 
+			end
 			data.lockedDirection = data.lockedDirection * -1
 			p.speedX = data.lockedSpeed * data.lockedDirection
 		end
@@ -333,27 +399,22 @@ function bowsershell.onTickPowerup(p)
 end
 
 -- runs when the powerup is active, passes the player
-function bowsershell.onTickEndPowerup(p)
-	return
-	--if not p.data.bowsershell then return end
-	--local data = p.data.bowsershell
-end
-
--- runs when the powerup is active, passes the player
 function bowsershell.onDrawPowerup(p)
-	if p.forcedState ~= 0 or p.deathTimer > 0 then return end
+	if p.forcedState ~= 0 or p.deathTimer > 0 or p.mount > 0 then return end
 	if not p.data.bowsershell then return end
-	
 	local data = p.data.bowsershell
-	if not data.isInShell and not data.isShooting then return end
 	
-	-- sets the animation frame depending on the animTimer
-	if not data.isShooting then
-		local frame = animation[1 + math.floor(data.animTimer * (math.min(math.abs(p.speedX), 4) * 0.1)) % #animation] 
-		p.frame = frame
-	else
-		p.frame = 11
+	bowsershell.settings.shellAnimations[p.character] = bowsershell.settings.shellAnimations[p.character] or defaultAnimation
+	local animation = bowsershell.settings.shellAnimations[p.character]
+	
+	local frame
+	if data.isInShell then
+		frame = animation[1 + math.floor(data.animTimer * (math.min(math.abs(p.speedX), 4) * 0.1)) % #animation] -- sets the animation frame depending on the animTimer
+	elseif not data.isInShell and isUnoccupied(p) and data.shootTimer > 0 then
+		frame = 11
 	end
+	if not frame then return end
+	p:setFrame(frame)
 end
 
 -- fallback if the player was able to be harmed by a NPC while using the blue shell
@@ -378,19 +439,6 @@ function bowsershell.onPlayerHarm(token,p)
 		p:mem(0x12E,FIELD_WORD,0)
 		p.data.bowsershell.isInShell = false
 	end
-end
-
--- handles changing the transforming NPC into a bowsershell powerup
-function bowsershell.onNPCTransform(v,oldID,harm)
-	if not transformableNPCs[oldID] then return end
-	
-	local newConfig = NPC.config[bowsershell.powerupID]
-	v.id = bowsershell.powerupID
-	v.width = newConfig.width
-	v.height = newConfig.height
-	
-	v.data.lastNPC = oldID -- remembers the last npc the blue shell powerup was
-	v.data.variant = shellVariant[oldID] -- changes the sprite variant depending on what is set in bowsershell.registerShellDropper()
 end
 
 return bowsershell

@@ -3,17 +3,17 @@ local npcManager = require("npcManager")
 local powerup = require("powerups/bombShroom")
 
 --Create the library table
-local sampleNPC = {}
+local shroom = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
-cp.addPowerup("Bomb Mushroom", "powerups/bombShroom", npcID, npcID+1, true)
+local bombShroom = cp.addPowerup("Bomb Mushroom", "powerups/bombShroom", npcID)
 cp.transformWhenSmall(npcID, 9)
 Explosion.register(-npcID-1, 112, npcID+1, 22)
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local shroomSettings = {
 	id = npcID,
 	--Sprite size
 	gfxheight = 42,
@@ -55,52 +55,33 @@ local sampleNPCSettings = {
 }
 
 --Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
+npcManager.setNpcSettings(shroomSettings)
 
 --Register the vulnerable harm types for this NPC. The first table defines the harm types the NPC should be affected by, while the second maps an effect to each, if desired.
 npcManager.registerHarmTypes(npcID,
 	{
-		--HARM_TYPE_JUMP,
-		--HARM_TYPE_FROMBELOW,
-		--HARM_TYPE_NPC,
-		--HARM_TYPE_PROJECTILE_USED,
-		--HARM_TYPE_LAVA,
-		--HARM_TYPE_HELD,
-		--HARM_TYPE_TAIL,
-		--HARM_TYPE_SPINJUMP,
+		HARM_TYPE_FROMBELOW,
+		HARM_TYPE_LAVA,
+		HARM_TYPE_TAIL,
 		--HARM_TYPE_OFFSCREEN,
-		--HARM_TYPE_SWORD
 	}, 
 	{
-		--[HARM_TYPE_JUMP]=10,
-		--[HARM_TYPE_FROMBELOW]=10,
-		--[HARM_TYPE_NPC]=10,
-		--[HARM_TYPE_PROJECTILE_USED]=10,
-		--[HARM_TYPE_LAVA]={id=13, xoffset=0.5, xoffsetBack = 0, yoffset=1, yoffsetBack = 1.5},
-		--[HARM_TYPE_HELD]=10,
-		--[HARM_TYPE_TAIL]=10,
-		--[HARM_TYPE_SPINJUMP]=10,
+		[HARM_TYPE_LAVA]={id=13, xoffset=0.5, xoffsetBack = 0, yoffset=1, yoffsetBack = 1.5},
 		--[HARM_TYPE_OFFSCREEN]=10,
-		--[HARM_TYPE_SWORD]=10,
 	}
 );
 
-function sampleNPC.onInitAPI()
-	Cheats.register("needaboomshroom",{
-		isCheat = true,
-		activateSFX = 12,
-		aliases = powerup.aliases,
-		onActivate = (function() 
-			for i,p in ipairs(Player.get()) do
-				p.reservePowerup = npcID
-			end
-			
-			return true
-		end)
-	})
+function shroom.onInitAPI()
+	registerEvent(shroom, "onNPCHarm")
 end
 
---Custom local definitions below
+function shroom.onNPCHarm(token,v,harm,c)
+	if v.id ~= npcID then return end
+	if harm ~= HARM_TYPE_TAIL and harm ~= HARM_TYPE_FROMBELOW then return end
+	v.speedY = -6
+	SFX.play(9)
+	token.cancelled = true
+end
 
 --Gotta return the library table!
-return sampleNPC
+return shroom

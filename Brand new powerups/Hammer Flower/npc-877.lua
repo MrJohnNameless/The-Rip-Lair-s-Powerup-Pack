@@ -1,24 +1,15 @@
 
-
---[[
-	This template can be used to make your own custom NPCs!
-	Copy it over into your level or episode folder and rename it to use an ID between 751 and 1000. For example: npc-751.lua
-	Please pay attention to the comments (lines with --) when making changes. They contain useful information!
-	Refer to the end of onTickNPC to see how to stop the NPC talking to you.
-]]
-
-
 --NPCManager is required for setting basic NPC properties
 local npcManager = require("npcManager")
 local npcutils = require("npcs/npcutils")
 
 --Create the library table
-local sampleNPC = {}
+local hammer = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local hammerSettings = {
 	id = npcID,
 
 	gfxwidth=32,
@@ -60,7 +51,7 @@ local sampleNPCSettings = {
 }
 
 --Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
+npcManager.setNpcSettings(hammerSettings)
 npcManager.registerHarmTypes(npcID,
 	{
 		HARM_TYPE_OFFSCREEN,
@@ -106,12 +97,12 @@ end
 
 
 --Register events
-function sampleNPC.onInitAPI()
-	npcManager.registerEvent(npcID, sampleNPC, "onTickNPC")
-	npcManager.registerEvent(npcID, sampleNPC, "onDrawNPC")
+function hammer.onInitAPI()
+	npcManager.registerEvent(npcID, hammer, "onTickEndNPC")
+	npcManager.registerEvent(npcID, hammer, "onDrawNPC")
 end
 
-function sampleNPC.onTickNPC(v)
+function hammer.onTickEndNPC(v)
 	--Don't act during time freeze
 	
 	if Defines.levelFreeze then return end
@@ -159,7 +150,10 @@ function sampleNPC.onTickNPC(v)
 	or v.forcedState > 0--Various forced states
 	then
 		data.timer = 0
+		data.rotation = 0
 	end
+
+	v.isProjectile = false
 
 	-- Put main AI below here
 	data.hitBox.x = v.x - 8
@@ -236,7 +230,7 @@ function sampleNPC.onTickNPC(v)
 end
 
 
-function sampleNPC.onDrawNPC(v)
+function hammer.onDrawNPC(v)
 	local config = NPC.config[v.id]
 	local data = v.data
 
@@ -259,4 +253,4 @@ function sampleNPC.onDrawNPC(v)
 end
 
 --Gotta return the library table!
-return sampleNPC
+return hammer

@@ -72,87 +72,85 @@ function spikeball.onTickPowerup(p)
 	if not p.data.spikeball then return end -- check if the powerup is currenly active
 	local data = p.data.spikeball
 	
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
-    
-    if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-        p:mem(0x160, FIELD_WORD, 2)
-	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
-    end
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	if p.isSpinJumping and p:isOnGround() then return end
+	 
+	if linkChars[p.character] then
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
+		if p:mem(0x162,FIELD_WORD) > 2 then return end
+	else
+		if p:mem(0x160, FIELD_WORD) > 0 then return end
+	end
 
-   if data.projectileTimer > 0 or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-
-    if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end -- if spinjumping while on the ground
+	local flamethrowerActive = Cheats.get("flamethrower").active
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p.isSpinJumping) 
 	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
+		tryingToShoot = true
+	end
 	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if ((p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) and not linkChars[p.character]) or player:mem(0x14, FIELD_WORD) == 2 then
+    if (tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
         local dir = p.direction
 		
 		-- spawns the projectile itself
         local v = NPC.spawn(
 			spikeball.projectileID,
-			p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
-			p.y + p.speedY, p.section, false, true
+			p.x + p.width/2 + (p.width/2) * dir + p.speedX,
+			p.y + p.height/2 + p.speedY, p.section, false, true
         )
-		
-		-- handles making the projectile be held if the player pressed altRun & is a SMB2 character
-		if p.keys.altRun then
-			-- this sets the npc to be held by the player
+		v.direction = dir
+		v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/1.2
+		-- handles shooting as link/snake/samus
+		if linkChars[p.character] then 
+			-- shoot less higher when ducking
+			local targetSpeedY = -6
+			if p.isDucking then
+				targetSpeedY = -2
+			end
+			Routine.run(function()
+				Routine.skip()
+				if v and v.isValid then
+					v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/1.2
+					v.speedY = targetSpeedY
+				end
+			end)
+			v.x = v.x + (16 * dir)
+			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
+			SFX.play(25)
+			if flamethrowerActive then
+				p:mem(0x162, FIELD_WORD,2)
+			end
+			return
+		end
+		-- handles making the projectile be held if the player is a SMB2 character & pressed altRun 
+		if p.holdingNPC == nil and p.keys.altRun then 
 			v.speedY = 0
 			v.heldIndex = p.idx
 			p:mem(0x154, FIELD_WORD, v.idx+1)
-			SFX.play(25)
-			
-			-- put your own code here!
-			
-		elseif linkChars[p.character] then -- handles shooting as link/snake/samus
-			if p:mem(0x12E,FIELD_BOOL) then -- if ducking, have the npc not rise higher
-				v.speedY = -2
-			else
-				v.speedY = -5
-			end
-			v.x = v.x + (16 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
-			
-			-- put your own code here!
-			
-			SFX.play(82)
 		else -- handles normal shooting
 			if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-				local speedYMod = p.speedY * 0.1
+				local speedYMod = p.speedY * 0.1 -- adds extra vertical speed depending on how fast you were going vertically
 				if p.standingNPC then
 					speedYMod = p.standingNPC.speedY * 0.1
 				end
 				v.speedY = -6 + speedYMod
 			else
-				v.speedY = -2
+				v.speedY = -4
 			end
-
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
-			v.direction = dir
-			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
-			
-			-- put your own code here!
-			
-			SFX.play(25)
+			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 		end
-        data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
+		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+		SFX.play(25)
+
+		if flamethrowerActive then
+			p:mem(0x160, FIELD_WORD,30)
+		end
     end
 end
 
 function spikeball.onTickEndPowerup(p)
 	if not p.data.spikeball then return end -- check if the powerup is currently active
-	
 	local data = p.data.spikeball
-	
-	-- put your own code here!
-	
-    local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
-    local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
-
-    if data.projectileTimer > 0 and canPlay and curFrame then
-        p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
-    end
 end
 
 function spikeball.onDrawPowerup(p)

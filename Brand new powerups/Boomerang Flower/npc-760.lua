@@ -1,7 +1,5 @@
 local npcManager = require("npcManager")
 local npcutils = require("npcs/npcutils")
-local remoteCC = require("powerups/remoteCC")
-local cp = require("customPowerups")
 local boomerang = {}
 
 local boomEffectID = 760
@@ -34,7 +32,7 @@ local boomerangSettings = {
 	
 	frames = 4,
 	framestyle = 0,
-	framespeed = 8,
+	framespeed = 6,
 	
 	speed = 1,
 	score = 0,
@@ -85,7 +83,7 @@ npcManager.registerHarmTypes(npcID,
 		HARM_TYPE_TAIL,
 		HARM_TYPE_SPINJUMP,
 		HARM_TYPE_OFFSCREEN,
-		HARM_TYPE_SWORD
+		--HARM_TYPE_SWORD
 	}, 
 	{
 		[HARM_TYPE_JUMP]=boomEffectID,
@@ -97,7 +95,7 @@ npcManager.registerHarmTypes(npcID,
 		[HARM_TYPE_TAIL]=boomEffectID,
 		[HARM_TYPE_SPINJUMP]=boomEffectID,
 		--[HARM_TYPE_OFFSCREEN]=10,
-		[HARM_TYPE_SWORD]=10,
+		--[HARM_TYPE_SWORD]=10,
 	}
 );
 
@@ -105,7 +103,6 @@ npcManager.setNpcSettings(boomerangSettings)
 
 function boomerang.onInitAPI()
 	npcManager.registerEvent(npcID, boomerang, "onTickNPC")
-	registerEvent(boomerang, "onNPCKill")
 end
 
 
@@ -138,15 +135,14 @@ function boomerang.onTickNPC(v)
 	data.hitBox.x = v.x - 8
 	data.hitBox.y = v.y - 8
 	
-	-- AI for coins and starcoins. Uses remoteCC.lua by Novarender
 	for _,c in NPC.iterate(boomerang.collectibleItems) do
-		
+		local collecter = data.owner or player
 		if v:collide(c) then
-			if not NPC.config[c.id].iscoin then
-				c.x = player.x
-				c.y = player.y
+			if not NPC.config[c.id].iscoin and not NPC.config[c.id].isinteractable then
+				c.x = collecter.x
+				c.y = collecter.y
 			else
-				remoteCC.collect(c)
+				c:collect(collecter)
 			end
 		end
 	end
@@ -171,14 +167,21 @@ function boomerang.onTickNPC(v)
 			data.slowDown = 0
 		else
 			v:kill(HARM_TYPE_TAIL)
-			
 		end
 	end
 	
+	if lunatime.tick() % 4 == 0 and math.abs(v.speedX) > 3 then  
+		local e = Effect.spawn(74,v)
+		e.x = e.x + RNG.randomInt(-8,24)
+		e.y = e.y + RNG.randomInt(-8,24)
+		e.speedX = -v.speedX/4
+	end
+
 	--If returning and it hits the player, collect it
 	if data.returnToSender and data.owner then
 		if Colliders.collide(v, data.owner) then
 			v:kill(HARM_TYPE_OFFSCREEN)
+			SFX.play(73)
 		end
 		if v.y < data.owner.y then
 			local bombyspeed = vector.v2(Player.getNearest(v.x + v.width/2, v.y + v.height).y + 0.5 * Player.getNearest(v.x + v.width/2, v.y + v.height).height - (v.y + 0.5 * v.height))
@@ -193,7 +196,6 @@ function boomerang.onTickNPC(v)
 				data.initialDir = - data.initialDir
 				data.slowdownSpeed = data.slowdownSpeed * 1.2
 				data.returnTries = data.returnTries + 1
-				--v.direction = -v.direction
 			end
 		else
 			if data.lifetime >= boomerang.lifetime then
@@ -269,13 +271,6 @@ function boomerang.onTickNPC(v)
 				data.slowDown = 0
 			end
 		end
-	end
-end
-
-function boomerang.onNPCKill(e, v, r)
-	if v.id ~= npcID then return end
-	if v.data.owner then
-		v.data.owner.data.stopThrowingBoomerangs = false
 	end
 end
 

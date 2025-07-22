@@ -6,7 +6,7 @@ local sampleNPC = {}
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
-local spikeBall = cp.addPowerup("Doctor Suit", "powerups/doctorsuit", npcID)
+local doctorSuit = cp.addPowerup("Doctor Suit", "powerups/doctorsuit", npcID)
 cp.transformWhenSmall(npcID, 9)
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.

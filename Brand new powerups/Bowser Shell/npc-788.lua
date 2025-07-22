@@ -1,115 +1,72 @@
---NPCManager is required for setting basic NPC properties
 local npcManager = require("npcManager")
---Create the library table
-local sampleNPC = {}
---NPC_ID is dynamic based on the name of the library file
+local cp = require("customPowerups")
+local powerup = require("powerups/bowserShell")
+local shell = {}
 local npcID = NPC_ID
 
---Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local bowserShell = cp.addPowerup("Bowser Shell", "powerups/bowserShell", npcID)
+
+local shellSettings = {
 	id = npcID,
-	--Sprite size
-	gfxheight = 32,
-	gfxwidth = 48,
-	--Hitbox size. Bottom-center-bound to sprite size.
-	width = 48,
+	gfxheight = 34,
+	gfxwidth = 32,
+	gfxoffsety = 2,
+	width = 32,
 	height = 32,
-	--Sprite offset from hitbox for adjusting hitbox anchor on sprite.
-	gfxoffsetx = 0,
-	gfxoffsety = 0,
-	--Frameloop-related
-	frames = 4,
-	framestyle = 1,
-	framespeed = 4, --# frames between frame change
-	--Movement speed. Only affects speedX by default.
-	speed = 6,
-	luahandlesspeed = true,
-	--Collision-related
+	frames = 1,
+	framestyle = 0,
+	framespeed = 8,
+	speed = 1,
+	score = SCORE_1000,
+	
 	npcblock = false,
-	npcblocktop = false, --Misnomer, affects whether thrown NPCs bounce off the NPC.
+	npcblocktop = false,
 	playerblock = false,
-	playerblocktop = false, --Also handles other NPCs walking atop this NPC.
-	powerup = false,
+	playerblocktop = false,
+	powerup = true,
 	nohurt=true,
-	nogravity = true,
-	noblockcollision = true,
+	nogravity = false,
+	noblockcollision = false,
 	nofireball = true,
 	noiceball = true,
-	noyoshi= true,
+	noyoshi= false,
 	nowaterphysics = false,
-	--Various interactions
-	jumphurt = true, --If true, spiny-like
-	spinjumpsafe = false, --If true, prevents player hurt when spinjumping
-	harmlessgrab = false, --Held NPC hurts other NPCs if false
-	harmlessthrown = false, --Thrown NPC hurts other NPCs if false
-	ishot=true,
-	durability=2,
+	luahandlesspeed = true,
+
+	jumphurt = true,
+	spinjumpsafe = false,
+	harmlessgrab = true,
+	harmlessthrown = true,
+
+	isinteractable = true,
+	ignorethrownnpcs = true,
+	notcointransformable = true,
 }
 
---Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
-
-
---Register the vulnerable harm types for this NPC. The first table defines the harm types the NPC should be affected by, while the second maps an effect to each, if desired.
+npcManager.setNpcSettings(shellSettings)
 npcManager.registerHarmTypes(npcID,
 	{
-		--HARM_TYPE_JUMP,
-		--HARM_TYPE_FROMBELOW,
-		--HARM_TYPE_NPC,
-		--HARM_TYPE_PROJECTILE_USED,
-		--HARM_TYPE_LAVA,
-		--HARM_TYPE_HELD,
-		--HARM_TYPE_TAIL,
-		--HARM_TYPE_SPINJUMP,
-		HARM_TYPE_OFFSCREEN,
-		--HARM_TYPE_SWORD
+		HARM_TYPE_FROMBELOW,
+		HARM_TYPE_LAVA,
+		HARM_TYPE_TAIL,
+		--HARM_TYPE_OFFSCREEN,
 	}, 
 	{
-		--[HARM_TYPE_JUMP]=10,
-		--[HARM_TYPE_FROMBELOW]=10,
-		--[HARM_TYPE_NPC]=10,
-		--[HARM_TYPE_PROJECTILE_USED]=10,
-		--[HARM_TYPE_LAVA]={id=13, xoffset=0.5, xoffsetBack = 0, yoffset=1, yoffsetBack = 1.5},
-		--[HARM_TYPE_HELD]=10,
-		--[HARM_TYPE_TAIL]=10,
-		--[HARM_TYPE_SPINJUMP]=10,
-		[HARM_TYPE_OFFSCREEN]=10,
-		--[HARM_TYPE_SWORD]=10,
+		[HARM_TYPE_LAVA]={id=13, xoffset=0.5, xoffsetBack = 0, yoffset=1, yoffsetBack = 1.5},
+		--[HARM_TYPE_OFFSCREEN]=10,
 	}
 );
 
---Register events
-function sampleNPC.onInitAPI()
-	npcManager.registerEvent(npcID, sampleNPC, "onTickNPC")
+function shell.onInitAPI()
+	registerEvent(shell, "onNPCHarm")
 end
 
-local function explode(v)
-	for k,n in ipairs(Colliders.getColliding{
-		a = v,
-		b = NPC.HITTABLE,
-		btype = Colliders.NPC,
-		filter = function(w)
-			if (not w.isHidden) and w:mem(0x64, FIELD_BOOL) == false and w:mem(0x12A, FIELD_WORD) > 0 and w:mem(0x138, FIELD_WORD) == 0 and w:mem(0x12C, FIELD_WORD) == 0 then
-				return true
-			end
-			return false
-		end
-	}) do
-		v:kill(9)
-		n:harm(HARM_TYPE_EXT_HAMMER)
-		return
-	end
+function shell.onNPCHarm(token,v,harm,c)
+	if v.id ~= npcID then return end
+	if harm ~= HARM_TYPE_TAIL and harm ~= HARM_TYPE_FROMBELOW then return end
+	v.speedY = -6
+	SFX.play(9)
+	token.cancelled = true
 end
 
-function sampleNPC.onTickNPC(v)
-	--Don't act during time freeze
-	if Defines.levelFreeze then return end
-	local data = v.data
-	
-	if v.id == npcID and rsn ~= 9 then
-		explode(v)
-	end
-end
-
---Gotta return the library table!
-return sampleNPC
+return shell

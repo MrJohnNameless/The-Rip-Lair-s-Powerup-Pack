@@ -1,9 +1,9 @@
 
 --[[
-	Poison Flower by Deltomx3
+				Poison Flower by Deltomx3
 				
-	A customPowerups poisonFlower script that helps to
-	streamline the process of making projectile throwing powerups
+		An original custom powerup that lets the player
+	shoot poison bubbles that move depending on what movement keys were pressed
 			
 	CREDITS:
 	Marioman2007 - created customPowerups framework which this script used as a base here (https://www.smbxgame.com/forums/viewtopic.php?t=29435&sid=09762126985be58594941d2479968bbf)
@@ -78,13 +78,13 @@ local function canPlayShootAnim(p)
     return (
         p.forcedState == 0
         and p.deathTimer == 0 -- not dead
-        and p.mount == 0
+        and (p.mount == 0 or p.mount == MOUNT_BOOT)
         and not p.climbing
         and not p.holdingNPC
         and not p.inLaunchBarrel
         and not p.inClearPipe
         and p:mem(0x26,FIELD_WORD) <= 0 -- pulling objects from top
-        and (not p:mem(0x12E, FIELD_BOOL) or linkChars[p.character]) -- ducking and is not link/snake/samus
+        and (not p.isDucking or linkChars[p.character]) -- ducking and is not link/snake/samus
         and not p:mem(0x3C,FIELD_BOOL) -- sliding
         and not p:mem(0x44,FIELD_BOOL) -- shell surfing
         and not p:mem(0x4A,FIELD_BOOL) -- statue
@@ -102,8 +102,8 @@ end
 -- runs once when the powerup gets activated, passes the player
 function poisonFlower.onEnable(p)	
 	p.data.poisonFlower = {
-		projectileTimer = 0, -- don't remove this
-		playerBubbles = 0,
+		lastDirection = p.direction * -1, -- don't remove this unless you know what you're doing
+		playerBubbles = {},
 	}
 end
 
@@ -117,101 +117,111 @@ function poisonFlower.onTickPowerup(p)
 	if cp.getCurrentPowerup(p) ~= poisonFlower or not p.data.poisonFlower then return end -- check if the powerup is currenly active
 	local data = p.data.poisonFlower
 	
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
-    
-    if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-        p:mem(0x160, FIELD_WORD, 2)
-	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
-    end
-
-	if data.projectileTimer > 0 or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	if p.isSpinJumping and p:isOnGround() then return end
 	
-	if data.playerBubbles <= 0 then
-		data.playerBubbles = 0
+	local flamethrowerActive = Cheats.get("flamethrower").active
+	
+	if linkChars[p.character] then
+		local cooldownNum = 2
+		if #data.playerBubbles >= poisonFlower.limit and not flamethrowerActive then
+			cooldownNum = 5
+		end
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),lockoutNum))
+		if p:mem(0x162,FIELD_WORD) > 2 then return end
+	else
+		if #data.playerBubbles >= poisonFlower.limit and not flamethrowerActive then
+			p:mem(0x160,FIELD_WORD,math.max(p:mem(0x160,FIELD_WORD),5))
+		end
+		if p:mem(0x160, FIELD_WORD) > 0 then return end
 	end
 
-    if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end -- if spinjumping while on the ground
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p.isSpinJumping) 
 	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
+		tryingToShoot = true
+	end
 	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if (((p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) and not linkChars[p.character]) or player:mem(0x14, FIELD_WORD) == 2) and data.playerBubbles < poisonFlower.limit then
+    if (tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
         local dir = p.direction
+		local count = 1
 		
 		-- reverses the direction the projectile goes when the player is spinjumping to make it be shot """in front""" of the player 
-		if p:mem(0x50, FIELD_BOOL) and p.holdingNPC == nil then
-			dir = p.direction * -1
+		if p.isSpinJumping and p.holdingNPC == nil and #data.playerBubbles <= 0 then
+			count = 2
 		end
 		
-		-- spawns the projectile itself
-        local v = NPC.spawn(
-			poisonFlower.projectileID,
-			p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
-			p.y + p.height/2 + p.speedY, p.section, false, true
-        )
-		v.direction = dir
-		v.speedX = ((NPC.config[v.id].speed + 4) + p.speedX/3.5) * dir
-
-		if p:mem(0x50, FIELD_BOOL) and data.playerBubbles == 0 then
-		       local v = NPC.spawn(
+		for i=1,count do
+			if i == 2 then
+				dir = dir * -1
+			end
+			-- spawns the projectile itself
+			local v = NPC.spawn(
 				poisonFlower.projectileID,
-				p.x + p.width/2 + (p.width/2 + 0) * -dir + p.speedX,
+				p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
 				p.y + p.height/2 + p.speedY, p.section, false, true
 			)
-			v.direction = dir * -1
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir * -1
-		end
-		
-		if p:mem(0x50, FIELD_BOOL) and data.playerBubbles == 0 then
-			data.playerBubbles = data.playerBubbles + 2
-		else
-			data.playerBubbles = data.playerBubbles + 1
-		end
-		
-		-- handles making the projectile be held if the player pressed altRun & is a SMB2 character
-		if p.keys.altRun and smb2Chars[p.character] and p.holdingNPC == nil then
-			-- this sets the npc to be held by the player
-			v.heldIndex = p.idx
-			p:mem(0x154, FIELD_WORD, v.idx+1)
-			SFX.play(18)
-		elseif linkChars[p.character] then -- handles shooting as link/snake/samus
-			v.x = v.x + (16 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
-			SFX.play(82)
-		else -- handles normal shooting
-			if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-				local speedYMod = p.speedY * 0.1 -- adds extra vertical speed depending on how fast you were going vertically
-				if p.standingNPC then
-					speedYMod = p.standingNPC.speedY * 0.1
+
+			v.direction = dir
+			v.speedX = ((NPC.config[v.id].speed + 4) + p.speedX/3.5) * dir
+			v.data.owner = p
+			table.insert(data.playerBubbles,v)
+
+			if linkChars[p.character] then -- handles shooting as link/snake/samus
+				v.x = v.x + (16 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
+				p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
+				SFX.play(82)
+				if flamethrowerActive then
+					p:mem(0x162, FIELD_WORD,2)
 				end
-				v.speedY = -2 + speedYMod
 			else
-				--v.speedY = -4
+				if p.keys.altRun and smb2Chars[p.character] and p.holdingNPC == nil then
+					v.heldIndex = p.idx
+					p:mem(0x154, FIELD_WORD, v.idx+1)
+					SFX.play(18)
+				else -- handles normal shooting
+					if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
+						local speedYMod = p.speedY * 0.1 -- adds extra vertical speed depending on how fast you were going vertically
+						if p.standingNPC then
+							speedYMod = p.standingNPC.speedY * 0.1
+						end
+						v.speedY = -2 + speedYMod
+					end
+					p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
+					SFX.play(18)
+				end
+				p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+				SFX.play(18)
+				if flamethrowerActive then
+					p:mem(0x160, FIELD_WORD,30)
+				end
 			end
-			
-			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
-			
-			SFX.play(18)
 		end
-        data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
     end
 end
 
 function poisonFlower.onTickEndPowerup(p)
 	if cp.getCurrentPowerup(p) ~= poisonFlower or not p.data.poisonFlower then return end -- check if the powerup is currently active
-	
 	local data = p.data.poisonFlower
 	
-    local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
-    local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
-
-    if data.projectileTimer > 0 and canPlay and curFrame then
-        p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
-    end
+	if not p.isSpinJumping then
+		data.lastDirection = p.direction * -1
+	end
+	p:mem(0x54,FIELD_WORD,data.lastDirection) -- prevents a base powerup's projectile from shooting while spinjumping
 end
+
 function poisonFlower.onNPCKill(e, v, r)
-	if v.id ~= poisonFlower.projectileID or not player.data.poisonFlower then return end
-	
-	player.data.poisonFlower.playerBubbles = player.data.poisonFlower.playerBubbles - 1
-	SFX.play(91)
+	if v.id ~= poisonFlower.projectileID then return end
+	for _,p in ipairs(Player.get()) do
+		if p.data.poisonFlower then
+			for i,n in ipairs(p.data.poisonFlower.playerBubbles) do
+				if n.isValid and n == v then
+					table.remove(p.data.poisonFlower.playerBubbles,i)
+					break
+				end
+			end
+		end
+	end
 end
 
 return poisonFlower

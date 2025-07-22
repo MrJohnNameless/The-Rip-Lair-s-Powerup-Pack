@@ -15,15 +15,12 @@
 	S3K Stage - made the original sprites of Peach with a ponytail which were used here (https://youtu.be/vwAQmpKEWhI)
 	David184, Qw2, Terra King - Ripped the laser firing SFX from Terraria which was used here (https://www.sounds-resource.com/pc_computer/terraria/sound/2890/)
 	
-	Version 3.0.0
+	Version 3.5.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 ]]--
 
-local utils = require("npcs/npcutils")
-
-local wasMuted1 = false
-local wasMuted2 = false
+local cp = require("customPowerups")
 
 local astroSuit = {}
 
@@ -83,14 +80,9 @@ local smb2Chars = table.map{3,4,6,9,10,11,16}
 -- Link, Snake, and Samus respectively
 local linkChars = table.map{5,12,16}
 
-local animFrames = {11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11} -- the animation frames for shooting a fireball
+local animFrames = {11, 11, 12, 12}-- the animation frames for shooting a fireball
 
 local jumpheights = {30,35,30,25,30}
-
-local wasMuted = false
-
--- Projectile cooldown timers for Mario, Luigi, Peach, Toad, and Link respectively
-local projectileTimerMax = {20, 20, 20, 20, 20}
 
 -- calls in Marioman2007's Ground Pound if it's in the same level folder as this script (https://www.smbxgame.com/forums/viewtopic.php?t=28456)
 local GP
@@ -120,6 +112,8 @@ end
 local function handleJumping(p,allowSpin,forceJump,playSFX,inputCheck) -- "replaces" the default SMBX jump with a replica that allows adjustable jumpheight
 	if p.deathTimer > 0 then return end
 	if not p.keys.jump and not p.keys.altJump then return end
+	local wasMuted1 = false
+	local wasMuted2 = false
 	local shouldJump = false
 	local holdingJump = p.keys.jump or p.keys.altJump
 	local tappingJump = p.keys.jump == KEYS_PRESSED or p.keys.altJump == KEYS_PRESSED
@@ -184,24 +178,14 @@ end
 
 -- runs once when the powerup gets activated, passes the player
 function astroSuit.onEnable(p)
-	local wasMuted = Audio.sounds[1].muted
-	-- replaces the ground pound image with one that has astroSuit sprites (you'll have to provide those sprites yourself)
-    if GP then
-        GP.overrideRenderData(p, {texture = astroSuit.gpImages[p.character], frameX = 0})
-    end
 	p.data.astroSuit = {
-		projectileTimer = 0, -- don't remove this
-		-- put your own values here!
+		animTimer = 0,
 		ownedLasers = {}
 	}
 end
 
 -- runs once when the powerup gets deactivated, passes the player
 function astroSuit.onDisable(p)
-	-- Resets the astroSuit version of the ground pound image back to normal
-    if GP then
-        GP.overrideRenderData(p, {})
-    end
 	p.data.astroSuit = nil
 end
 
@@ -211,12 +195,12 @@ function astroSuit.onTickPowerup(p)
 	local data = p.data.astroSuit
 	local settings = astroSuit.settings
 	
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
+    data.animTimer = math.max(data.animTimer - 1, 0) -- decrement the projectile timer/cooldown
     
     if p.mount < 2 and not linkChars[p.character] then -- disables shooting fireballs for the original 4 characters + any X2 character that uses them as a base
-		p:mem(0x160, FIELD_WORD, 2)
+		p:mem(0x160, FIELD_WORD, 5)
 	elseif linkChars[p.character] then -- disables shooting fireballs if you're link, snake, or samus
-		p:mem(0x162, FIELD_WORD, 2)
+		p:mem(0x162, FIELD_WORD, 5)
     end
 	
 	-- replaces the default SMBX jump with a replica that allows extended jumpheights
@@ -242,12 +226,21 @@ function astroSuit.onTickPowerup(p)
 		p.speedY = math.min(p.speedY + 0.4,Defines.gravity)
 	end
 	
-	if (#data.ownedLasers >= settings.projectileCap and settings.projectileCap >= 0) or not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
-
+	local flamethrowerActive = Cheats.get("flamethrower").active
+	
+	if not canPlayShootAnim(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
+	if (#data.ownedLasers >= settings.projectileCap and settings.projectileCap >= 0 and not flamethrowerActive) then return end
+	
+	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED) 
+	
+	if (p.keys.run == KEYS_DOWN) and flamethrowerActive and lunatime.tick() % 6 == 0 then 
+		tryingToShoot = true
+	end
+	
     if p:mem(0x50, FIELD_BOOL) and p:isOnGround() then return end -- if spinjumping while on the ground
 	
 	-- handles spawning the projectile if the player is pressing either run button, spinjumping, or at the apex(?) of link's sword slash animation respectively
-    if ((p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED) and not p:mem(0x50, FIELD_BOOL) and not linkChars[p.character]) or player:mem(0x14, FIELD_WORD) == 2 then
+    if (tryingToShoot and not p:mem(0x50, FIELD_BOOL) and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
         local dir = p.direction
 		
 		-- spawns the projectile itself
@@ -261,58 +254,43 @@ function astroSuit.onTickPowerup(p)
 			if not p:mem(0x12E,FIELD_BOOL) then -- if ducking, have the npc not rise higher
 				v.y = v.y - 8
 			end
-			v.x = v.x + (16 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
-		else -- handles normal shooting
-			v.ai1 = -120
-			v.spawnDirection = dir
-			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
+			v.x = v.x + (8 * dir) -- adjust the npc a bit to look like it's being shot out of link's sword
 		end
 		v.speedX = (settings.projectileSpeed + p.speedX/3.5) * dir
-		
 		v.data.totalLife = settings.projectileLifetime -- sets how long the laser should live
 		v.data.variant = p.character -- changes the sprite of the laser based on the character shooting it
 		table.insert(data.ownedLasers,v) -- makes the player "own" the laser they shot
 		
-        data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
-		SFX.play(settings.firingSFX,1)
+        data.animTimer = 25
+		SFX.play(settings.firingSFX)
     end
 end
 
 function astroSuit.onTickEndPowerup(p)
-	if not p.data.astroSuit then return end -- check if the powerup is currently active
+	if not p.data.astroSuit then return end
 	local data = p.data.astroSuit
-	-- put your own code here!
-    local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
+
+	local curFrame = animFrames[math.min(1 + math.floor(data.animTimer / 5),#animFrames)] -- sets the frame depending on how much the projectile timer has
     local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
 
-    if data.projectileTimer > 0 and canPlay and curFrame then
+    if data.animTimer > 0 and canPlay and curFrame then
         p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
     end
 end
 
-function astroSuit.onDrawPowerup(p)
-	return
-	--[[
-	if not p.data.astroSuit then return end -- check if the powerup is currently active
-	local data = p.data.astroSuit
-	--]]
-	-- put your own code here!
-end
-
 -- the following chunks of code all refreshes the player's jump replica
-
 function astroSuit.onNPCHarm(token,v,harm,c)
 	if not c or type(c) ~= "Player" then return end
-	if harm ~= 1 then return end
-	if not c.data.astroSuit then return end 	
+	if harm ~= 1 or harm ~= 8 then return end
+	if cp.getCurrentPowerup(c) ~= astroSuit or not c.data.astroSuit then return end 	
 	handleJumping(c,false,true,false,"hold")
 end
 
 -- check if a player was right above the NPC whenever it was transformed
 function astroSuit.onNPCTransform(v,oldID,harm)
-	if harm ~= 1 then return end
+	if harm ~= 1 or harm ~= 8 then return end
 	for _,p in ipairs(Player.getIntersecting(v.x - 2,v.y - 4,v.x + v.width + 2,v.y + v.height)) do 
-		if p.data.astroSuit then
+		if cp.getCurrentPowerup(p) == astroSuit and p.data.astroSuit then
 			-- refreshes the player's jump replica
 			handleJumping(p,false,true,false,"hold")
 		end
@@ -323,20 +301,21 @@ end
 function astroSuit.onBlockHit(token,v,above,p)
 	if v.id ~= 55 or not above then return end
 	for _,p in ipairs(Player.getIntersecting(v.x,v.y - 4,v.x + v.width,v.y + v.height)) do  -- refreshes the player's jump replica after hitting a note block
-		if p.data.astroSuit then
+		if cp.getCurrentPowerup(p) == astroSuit and p.data.astroSuit then
 			handleJumping(p,false,true,true,"hold")
 		end
 	end
 end
 
 function astroSuit.onNPCKill(token,v,harm,c)
+	if v.id ~= astroSuit.projectileID then return end
 	for _,p in ipairs(Player.get()) do
-		if p.data.astroSuit then
+		if cp.getCurrentPowerup(p) == astroSuit and p.data.astroSuit then
 			local data = p.data.astroSuit
-			for i = #data.ownedLasers,1,-1 do
-				local n = data.ownedLasers[i];
+			for i,n in ipairs(data.ownedLasers) do
 				if n.isValid and n == v then
 					table.remove(data.ownedLasers, i) -- makes the player "disown" the laser they shot, allowing them to shoot more
+					break
 				end
 			end
 		end

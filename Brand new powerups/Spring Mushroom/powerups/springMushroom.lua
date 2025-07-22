@@ -128,7 +128,6 @@ function springMushroom.onTickPowerup(p)
 		p.keys.altJump = KEYS_DOWN
 	end
 
-	p.speedX = math.clamp(p.speedX, -3, 3)
 	p.speedY = p.speedY - 0.15
 
     	if GP then
@@ -149,43 +148,44 @@ function springMushroom.onTickPowerup(p)
    	if not canBounceAround(p) then return end
 
 	p.speedX = data.moveSpeed
+	data.moveSpeed = math.clamp(data.moveSpeed, -3, 3)
 
 	if p.keys.left then
 		p.direction = -1
-		if data.moveSpeed > -3 then
-			data.moveSpeed = data.moveSpeed - 0.05
-		end
+		data.moveSpeed = data.moveSpeed - 0.05
+
 	elseif p.keys.right then
 		p.direction = 1
-		if data.moveSpeed < 3 then
-			data.moveSpeed = data.moveSpeed + 0.05
-		end
+		data.moveSpeed = data.moveSpeed + 0.05
 	end
 
 	if isOnGround(p) then
 		if p.keys.jump == KEYS_DOWN then
 			p.speedY = -16
-			p:mem(0x176,FIELD_WORD,0)
 			SFX.play("powerups/bigBounce.ogg")
 			data.scale = 2
-			data.occupiedRotation = true
 		else
 			p.speedY = -8
-			p:mem(0x176,FIELD_WORD,0)
 			SFX.play("powerups/smallBounce.ogg")
 			data.scale = 0.15
-			data.occupiedRotation = true
+
+			-- slinky!!
 			for k, v in Block.iterateIntersecting(p.x + 2, p.y + (p.height - 2), p.x + (p.width - 2), p.y + (p.height + 16)) do
             			if p:mem(0x48,FIELD_WORD) ~= 0 and (Block.SLOPE_MAP[v.id] and Block.config[v.id].floorslope ~= 0 and not v.isHidden and not v:mem(0x5A, FIELD_BOOL)) then
 					if Block.SLOPE_LR_FLOOR_MAP[v.id] and Block.config[v.id].floorslope == -1 then
-						data.moveSpeed = 3
+						data.moveSpeed = data.moveSpeed + 0.5
 					elseif Block.SLOPE_RL_FLOOR_MAP[v.id] and Block.config[v.id].floorslope == 1 then
-						data.moveSpeed = -3
+						data.moveSpeed = data.moveSpeed - 0.5
 					end
             			end
         		end
 		end
+
+		data.occupiedRotation = true
+		p:mem(0x176,FIELD_WORD,0)
 	end
+
+	-- Wall bouncing
 
 	if p:mem(0x148, FIELD_WORD) == 2 then 
 		data.moveSpeed = 3 
@@ -216,9 +216,11 @@ function springMushroom.onTickEndPowerup(p)
 	end
 
         if data.scale > 1 then 
-                data.scale = data.scale - 0.05
+                data.scale = math.max(1, data.scale - 0.05)
         elseif data.scale < 1 then 
-                data.scale = data.scale + 0.05
+                data.scale = math.min(1, data.scale + 0.05)
+	else
+		data.scale = 1
         end
 
 	data.turnTimer = data.turnTimer - 1
@@ -238,6 +240,7 @@ end
 function springMushroom.onDrawPowerup(p)
 	if not p.data.springMushroom then return end
 	local data = p.data.springMushroom
+
 	if p.deathTimer == 0 then 
 		p:setFrame(-50 * p.direction)	
 		Graphics.drawBox{

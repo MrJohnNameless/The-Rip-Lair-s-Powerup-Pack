@@ -2,12 +2,12 @@
 local npcManager = require("npcManager")
 local npcutils = require("npcs/npcutils")
 --Create the library table
-local sampleNPC = {}
+local bomb = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
 --Defines NPC config for our NPC. You can remove superfluous definitions.
-local sampleNPCSettings = {
+local bombSettings = {
 	id = npcID,
 	--Sprite size
 	gfxheight = 22,
@@ -19,7 +19,7 @@ local sampleNPCSettings = {
 	gfxoffsetx = 0,
 	gfxoffsety = 0,
 	--Frameloop-related
-	frames = 2,
+	frames = 4,
 	framestyle = 0,
 	framespeed = 4, --# frames between frame change
 	--Movement speed. Only affects speedX by default.
@@ -45,17 +45,22 @@ local sampleNPCSettings = {
 	harmlessgrab = false, --Held NPC hurts other NPCs if false
 	harmlessthrown = false, --Thrown NPC hurts other NPCs if false
 	useclearpipe = true,
+	
+	explodeTime = 256,
+	normalAnimation = {0,1},
+	alertAnimation = {0,3,2,1},
+	allowAlert = true,
 }
 
 --Applies NPC settings
-npcManager.setNpcSettings(sampleNPCSettings)
+npcManager.setNpcSettings(bombSettings)
 
 --Register events
-function sampleNPC.onInitAPI()
-	npcManager.registerEvent(npcID, sampleNPC, "onTickNPC")
+function bomb.onInitAPI()
+	npcManager.registerEvent(npcID, bomb, "onTickEndNPC")
 end
 
-function sampleNPC.onTickNPC(v)
+function bomb.onTickEndNPC(v)
 	--Don't act during time freeze
 	if Defines.levelFreeze then return end
 	local data = v.data
@@ -67,9 +72,13 @@ function sampleNPC.onTickNPC(v)
 		return
 	end
 
+	local config = NPC.config[npcID]
+
 	--Initialize
 	if not data.initialized then
 		--Initialize necessary data.
+		v.ai1 = 0
+		data.animation = config.normalAnimation
 		data.initialized = true
 	end
 	
@@ -84,18 +93,24 @@ function sampleNPC.onTickNPC(v)
 	end
 	
 	v.ai1 = v.ai1 + 1
-	if v.ai1 >= 256 then
+	if v.ai1 >= config.explodeTime then
 		Explosion.spawn(v.x + 8, v.y + 16, -841)
 		v:kill(9)
+	elseif v.ai1 == config.explodeTime - 72 and config.allowAlert then
+		data.animation = config.alertAnimation
 	end
 	
-	for _,p in ipairs(NPC.getIntersecting(v.x - 1, v.y - 1, v.x + v.width + 1, v.y + v.height + 1)) do
-		if p:mem(0x12A, FIELD_WORD) > 0 and p:mem(0x138, FIELD_WORD) == 0 and v:mem(0x138, FIELD_WORD) == 0 and (not p.isHidden) and (not p.friendly) and p:mem(0x12C, FIELD_WORD) == 0 and p.idx ~= v.idx and v:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[p.id] then
+	for _,p in ipairs(NPC.getIntersecting(v.x - 2, v.y - 2, v.x + v.width + 2, v.y + v.height + 2)) do
+		if p:mem(0x12A, FIELD_WORD) > 0 and p:mem(0x138, FIELD_WORD) == 0 and v:mem(0x138, FIELD_WORD) == 0 
+		and (not p.isHidden) and (not p.friendly) and p:mem(0x12C, FIELD_WORD) == 0 and p.idx ~= v.idx 
+		and v:mem(0x12C, FIELD_WORD) == 0 and (not NPC.config[p.id].powerup) and NPC.HITTABLE_MAP[p.id] then
 			Explosion.spawn(v.x + 8, v.y + 16, -841)
 			v:kill(9)
 		end
 	end
+
+	v.animationFrame = data.animation[1 + math.floor(v.ai1 / config.framespeed) % #data.animation] -- updates the animation manually
 end
 
 --Gotta return the library table!
-return sampleNPC
+return bomb

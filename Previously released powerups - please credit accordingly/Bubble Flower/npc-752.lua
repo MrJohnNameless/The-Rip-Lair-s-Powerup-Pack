@@ -59,7 +59,6 @@ npcManager.registerHarmTypes(npcID,
 		HARM_TYPE_TAIL,
 		HARM_TYPE_SPINJUMP,
 		HARM_TYPE_OFFSCREEN,
-		HARM_TYPE_SWORD
 	}, 
 	{
 		[HARM_TYPE_JUMP]=deathEffect,
@@ -69,7 +68,6 @@ npcManager.registerHarmTypes(npcID,
 		[HARM_TYPE_TAIL]=deathEffect,
 		[HARM_TYPE_SPINJUMP]=deathEffect,
 		[HARM_TYPE_OFFSCREEN]=deathEffect,
-		[HARM_TYPE_SWORD]=deathEffect,
 	}
 )
 
