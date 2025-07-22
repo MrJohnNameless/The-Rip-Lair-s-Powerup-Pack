@@ -1,10 +1,19 @@
 local npcManager = require("npcManager")
+
 local vanishShader = Shader()
 vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag"))
-local template = {}
+
+local vanishCap = {}
 local npcID = NPC_ID
 
-local templateSettings = {
+vanishCap.settings = {
+	duration = 20,
+	music = "powerfulMario.ogg",
+
+	intangibleBlocks = {115, 687, 1283, 1284, 1285, 1286, 1287, 1288, 1289, 1290, 1291, npcID --[[The custom Grate Block]]},
+}
+
+local vanishCapNPCSettings = {
 	id = npcID,
 	gfxheight = 16,
 	gfxwidth = 32,
@@ -37,12 +46,10 @@ local templateSettings = {
 
 	isinteractable = true,
 	ignorethrownnpcs = true,
-	notcointransformable = true,
-	
-	intangibleBlocks = {115, 687, 1283, 1284, 1285, 1286, 1287, 1288, 1289, 1290, 1291, npcID --[[The custom Grate Block]]},
+	notcointransformable = true
 }
 
-npcManager.setNpcSettings(templateSettings)
+npcManager.setNpcSettings(vanishCapNPCSettings)
 npcManager.registerHarmTypes(npcID,
 	{
 		HARM_TYPE_FROMBELOW,
@@ -58,13 +65,14 @@ npcManager.registerHarmTypes(npcID,
 
 local sm64_star = Misc.resolveFile("sm64_star.wav")
 
-function template.onInitAPI()
-	registerEvent(template, "onTick")
-	registerEvent(template, "onDraw")
-	registerEvent(template, "onNPCHarm")
-	registerEvent(template, "onNPCCollect")
-	registerEvent(template, "onExit")
-	registerEvent(template, "onPlayerKill")
+function vanishCap.onInitAPI()
+	registerEvent(vanishCap, "onTick")
+	registerEvent(vanishCap, "onDraw")
+	registerEvent(vanishCap, "onNPCHarm")
+	registerEvent(vanishCap, "onNPCCollect")
+	registerEvent(vanishCap, "onExit")
+	registerEvent(vanishCap, "onPlayerKill")
+
 	Cheats.register("needavanishcap",{
 		isCheat = true,
 		activateSFX = 12,
@@ -77,49 +85,50 @@ function template.onInitAPI()
 	})
 end
 
-function template.onPlayerKill(e,p)
-	if not p.data.vanishcapPowerupcapTimer then return end
-	Audio.resetMciSections()
+local function deInitDataForCap(p)
 	p.data.vanishcapPowerupcapTimer = nil
 	p.data.vanishcapPowerupstartMusic = nil
 	p.data.vanishcapisvanishcap = nil
+
 	Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = true
 end
 
-function template.onExit()
+function vanishCap.onPlayerKill(e,p)
+	if not p.data.vanishcapPowerupcapTimer then return end
+
+	Audio.resetMciSections()
+	deInitDataForCap(p)
+end
+
+function vanishCap.onExit()
 	for i,p in ipairs(Player.get()) do
-		p.data.vanishcapPowerupcapTimer = nil
-		p.data.vanishcapPowerupstartMusic = nil
-		p.data.vanishcapisvanishcap = nil
-		Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = true
+		deInitDataForCap(p)
 	end
 end
 
-local restrictMovement = false
+local restrictMovement = {}
 
-function template.onTick(p)
-	
+function vanishCap.onTick(p)
 	for i,p in ipairs(Player.get()) do
-		
 		if not p.data.vanishcapPowerupcapTimer then return end
 
 		local data = p.data
+		local config = vanishCap.settings
 		
 		if data.vanishcapPowerupcapTimer == 0 and data.vanishcapPowerupstartMusic then
 			Audio.SeizeStream(-1)
 			Audio.MusicStopFadeOut(300)
+
 			data.vanishcapPowerupstartMusic = false
 		elseif data.vanishcapPowerupcapTimer == 30 then
-			Audio.MusicOpen("powerfulMario.ogg")
+			Audio.MusicOpen(config.music)
 			Audio.MusicPlay()
-		elseif data.vanishcapPowerupcapTimer == 1150 then
+		elseif data.vanishcapPowerupcapTimer == (lunatime.toTicks(config.duration) - 100) then
 			Audio.MusicStopFadeOut(1000)
-		elseif data.vanishcapPowerupcapTimer == 1344 then
+		elseif data.vanishcapPowerupcapTimer == lunatime.toTicks(config.duration) then
 			Audio.resetMciSections()
-			p.data.vanishcapisvanishcap = nil
-			p.data.vanishcapPowerupcapTimer = nil
-			p.data.vanishcapPowerupstartMusic = nil
-			Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = true
+			deInitDataForCap(p)
+
 			return
 		end
 		
@@ -130,22 +139,21 @@ function template.onTick(p)
 		--Invincibility code taken from MegaDood's Invincibility Leaf
 		p:mem(0x140, FIELD_WORD, 1)
 		p:mem(0x142, FIELD_BOOL, true)
+
+		if restrictMovement[p.idx] then
+			p.keys.up = nil
+			p.keys.left = nil
+			p.keys.right = nil
+			p.keys.down = nil
+			p.keys.run = nil
+			p.keys.jump = nil
+			p.keys.altRun = nil
+			p.keys.altJump = nil
+		end
 	end
-	
-	if restrictMovement then
-		player.keys.up = nil
-		player.keys.left = nil
-		player.keys.right = nil
-		player.keys.down = nil
-		player.keys.run = nil
-		player.keys.jump = nil
-		player.keys.altRun = nil
-		player.keys.altJump = nil
-	end
-	
 end
 
-function template.onNPCHarm(token,v,harm,c)
+function vanishCap.onNPCHarm(token,v,harm,c)
 	if v.id ~= npcID then return end
 	
 	if harm ~= HARM_TYPE_TAIL and harm ~= HARM_TYPE_FROMBELOW then return end
@@ -154,38 +162,45 @@ function template.onNPCHarm(token,v,harm,c)
 	token.cancelled = true
 end
 
-function template.onNPCCollect(eventObj, v, p)
+function vanishCap.onNPCCollect(eventObj, v, p)
 	if npcID ~= v.id or v.isGenerator then return end
 	
 	SFX.play(sm64_star)
 	
 	Misc.givePoints(NPC.config[v.id].score, {x = v.x, y = v.y}, true)
 	
-	--Reset the metal cap timer if already in that state, otherwise start the whole metal cap event
+	--Reset the vanish cap timer if already in that state, otherwise start the whole vanish cap event
 	if p.data.vanishcapPowerupcapTimer and p.data.vanishcapPowerupcapTimer > 0 then
 		p.data.vanishcapPowerupcapTimer = 0
 	else
+		-- Init data values!!!
+
 		p.data.vanishcapPowerupcapTimer = 0
 		p.data.vanishcapPowerupstartMusic = true
 		p.collisionGroup = "vanishPlayer"
-		for _,block in ipairs(Block.get(templateSettings.intangibleBlocks)) do
-		block.collisionGroup = "vanishBlock"
-		Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = false
-	end
+
+		for _,block in ipairs(Block.get(vanishCap.settings.intangibleBlocks)) do
+			block.collisionGroup = "vanishBlock"
+			Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = false
+		end
 	end
 	
 end
 
-function template.onDraw(p)
+function vanishCap.onDraw(p)
 	for i,p in ipairs(Player.get()) do
+
 		local enabled = 0
 		local speed = 0
+
+		local config = vanishCap.settings
+
 		if not p.data.vanishcapPowerupcapTimer then return end
 		
 		if p.data.vanishcapPowerupcapTimer < 60 then speed = 8 else speed = 4 end
 		
-		if (p.data.vanishcapPowerupcapTimer < 60 and not p.data.vanishcapisvanishcap) or p.data.vanishcapPowerupcapTimer >= 1248 then
-			enabled = math.floor(lunatime.tick() / speed) % 2
+		if (p.data.vanishcapPowerupcapTimer < 60 and not p.data.vanishcapisvanishcap) or p.data.vanishcapPowerupcapTimer >= (lunatime.toTicks(config.duration) - 128) then
+			enabled = math.floor(p.data.vanishcapPowerupcapTimer / speed) % 2
 		else
 			enabled = 1
 			p.data.vanishcapisvanishcap = true
@@ -194,37 +209,37 @@ function template.onDraw(p)
 		--Stop the player's movement like they're transforming
 		if not p.data.vanishcapisvanishcap then
 			if speed == 8 then
-				restrictMovement = true
+				restrictMovement[p.idx] = true
 				p.speedX = 0
 			end
 		end
 		
-		if p.data.vanishcapPowerupcapTimer == 61 then restrictMovement = false end
+		if p.data.vanishcapPowerupcapTimer == 61 then restrictMovement[p.idx] = false end
 		
 		if p.frame ~= -50 then p.data.vanishcapFrame = p.frame end
 		
 		if enabled == 1 then
 			p:render{
-			frame = p.data.vanishcapFrame,
-			direction = p.direction,
-			powerup = p.powerup,
-			mount = p.mount,
-			character = p.character,
-			x = p.x,
-			y = p.y,
-			color = Color.white .. 0.5,
-			drawplayer = true,
-			ignorestate = false,
-			sceneCoords = true,
-			priority = -50,
-			shader = vanishShader,
-			uniforms = {
-				enabled = enabled,
-			},
+				frame = p.data.vanishcapFrame,
+				direction = p.direction,
+				powerup = p.powerup,
+				mount = p.mount,
+				character = p.character,
+				x = p.x,
+				y = p.y,
+				color = Color.white .. 0.5,
+				drawplayer = true,
+				ignorestate = false,
+				sceneCoords = true,
+				priority = -50,
+				shader = vanishShader,
+				uniforms = {
+					enabled = enabled,
+				},
 			}
 			p.frame = -50
 		end
 	end
 end
 
-return template
+return vanishCap
