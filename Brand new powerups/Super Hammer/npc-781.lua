@@ -1,8 +1,8 @@
-
 --NPCManager is required for setting basic NPC properties
 local npcManager = require("npcManager")
 local utils = require("npcs/npcutils")
 local vectr = require("vectr")
+
 --Create the library table
 local crate = {}
 --NPC_ID is dynamic based on the name of the library file
@@ -182,6 +182,7 @@ function crate.onTickEndNPC(v)
 		local buoyancyAmount = 1.25 * multiplier * Defines.npc_grav
 		velocity.y = math.max(velocity.y - buoyancyAmount, -0.5)
 		v.speedY = math.max(v.speedY - buoyancyAmount, -3.5)
+		v.isProjectile = false
 	end
 	
 	local p = utils.getNearestPlayer(v)
