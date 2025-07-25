@@ -40,6 +40,7 @@ catSuit.basePowerup = PLAYER_FIREFLOWER
 catSuit.cheats = {"needaluckybell","needaluckycatsuit"}
 catSuit.settings = { 
 	swipeSFX = Misc.resolveSoundFile("powerups/catsuit_swipe.ogg"), -- what is the SFX played when attacking/swiping with the cat suit?
+	diveSFX = Misc.resolveSoundFile("sound/character/ub_lunge.wav"), -- what is the SFX played when diving with the cat suit?
 	catStatueSFX = Misc.resolveSoundFile("powerups/cat_statue.wav"),
 	canDive = true, -- is the player able to dive while using the cat suit? (true by default)
 	canSlide = true, -- is the player able to slide while using the cat suit? (true by default)
@@ -351,9 +352,10 @@ function catSuit.onTickPowerup(p)
 		end
 	end
 		
-	if unOccupied(p) and p.keys.run == KEYS_PRESSED and data.state == STATE_NORMAL then
+	if unOccupied(p) and (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and data.state == STATE_NORMAL then
 		-- initiates sliding
-		if settings.canSlide and not onSand(p) and (p:mem(0x12E, FIELD_BOOL) or p.keys.down) and not p:mem(0x36,FIELD_BOOL) and p:mem(0x176,FIELD_WORD) == 0 then
+		if settings.canSlide and not onSand(p) and (p:mem(0x12E, FIELD_BOOL) or p.keys.down) 
+		and p.rawKeys.altJump ~= KEYS_DOWN and not p:mem(0x36,FIELD_BOOL) and p:mem(0x176,FIELD_WORD) == 0 then
 			p.speedX = 8 * p.direction
 			p.keys.run = KEYS_UP
 			p.keys.altRun = KEYS_UP
@@ -361,8 +363,18 @@ function catSuit.onTickPowerup(p)
 			data.state = STATE_SLIDE
 			data.slideDirection = p.direction
 			data.hitSomething = false
+			handleSwiping(
+				p, -- player
+				p.x, -- left
+				p.x + p.width, -- right
+				p.y - 2, -- top 
+				p.y + p.height + 4 + math.max(p.speedY,0), -- bottom
+				12 + math.abs(p.speedX), -- hitbox width
+				true -- allows comboing
+			)
 			SFX.play(catSuit.settings.swipeSFX) 
 			Effect.spawn(10,p)
+
 		-- initiates swiping
 		elseif ((p:mem(0x176,FIELD_WORD) == 0 and not onSand(p)) or not p.keys.down) then
 			p:setFrame(swipeAnim[1])
@@ -414,66 +426,23 @@ function catSuit.onTickPowerup(p)
 	-- prevents the rest of the code below from activating when not doing any action
 	if data.state == STATE_NORMAL then 
 		data.wallJumpLeeway = math.max(data.wallJumpLeeway - 1, 0)
+		data.diveCombo = 0
 		data.swipeTimer = 0
 		data.wallTimer = 0
 		data.statueTimer = 0
-		data.statueHeldTimer = 0
 		p:mem(0x154,FIELD_WORD,math.max(p:mem(0x154,FIELD_WORD), 0)) -- allows the player to hold an item again
 		return 
-	end 
+	end
 	
-	------------ SWIPE HANDLING ------------
 	if data.state == STATE_SWIPE then
 		-- prevent the player from jumping
 		p.keys.jump = KEYS_UP
 		p.keys.altJump = KEYS_UP
-		data.swipeTimer = data.swipeTimer + 1
-		-- lets the player levitate when they're able to dive
-		if data.canDive and p.speedY >= Defines.player_grav then
-			p.speedY = -Defines.player_grav + 0.01
-		end
-		if data.swipeTimer >= 6 and data.swipeTimer < 20 then
-			handleSwiping(
-				p, -- player
-				p.x, -- left
-				p.x + p.width, -- right
-				p.y, -- top 
-				p.y + p.height - 2, -- botton
-				30 -- hitbox width
-			)
-		end
-		-- handles making the swipe effect follow the player
-		data.swipeEffect.x = (p.x + p.width/2) + p.speedX
-		data.swipeEffect.y = (p.y + p.height/2) + p.speedY
-		
-		-- handles ending the swipe & transitioning to either diving or wall climbing depending on the situation
-		if data.swipeTimer >= 20 then
-			data.state = STATE_NORMAL
-			data.swipeTimer = 0
-			data.wallTimer = 0
-			data.wallJumpLeeway = 0
-			
-			data.hitSomething = false
-			data.hittedBlocks = {}
-			data.hittedNPCs = {}
-			
-			if settings.canDive and p.keys.run == KEYS_DOWN and not isOnGround(p) and not p:mem(0x36,FIELD_BOOL) and data.canDive and not canWallClimb(p) then
-				data.state = STATE_DIVE
-				data.wallDuration = math.max(data.wallDuration,settings.wallClimbLength/2) -- makes it so you only regain a bit of your wall climb duration back & not all of it
-				p.speedX = Defines.player_runspeed * p.direction
-				SFX.play(Misc.resolveSoundFile("sound/character/ub_lunge.wav"), 0.75) 
-			else
-				p:mem(0x154,FIELD_WORD,0) -- allows the player to hold an item again
-			end
-			if not canWallClimb(p) then data.canDive = false end
-		else
-			return
-		end
+		p.keys.down = KEYS_UP
 	end
-	------------ END OF SWIPE HANDLING ------------
 	
 	------------ DIVE HANDLING ------------
-	if data.state == STATE_DIVE and p.keys.run and p.speedX ~= 0 and not isOnGround(p) then
+	if data.state == STATE_DIVE and (p.keys.run or p.keys.altRun) and p.speedX ~= 0 and not isOnGround(p) then
 		p.keys.left = KEYS_UP
 		p.keys.right = KEYS_UP
 		p.keys.down = KEYS_UP
@@ -481,17 +450,6 @@ function catSuit.onTickPowerup(p)
 		p.keys.altRun = KEYS_UP
 		p.speedX = 8 * p.direction
 		p.speedY = 8
-		p:setFrame(39)
-		data.hittedNPCs = {}
-		handleSwiping(
-			p, -- player
-			p.x, -- left
-			p.x + p.width, -- right
-			p.y, -- top 
-			p.y + p.height + 4 + math.max(p.speedY,0), -- bottom
-			16, -- hitbox width
-			true -- allows comboing
-		)
 		if lunatime.tick() % 6 == 0 then Effect.spawn(10,p) end
 	elseif data.state == STATE_DIVE then
 		p:mem(0x154,FIELD_WORD,0) -- allows the player to hold an item again
@@ -524,17 +482,9 @@ function catSuit.onTickPowerup(p)
 			local modifier = 0.05
 			if isOnGround(p) then modifier = -0.01 end
 			p.speedX = p.speedX + (modifier * p.direction) -- lessens the player's friction if not going uphill
+		else
+			p:mem(0x3A,FIELD_WORD,5)
 		end
-		p:setFrame(11)
-		handleSwiping(
-			p, -- player
-			p.x, -- left
-			p.x + p.width, -- right
-			p.y - 2, -- top 
-			p.y + p.height + 4 + math.max(p.speedY,0), -- botton
-			20 + math.abs(p.speedX), -- hitbox width
-			true -- can combo
-		)
 		if isOnGround(p) then
 			local e = spawnWallSkid(p)
 			e.x = e.x - (RNG.randomInt(1,4) * p.direction)
@@ -620,7 +570,6 @@ function catSuit.onTickPowerup(p)
 			Effect.spawn(11,p.x+(p.width/2),p.y)
 			SFX.play(14)
 		end
-		--[[]]
 	end
 	------------ END OF STATUE HANDLING ------------
 end
@@ -629,10 +578,84 @@ function catSuit.onTickEndPowerup(p)
 	if not p.data.catSuit then return end
 	
 	local data = p.data.catSuit
-
-	if data.state == STATE_SLIDE then -- needed in order to lock the player's direction while sliding
-		p.direction = data.slideDirection
+	local settings = catSuit.settings
+	
+	------------ SWIPE HANDLING ------------
+	if data.state == STATE_SWIPE then
+		data.swipeTimer = data.swipeTimer + 1
+		-- lets the player levitate when they're able to dive
+		if data.canDive and p.speedY >= Defines.player_grav and not p:isUnderwater() then
+			p.speedY = -Defines.player_grav + 0.01
+		end
+		if data.swipeTimer >= 4 and data.swipeTimer < 20 then
+			handleSwiping(
+				p, -- player
+				p.x, -- left
+				p.x + p.width, -- right
+				p.y, -- top 
+				p.y + p.height - 2, -- botton
+				30 -- hitbox width
+			)
+		end
+		-- handles making the swipe effect follow the player
+		data.swipeEffect.x = (p.x + p.width/2) + p.speedX
+		data.swipeEffect.y = (p.y + p.height/2) + p.speedY
+		
+		-- handles ending the swipe & transitioning to either diving or wall climbing depending on the situation
+		if data.swipeTimer >= 20 then
+			data.state = STATE_NORMAL
+			data.swipeTimer = 0
+			data.wallTimer = 0
+			data.wallJumpLeeway = 0
+			
+			data.hitSomething = false
+			data.hittedBlocks = {}
+			data.hittedNPCs = {}
+			
+			if settings.canDive and p.keys.run == KEYS_DOWN and not p.keys.altRun and not isOnGround(p) 
+			and not p:mem(0x36,FIELD_BOOL) and data.canDive and not canWallClimb(p) then
+				data.state = STATE_DIVE
+				data.wallDuration = math.max(data.wallDuration,settings.wallClimbLength/2) -- makes it so you only regain a bit of your wall climb duration back & not all of it
+				p.speedX = Defines.player_runspeed * p.direction
+				SFX.play(settings.diveSFX, 0.75) 
+			else
+				p:mem(0x154,FIELD_WORD,0) -- allows the player to hold an item again
+			end
+			if not canWallClimb(p) then data.canDive = false end
+		else
+			return
+		end
 	end
+	------------ END OF SWIPE HANDLING ------------
+	
+
+	if data.state == STATE_DIVE then
+		p:setFrame(39)
+		data.hittedNPCs = {}
+		handleSwiping(
+			p, -- player
+			p.x, -- left
+			p.x + p.width, -- right
+			p.y, -- top 
+			p.y + p.height + 4 + math.max(p.speedY,0), -- bottom
+			8, -- hitbox width
+			true -- allows comboing
+		)
+	end
+	
+	if data.state == STATE_SLIDE then
+		p:setFrame(11)
+		handleSwiping(
+			p, -- player
+			p.x, -- left
+			p.x + p.width, -- right
+			p.y - 2, -- top 
+			p.y + p.height + 4 + math.max(p.speedY,0), -- bottom
+			12 + math.abs(p.speedX), -- hitbox width
+			true -- allows comboing
+		)
+		p.direction = data.slideDirection
+	end	
 end
 
 function catSuit.onDrawPowerup(p)
