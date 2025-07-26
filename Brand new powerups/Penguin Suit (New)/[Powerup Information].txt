@@ -8,4 +8,9 @@ These are:
 * linux
 * dropthebabypenguin
 
-The powerup also has some configs you can apply. Simply open the file "penguinSuit.lua", using something like notepad++ or visual studio code.
+The powerup also has some configs you can apply. Simply open the file "penguinSuit.lua", using something like notepad++ or visual studio code. They are as listed:
+
+* slideMinimumSpeed - What's the minimum horizontal speed required to start sliding on a flat surface? (3.25 by default)
+* slideSpeedcap - What's the maximum horizontal speed obtainable while sliding? (11 by default)
+* slideComboTime - When sliding, how much time does the player have to hit a NPC before their slide combo resets? (130 by default)
+* animations (You should leave this one I think)

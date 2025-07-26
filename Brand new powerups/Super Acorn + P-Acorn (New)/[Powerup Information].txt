@@ -1,0 +1,29 @@
+These Powerups has various cheats you can do!
+
+These are for the Super Acorn:
+
+* needasuperacorn
+* needanacorn
+* needaacorn
+* stockupforwinter
+* flyingsquirrel
+* nutcase
+* foragefreak
+
+These are for the P-Acorn:
+
+* needapacorn
+* superflyingsquirrel
+* cheatingnut
+
+
+The powerup also has some configs you can apply. Simply open the file "acorn_AI.lua", using something like notepad++ or visual studio code. They are as listed:
+
+* glideConstant - Used to determine how quickly you fall while moving at your maximum speed. The higher it is, the faster your descent will be.
+* glideRounding - Used to determine how quickly you slow down while gliding. The higher it is, the quicker you'll snap to your gliding speed.
+* glideFloor - Used to determine the fastest speed that you can fall at, which is equal to your terminal velocity (Defines.gravity) divided by this number. The higher it is, the slower you'll drop.
+* spinJumpConstant - Used to determine how much higher spin jumps go. The higher it is, the higher you'll spin jump!
+* boostCurveX + boostCurveY - Used to determine how high you'll go when you boost up.
+* boostDuration - The duration of your boost.
+* hoverConstant - Used to determine how quickly you slow down while hovering.
+* clingTime - How long you can cling onto walls before you fall down.
