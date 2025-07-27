@@ -1,2 +1,12 @@
-Sprites by Unknown
 Powerup by DeviousQuacks23
+
+-- Full credits can be found in the AI file. --
+
+Capt. Monochrome - made the original Super Acorn powerup script which was referenced for this 
+MegaDood - ported the original script to customPowerups, and added the wall-clinging code
+		
+Shikaternia - made the sprites for Squirrel Mario 
+Gatete - featured Squirrel Luigi sprites for Gatete Mario Engine 9 which were used here 
+JR.Master - Made the glide-holding frames for Squirrel Mario & Luigi 
+
+marioBrigade2018 - Imported Squirrel Mario sprites, and made the boost frames
