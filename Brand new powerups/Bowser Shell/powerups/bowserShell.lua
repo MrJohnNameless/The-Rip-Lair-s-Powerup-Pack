@@ -148,7 +148,7 @@ end
 -- runs once when the powerup gets deactivated, passes the player
 function bowsershell.onDisable(p)
 	-- if the player's in a shell, force them to crouch to prevent the transformation from looking wonky
-	if p.data.bowsershell.isInShell then	
+	if p.data.bowsershell and p.data.bowsershell.isInShell then	
 		p.data.bowsershell.isInShell = false
 		p:mem(0x12E,FIELD_WORD,0)
 		p:mem(0x12E,FIELD_BOOL,true)
