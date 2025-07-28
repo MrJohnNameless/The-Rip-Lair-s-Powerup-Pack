@@ -107,7 +107,7 @@ function bombShroom.onTickPowerup(p)
 			local speedYMod = p.speedY * 0.1
 			local holdingUp = 0
 
-			v.speedX = (4 + p.speedX/3.5) * dir
+			v.speedX = ((NPC.config[v.id].speed + 4) + p.speedX/3.5) * dir
 			
 			-- handles shooting as link/snake/samus
 			if linkChars[p.character] then 
