@@ -138,7 +138,7 @@ end
 -- runs once when the powerup gets deactivated, passes the player
 function blueShell.onDisable(p)
 	-- if the player's in a shell, force them to crouch to prevent the transformation from looking wonky
-	if p.data.blueShell.isInShell then	
+	if p.data.blueShell and p.data.blueShell.isInShell then	
 		p.data.blueShell.isInShell = false
 		p:mem(0x12E,FIELD_WORD,0)
 		p:mem(0x12E,FIELD_BOOL,true)
