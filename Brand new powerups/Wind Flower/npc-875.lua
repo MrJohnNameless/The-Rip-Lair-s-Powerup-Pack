@@ -75,7 +75,7 @@ local windChargeSettings = {
         earthquake = 6,
         burstEffect = 875,
         effectOffset = 48,
-        burstStrength = 12,
+        burstStrength = 6,
         chargeSpeed = 12,
 }
 
