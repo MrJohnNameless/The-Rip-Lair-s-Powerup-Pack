@@ -109,6 +109,7 @@ function sampleNPC.onTickNPC(v)
 	or v.isProjectile    -- Thrown
 	or v.forcedState > 0 -- Various forced states
 	then
+		data.originY = v.y
 		return
 	end
 
