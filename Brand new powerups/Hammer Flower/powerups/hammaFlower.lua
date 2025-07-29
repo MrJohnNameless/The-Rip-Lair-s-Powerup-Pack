@@ -100,7 +100,7 @@ function hammaFlower.onTickPowerup(p)
 		tryingToShoot = true
 	end
 	-- handles spawning the projectile if the player is pressing either run button or spinjumping
-   	if (tryingToShoot and not linkChars[p.character]) or player:mem(0x14, FIELD_WORD) == 2 then
+   	if (tryingToShoot and not linkChars[p.character]) or p:mem(0x14, FIELD_WORD) == 2 then
 		
 		local dir = p.direction
 		
