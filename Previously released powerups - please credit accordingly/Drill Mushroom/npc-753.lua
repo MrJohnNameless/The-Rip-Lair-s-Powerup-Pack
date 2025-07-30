@@ -12,6 +12,7 @@ local sampleNPCSettings = {
 	id = npcID,
 	gfxheight = 32,
 	gfxwidth = 32,
+	gfxoffsety = 2,
 	width = 32,
 	height = 32,
 	frames = 3,

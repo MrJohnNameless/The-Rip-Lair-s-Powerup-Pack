@@ -22,7 +22,7 @@ local fireTanookiSettings = {
 	height = 32,
 	--Sprite offset from hitbox for adjusting hitbox anchor on sprite.
 	gfxoffsetx = 0,
-	gfxoffsety = 0,
+	gfxoffsety = 2,
 	--Frameloop-related
 	frames = 1,
 	framestyle = 0,

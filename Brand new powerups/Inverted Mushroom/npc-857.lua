@@ -17,7 +17,7 @@ local powerupSettings = {
 	height = 32,
 	
 	gfxoffsetx = 0,
-	gfxoffsety = 0,
+	gfxoffsety = 2,
 	
 	frames = 1,
 	framestyle = 0,

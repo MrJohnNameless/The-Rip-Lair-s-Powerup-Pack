@@ -395,6 +395,27 @@ end
 -----------------------
 
 function drill.onEnable(p)
+    playerData[p.idx] = {
+        animTimer = 0,
+        isDigging = false,
+        angle = 0,
+        angleLerp = 0,
+        curAngle = 0,
+        targetAngle = 0,
+        curSlope = nil,
+        digPart = Particles.Emitter(0, 0, drill.digParticle),
+        drillPart = Particles.Emitter(0, 0, drill.drillParticle),
+        collider = Colliders.Box(0, 0, 24, 20),
+        effectSpawned = false,
+        waitTimer = 0,
+        storedNPCs = {},
+        hittingBlocks = false,
+        fakeFrame = false,
+        fakePos = 0,
+        drillTimer = 0,
+        preventDigging = false,
+        lastHittingBlocks = false,
+    }
 end
 
 
@@ -411,34 +432,14 @@ function drill.onDisable(p)
 
     oldFilters = {}
     drill.stopDig(p, true)
+
+    playerData[p.idx] = nil
 end
 
 
 function drill.onTickPowerup(p)
     if not playerData[p.idx] then
-        playerData[p.idx] = {
-            animTimer = 0,
-            isDigging = false,
-            angle = 0,
-            angleLerp = 0,
-            curAngle = 0,
-            targetAngle = 0,
-            curSlope = nil,
-            digPart = Particles.Emitter(0, 0, drill.digParticle),
-            drillPart = Particles.Emitter(0, 0, drill.drillParticle),
-            collider = Colliders.Box(0, 0, 24, 20),
-            effectSpawned = false,
-            waitTimer = 0,
-            storedNPCs = {},
-            hittingBlocks = false,
-            fakeFrame = false,
-            fakePos = 0,
-            drillTimer = 0,
-            preventDigging = false,
-            lastHittingBlocks = false,
-        }
-
-        --playerData[p.idx].collider:debug(true)
+	return
     end
 
     local data = playerData[p.idx]

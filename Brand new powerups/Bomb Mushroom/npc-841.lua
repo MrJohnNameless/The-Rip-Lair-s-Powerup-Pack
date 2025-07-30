@@ -17,7 +17,7 @@ local bombSettings = {
 	height = 16,
 	--Sprite offset from hitbox for adjusting hitbox anchor on sprite.
 	gfxoffsetx = 0,
-	gfxoffsety = 0,
+	gfxoffsety = 2,
 	--Frameloop-related
 	frames = 4,
 	framestyle = 0,

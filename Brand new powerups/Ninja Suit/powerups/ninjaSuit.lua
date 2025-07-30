@@ -216,6 +216,13 @@ function ninja.onTickEndPowerup(p)
 			data.wallClingTimer = data.wallClingTimer + 1
 			p.frame = math.floor(data.wallClingTimer / 6) % 4 + 32
 		end
+
+		-- disable shooting
+   	 	if p.mount < 2 and not linkChars[p.character] then 
+        		p:mem(0x160, FIELD_WORD, 2)
+		elseif linkChars[p.character] then
+			p:mem(0x162, FIELD_WORD, 2)
+    		end
 		
 		p.speedX = 0
 		

@@ -10,6 +10,7 @@ local sampleNPCSettings = {
 	gfxwidth = 32,
 	width = 32,
 	height = 32,
+	gfxoffsety = 2,
 	speed = 0,
 	frames = 13,
 	framestyle = 0,
