@@ -166,7 +166,7 @@ function cloudFlower.onTickPowerup(p)
 	for i = #data.clouds,1,-1 do
 		local n = data.clouds[i];
 		-- replenish a cloud when touching on a floor that isn't a cloud platform OR if the replenishOnClouds settings is true
-		if ((isOnGround(p) and (not p.standingNPC or p.standingNPC.id ~= 852)) or cloudFlower.settings.replenishAnywhere) and n.canBeRemoved then 
+		if ((isOnGround(p) and (not p.standingNPC or p.standingNPC.id ~= cloudFlower.projectileID)) or cloudFlower.settings.replenishAnywhere) and n.canBeRemoved then 
 			table.remove(data.clouds, i)
 		end
 	end
