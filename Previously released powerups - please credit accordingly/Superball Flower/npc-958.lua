@@ -66,7 +66,10 @@ end
 local function getDirection(v) --get the direction for eject the ball
 	local data = v.data
 	local dir = v.data.dir
-	if player.keys.up and not v.data.firstFrame then
+
+	local p = data.owner or player
+
+	if p.keys.up and not v.data.firstFrame then
 		dir.y = -1
 	end
 	
@@ -133,8 +136,10 @@ function ball.onTickNPC(v)
 		return
 	end
 
+	local p = data.owner or player
+
 	if not data.init then
-		data.dir = vector.v2(player.direction,1)
+		data.dir = vector.v2(p.direction,1)
 		data.init = true
 	end
 
@@ -158,8 +163,8 @@ function ball.onTickNPC(v)
 		
 		if v:collide(c) then
 			if not NPC.config[c.id].iscoin then
-				c.x = player.x
-				c.y = player.y
+				c.x = p.x
+				c.y = p.y
 			else
 				remoteCC.collect(c)
 			end

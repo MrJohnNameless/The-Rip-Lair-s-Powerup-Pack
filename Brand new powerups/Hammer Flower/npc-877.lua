@@ -183,7 +183,7 @@ function hammer.onTickEndNPC(v)
 
 	for _,npc in ipairs(Colliders.getColliding{a = v, atype = Colliders.NPC, b = NPC.HITTABLE}) do
 		--Text.print("Colliding!",0,200) --debug
-		if data.maxPower == true then
+		if data.maxPower == true and not NPC.POWERUP_MAP[npc.id] then
 			v.speedX = 2 * -(v.direction)
 			v.speedY = -5
 			local oldScore = NPC.config[npc.id].score--the next 3 lines are based off MrNameless's Blue Shell Combo handling

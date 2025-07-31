@@ -224,7 +224,7 @@ function goldBall.onTickEndNPC(v)
 
 	-- check for npcs
 	for k, n in ipairs(Colliders.getColliding{a = v, b = NPC.HITTABLE, btype = Colliders.NPC}) do
-		if not npcBlacklist[n.id] and n.id ~= v.id then
+		if not npcBlacklist[n.id] and n.id ~= v.id and not NPC.POWERUP_MAP[n.id] then
 			data.explode = true
 			v:kill(HARM_TYPE_OFFSCREEN)
 			return
