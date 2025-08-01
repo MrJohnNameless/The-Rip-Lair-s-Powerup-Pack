@@ -108,10 +108,6 @@ function lifeShroom.onDraw() -- custom HUD (not multiplayer compatible)
 			image = iconImage,
 			x = 212,
 			y = 26,
-			sourceX = 0,
-			sourceY = 0,
-			sourceWidth = 16,
-			sourceHeight = 16,
 			priority = 5
 		}
 	end
