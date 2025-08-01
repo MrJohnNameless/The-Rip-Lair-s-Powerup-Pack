@@ -223,6 +223,7 @@ function bigShroom.onTickPowerup(p)
 					p.data.canBreakBlocksAsBigMario = false
 					Defines.earthquake = 3
 					if p.data.canDoSmallHop and p:mem(0x146, FIELD_WORD) == 2 then
+						p:mem(0x11C, FIELD_WORD, Defines.jumpheight)
 						p.speedY = -5
                                                 SFX.play(37)
 						p.data.canDoSmallHop = false
