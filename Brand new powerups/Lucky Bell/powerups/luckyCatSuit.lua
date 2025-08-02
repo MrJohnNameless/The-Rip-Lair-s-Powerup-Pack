@@ -347,8 +347,10 @@ function catSuit.onTickPowerup(p)
 	if unOccupied(p) and p.keys.altRun == KEYS_PRESSED and not isOnGround(p) and settings.canStatue and data.state == STATE_NORMAL then
 		data.state = STATE_STATUE
 		SFX.play(catSuit.settings.catStatueSFX)
-		for i = 0,23 do
-			Effect.spawn(80, RNG.randomInt(p.x, p.x + p.width), RNG.randomInt(p.y, p.y + p.height))
+		for i = 0,15 do
+			local e = Effect.spawn(80, RNG.randomInt(p.x, p.x + p.width), RNG.randomInt(p.y, p.y + p.height))
+			e.speedX = RNG.random(-2,2)
+			e.speedY = RNG.random(-2,2)
 		end
 	end
 		
@@ -550,8 +552,10 @@ function catSuit.onTickPowerup(p)
 		if data.statueTimer >= 384 or data.statueHeldTimer >= 48 then
 			data.state = STATE_NORMAL
 			SFX.play(catSuit.settings.catStatueSFX)
-			for i = 0,23 do
-				Effect.spawn(80, RNG.randomInt(p.x, p.x + p.width), RNG.randomInt(p.y, p.y + p.height))
+			for i = 0,15 do
+				local e = Effect.spawn(80, RNG.randomInt(p.x, p.x + p.width), RNG.randomInt(p.y, p.y + p.height))
+				e.speedX = RNG.random(-2,2)
+				e.speedY = RNG.random(-2,2)
 			end
 		end
 		
@@ -706,6 +710,13 @@ function catSuit.onDrawPowerup(p)
 		end
 	else
 		p.frame = 0
+
+		-- Flash before transforming back
+		if data.statueTimer >= 340 or data.statueHeldTimer > 0 then
+			if lunatime.tick() % 4 <= 2 and lunatime.tick() > 4 then
+				p:setFrame(-50 * p.direction) 
+			end
+		end
 	end
 	--[[
 	-- shows the player's hitbox (for debug purposes only)

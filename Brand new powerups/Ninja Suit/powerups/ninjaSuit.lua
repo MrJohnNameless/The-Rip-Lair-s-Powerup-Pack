@@ -210,11 +210,11 @@ function ninja.onTickEndPowerup(p)
 	if data.isNinjaClimbing then
 		--Frames for when climbing a wall
 		if math.abs(p.speedY) <= 0.1 then
-			p.frame = 32
+			p.frame = 37
 			data.wallClingTimer = 0
 		else
 			data.wallClingTimer = data.wallClingTimer + 1
-			p.frame = math.floor(data.wallClingTimer / 6) % 4 + 32
+			p.frame = ({37,38,47,48})[1 + math.floor(data.wallClingTimer / 6) % 4]
 		end
 
 		-- disable shooting
