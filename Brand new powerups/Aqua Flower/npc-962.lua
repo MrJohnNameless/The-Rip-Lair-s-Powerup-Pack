@@ -183,7 +183,7 @@ function bigWaterball.onTickEndNPC(v)
 	end
 
 	for k, n in ipairs(Colliders.getColliding{a = v, b = NPC.HITTABLE, btype = Colliders.NPC}) do
-		if n.id ~= npcID and n.id ~= npcID + 1 then
+		if n.id ~= npcID and n.id ~= npcID + 1 and not NPC.POWERUP_MAP[n.id] then
 			die(v, data, config)
 			n:harm(3)
 			return

@@ -179,7 +179,7 @@ function smallWaterball.onTickEndNPC(v)
 	end
 
 	for k, n in ipairs(Colliders.getColliding{a = v, b = NPC.HITTABLE, btype = Colliders.NPC}) do
-		if n.id ~= npcID and n.id ~= npcID-1 then
+		if n.id ~= npcID and n.id ~= npcID-1 and not NPC.POWERUP_MAP[n.id] then
 			v:kill(HARM_TYPE_OFFSCREEN)
 			SFX.play(72)
 			n:harm(-1)

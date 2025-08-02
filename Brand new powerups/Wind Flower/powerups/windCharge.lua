@@ -41,7 +41,7 @@ function windChargeAI.onTickEndNPC(v)
 
         -- knock back NPCs
         for _,n in ipairs(NPC.get()) do
-                if n:mem(0x12A, FIELD_WORD) > 0 and n:mem(0x138, FIELD_WORD) == 0 and v:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and n.idx ~= v.idx and v:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
+		if n.idx ~= v.idx and not n.isHidden and not n.friendly and NPC.HITTABLE_MAP[n.id] and not NPC.POWERUP_MAP[n.id] then
                         if Colliders.collide(data.hitbox,n) and Misc.canCollideWith(v, n) then
 			        n.speedX = (1.5 * cfg.burstStrength) * v.direction
 			        n.speedY = -1.25 * cfg.burstStrength			
