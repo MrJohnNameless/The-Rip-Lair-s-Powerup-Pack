@@ -8,6 +8,9 @@ local playersToRevive = SaveData.playersToRevive
 local iconImage = Graphics.loadImageResolved("lifeShroomIcon.png")
 lifeShroom.effectID = npcID
 
+lifeShroom.xPosHUD = 190
+lifeShroom.yPosHUD = 26
+
 local health
 pcall(function() health = require("customHealth") end)
 
@@ -103,11 +106,11 @@ end
 
 function lifeShroom.onDraw() -- custom HUD (not multiplayer compatible)
     	for k,p in ipairs(playersToRevive) do
-		Graphics.draw{
-			type = RTYPE_IMAGE,
-			image = iconImage,
-			x = 212,
-			y = 26,
+		Graphics.drawBox{
+			texture = iconImage,
+			x = ((camera.width / 2) - lifeShroom.xPosHUD) + (iconImage.width / 2),
+			y = lifeShroom.yPosHUD + (iconImage.height / 2),
+			centered = true,
 			priority = 5
 		}
 	end
