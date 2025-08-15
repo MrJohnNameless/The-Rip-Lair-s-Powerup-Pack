@@ -22,8 +22,8 @@ local originalSpeed = nil
 local ogMusicSpeed = nil
 local ogMusicTempo = nil
 
-local oldScore = Misc.score()
-local oldCoins = Misc.coins()
+local oldScore = 0
+local oldCoins = 0
 
 local timer = 0
 local timerSpeed = 1
@@ -71,9 +71,6 @@ function slowAndSpeed.slowDownTime()
         speedDir = -1
         timer = 750
         timerSpeed = 2
-
-	oldScore = Misc.score()
-	oldCoins = Misc.coins()
 end
 
 function slowAndSpeed.speedUpTime()
@@ -89,9 +86,6 @@ function slowAndSpeed.speedUpTime()
         speedDir = 1
         timer = 750
         timerSpeed = 0.5
-
-	oldScore = Misc.score()
-	oldCoins = Misc.coins()
 end
 
 function slowAndSpeed.resetStuff()
@@ -150,6 +144,9 @@ function slowAndSpeed.onTick()
 			addCoins(coinsDiff * 2)
 			oldCoins = Misc.coins()
 		end
+	else
+		oldScore = Misc.score()
+		oldCoins = Misc.coins()
 	end
 
 	-- Afterimages!
