@@ -75,14 +75,11 @@ local function handleJumping(p,allowSpin,forceJump,playSFX,inputCheck) -- "repla
 		Audio.sounds[33].muted = true
 		if allowSpin  -- lessens the jumpheight when spinjumping
 		and p.keys.altJump and p.mount == 0
-		and p.character ~= CHARACTER_PEACH 
-		and not linkChars[p.character] then 
-			finalHeight = jumpheights[p.character] - 10
-			p:mem(0x50,FIELD_BOOL, true)
-			if playSFX then SFX.play(33) end
-		else
-			if playSFX then SFX.play(1) end
+		and p.character ~= CHARACTER_PEACH then 
+			p.direction = -p.direction
 		end
+		p:mem(0x50, FIELD_BOOL, false)
+		if playSFX then SFX.play(1) end
 		Routine.run(function()
 			Routine.skip()
 			p:mem(0x11C,FIELD_WORD, finalHeight) -- this handles jumpheights (this trick doesn't affect springs :[ )
@@ -131,8 +128,12 @@ function froggy.onEnable(p)
 		wasSwimming = false,
 		isInAir = false,
 		swimSpeed = 0,
+
+		swimAnimTimer = 0,
+		hasStartedTimer = false,
+		runAnimTimer = 0,
 	
-		isWaterRunning = false
+		isWaterRunning = 0
 	}
 end
 
@@ -220,8 +221,6 @@ function froggy.onTickPowerup(p)
 	if not canDoActions(p) then return end
 
 	if p.character ~= 5 and p.mount == 0 then
-		p.keys.altJump = false
-		
 		local sec = Section(p.section)
 		local liquid = Liquid.getIntersecting(p.x, p.y, p.x+p.width, p.y+p.height)
 		
@@ -244,6 +243,8 @@ function froggy.onTickPowerup(p)
 		ps.hitboxDuckHeight = 32
 		
 		if (sec.isUnderwater or #liquid ~= 0) then
+			p.keys.altJump = false
+
 			if not p.data.frogOrPenguinSuitDisableWater then
 				p.speedY = p.speedY-(Defines.player_grav/10)
 				if Level.endState() == 0 then
@@ -325,6 +326,9 @@ function froggy.onTickPowerup(p)
 				end
 			end
 
+			-- No spinjumping
+			if p:mem(0x50, FIELD_BOOL) then p:mem(0x50, FIELD_BOOL, false) end
+
 			--The code that makes him hop
 			if isOnGround(p) and not p:mem(0x3C, FIELD_BOOL) and p.holdingNPC == nil and p.mount == 0 then
 				if data.isInAir then p.speedX = 0 end
@@ -385,6 +389,7 @@ function froggy.onTickPowerup(p)
 			end
 			
 			data.onWater = false
+			data.isWaterRunning = math.max(data.isWaterRunning - 1, 0)
 			
 			if p.holdingNPC ~= nil and froggy.settings.allowWaterRun then
 				-- Code by MrNameless!
@@ -395,6 +400,7 @@ function froggy.onTickPowerup(p)
 						p.speedY = -Defines.player_grav
 						data.wasGrounded = true
 						data.onWater = true
+						data.isWaterRunning = 2
 						Routine.run(function()
 							Routine.skip() -- delays jump handling check by 1 frame/tick
 							handleJumping(p,true,false,true,"tap")
@@ -404,9 +410,6 @@ function froggy.onTickPowerup(p)
 							e.xAlign = 0.5
 							e.x = (e.x - (e.width * 0.5)) - (p.width * p.direction)
 						end
-						data.isWaterRunning = true
-					else
-						data.isWaterRunning = false
 					end
 				end
 			end
@@ -453,18 +456,17 @@ function froggy.onDrawPowerup(p)
 	
 	if p.character ~= 5 and p.mount == 0 then
 		if p:mem(0x36, FIELD_BOOL) then
-			
 			--Animation stuff, thanks to Cpt. Monochrome's penguin code as a reference
 			if not p.data.frogOrPenguinSuitDisableWater then
 				if p.holdingNPC == nil then
 					if p.keys.left or p.keys.right then
-						p.frame = math.floor((lunatime.tick() / (12 / data.swimAnimIncrease)) % 3 + 41)
+						p.frame = math.floor((data.swimAnimTimer / 12) % 3 + 41)
 					elseif p.keys.up then
-						p.frame = math.floor((lunatime.tick() / (12 / data.swimAnimIncrease)) % 3 + 46)
+						p.frame = math.floor((data.swimAnimTimer / 12) % 3 + 46)
 					elseif p.keys.down then
-						p.frame = math.floor((lunatime.tick() / (12 / data.swimAnimIncrease)) % 3 + 36)
+						p.frame = math.floor((data.swimAnimTimer / 12) % 3 + 36)
 					else
-						if lunatime.tick() % 24 <= 12 then
+						if data.swimAnimTimer % 24 <= 12 then
 							p.frame = 40
 						else
 							p.frame = 44
@@ -472,20 +474,41 @@ function froggy.onDrawPowerup(p)
 					end
 				elseif p.holdingNPC ~= nil then
 					if p.keys.left or p.keys.right or p.keys.up or p.keys.down then
-						p.frame = math.floor((lunatime.tick() / (12 / data.swimAnimIncrease)) % 3 + 19)
+						p.frame = math.floor((data.swimAnimTimer / 12) % 3 + 19)
 					else
-						if lunatime.tick() % 24 <= 12 then
+						if data.swimAnimTimer % 48 <= 24 then
 							p.frame = 11
 						else
 							p.frame = 12
 						end
 					end
 				end
+
+				data.swimAnimTimer = data.swimAnimTimer + (1 * data.swimAnimIncrease) 
+
+				if p.keys.left or p.keys.right or p.keys.up or p.keys.down then
+					if not data.hasStartedTimer then
+						data.swimAnimTimer = 0
+						data.hasStartedTimer = true
+					end
+				else
+					if data.hasStartedTimer then
+						data.swimAnimTimer = 0
+						data.hasStartedTimer = false
+					end
+				end
 			end			
 		else
-			if p.holdingNPC ~= nil and not p.keys.down and (math.abs(p.speedX) >= 5.5) and (isOnGround(p) or data.isWaterRunning) then
-				p.frame = math.floor((lunatime.tick() / 2) % 3 + 16)
+			data.swimAnimTimer = 0
+			data.hasStartedTimer = false
+
+			if p.holdingNPC ~= nil and not p.keys.down and (math.abs(p.speedX) >= 5.5) and (isOnGround(p) or data.isWaterRunning > 0) then
+				p.frame = math.floor((data.runAnimTimer / 2) % 3 + 16)
+				data.runAnimTimer = data.runAnimTimer + 1
+			else
+				data.runAnimTimer = 0
 			end
+
 			if not p:mem(0x3C, FIELD_BOOL) and p.holdingNPC == nil and not p.keys.down then
 				if isOnGround(p) then
 					if data.isInAir then
