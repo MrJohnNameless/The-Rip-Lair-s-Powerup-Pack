@@ -125,7 +125,6 @@ function hammer.onTickEndNPC(v)
 		data.rotation = 0
 		data.CT = nil
 		data.hasChecked = false
-		data.hitBox = Colliders.Box(v.x - 8, v.y - 8, 48 ,48)
 		data.timer = 0
 		if config.framespeed ~= 4 then
 			data.divisor = config.framespeed
@@ -156,9 +155,6 @@ function hammer.onTickEndNPC(v)
 	v.isProjectile = false
 
 	-- Put main AI below here
-	data.hitBox.x = v.x - 8
-	data.hitBox.y = v.y - 8
-
 	if not data.hasChecked then
 		if config.canTearThruBlocks == true then
 			data.CT = true
@@ -203,7 +199,7 @@ function hammer.onTickEndNPC(v)
 		end
 	end
 
-	local list = Colliders.getColliding{a = data.hitBox, btype = Colliders.BLOCK, filter = function(other)
+	local list = Colliders.getColliding{a = v, btype = Colliders.BLOCK, filter = function(other)
 		if other.isHidden or other:mem(0x5A, FIELD_BOOL) then
 			return false
 		end
