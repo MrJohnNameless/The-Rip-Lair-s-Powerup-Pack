@@ -8,6 +8,7 @@ local hammer = {}
 --NPC_ID is dynamic based on the name of the library file
 local npcID = NPC_ID
 
+hammer.breakableBlocks = table.map{457,759}
 --Defines NPC config for our NPC. You can remove superfluous definitions.
 local hammerSettings = {
 	id = npcID,
@@ -35,10 +36,7 @@ local hammerSettings = {
 
 	--Define custom properties below
 	rotateSprite = true, --enables sprite rotation
-	newPhysics = true, --enables the new properties that I made
 	doSparkleTrail = true,-- allows a 1.3 recreation of the sparkle train
-
-	-- the configurations below will only work if newPhysics is set to true
 
 	canComboNPCs = true, --does what it says
 	canTearThruBlocks = true, --does what it says
@@ -61,8 +59,6 @@ npcManager.registerHarmTypes(npcID,
 );
 
 --Custom local definitions below
-local breakableBlocks = table.map{457,759}
-
 
 --[[************************
 Rotation code by MrDoubleA
@@ -131,6 +127,7 @@ function hammer.onTickEndNPC(v)
 		else
 			data.divisor = 4
 		end
+		data.direction = v.direction
 		data.initialized = true
 	end
 
@@ -173,8 +170,6 @@ function hammer.onTickEndNPC(v)
 		e.speedY = RNG.random() * 1 - 0.5
 	end
 
-	if config.newPhysics == false then return end -- for the insane folks who don't like the new behavior of the hammers
-
 	v.friendly = true
 
 	for _,npc in ipairs(Colliders.getColliding{a = v, atype = Colliders.NPC, b = NPC.HITTABLE}) do
@@ -207,7 +202,7 @@ function hammer.onTickEndNPC(v)
 	end}
 
 	for _,block in ipairs(list) do
-		if breakableBlocks[block.id] then
+		if hammer.breakableBlocks[block.id] then
 			--Text.print("Colliding!",0,200) --debug
 			if block.id <= 638 then
 				block:remove(true)
@@ -223,6 +218,11 @@ function hammer.onTickEndNPC(v)
 			end
 		end
 	end
+
+	v.animationFrame = npcutils.getFrameByFramestyle(v, {
+		direction = data.direction,
+		frames = config.frames
+	});
 end
 
 
