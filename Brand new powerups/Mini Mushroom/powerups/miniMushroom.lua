@@ -227,7 +227,7 @@ function miniMush.onTickPowerup(p)
 	end
 	
 	-- gives the player slower fallspeed
-	if p.speedY > Defines.player_grav and p.forcedState == 0 and p.mount ~= MOUNT_CLOWNCAR and not p:mem(0x36,FIELD_BOOL) and not p:mem(0x0C,FIELD_BOOL) then 
+	if p.speedY > Defines.player_grav and p.forcedState == 0 and p.mount == 0 and not p:mem(0x36,FIELD_BOOL) and not p:mem(0x0C,FIELD_BOOL) then 
 		local modifier = 0.8
 		if p.character == CHARACTER_LUIGI then
 			modifier = 0.7
