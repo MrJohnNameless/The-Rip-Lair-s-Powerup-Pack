@@ -1,0 +1,3 @@
+This script changes the tanooki statue behaviour to be more like in some of the modern games, such as 3D Land.
+
+Coded by mariobrigade2018!
