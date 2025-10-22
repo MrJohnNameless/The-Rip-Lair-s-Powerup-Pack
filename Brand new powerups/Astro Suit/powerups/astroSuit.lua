@@ -15,12 +15,14 @@
 	S3K Stage - made the original sprites of Peach with a ponytail which were used here (https://youtu.be/vwAQmpKEWhI)
 	David184, Qw2, Terra King - Ripped the laser firing SFX from Terraria which was used here (https://www.sounds-resource.com/pc_computer/terraria/sound/2890/)
 	
-	Version 3.5.0
+	Version 4.0.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 ]]--
 
 local cp = require("customPowerups")
+
+local jumper = require("powerups/customJumps")
 
 local astroSuit = {}
 
@@ -99,55 +101,6 @@ pcall(function() respawnRooms = require("respawnRooms") end)
 
 respawnRooms = respawnRooms or {}
 
-local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scripts
-	return (
-		p.speedY == 0 -- "on a block"
-		or p:isGroundTouching() -- on a block (fallback if the former check fails)
-		or p:mem(0x176,FIELD_WORD) ~= 0 -- on an NPC
-		or p:mem(0x48,FIELD_WORD) ~= 0 -- on a slope
-		or (p.mount == MOUNT_BOOT and p:mem(0x10C, FIELD_WORD) ~= 0) -- hopping around while wearing a boot
-	)
-end
-
-local function handleJumping(p,allowSpin,forceJump,playSFX,inputCheck) -- "replaces" the default SMBX jump with a replica that allows adjustable jumpheight
-	if p.deathTimer > 0 then return end
-	if not p.keys.jump and not p.keys.altJump then return end
-	local wasMuted1 = false
-	local wasMuted2 = false
-	local shouldJump = false
-	local holdingJump = p.keys.jump or p.keys.altJump
-	local tappingJump = p.keys.jump == KEYS_PRESSED or p.keys.altJump == KEYS_PRESSED
-	
-	if ((inputCheck == "tap" and tappingJump) or (inputCheck == "hold" and holdingJump))
-	and p.mount ~= MOUNT_CLOWNCAR
-	and p:mem(0x26,FIELD_WORD) == 0	
-	then
-		shouldJump = true
-	end
-	
-	local finalHeight = jumpheights[p.character]
-	if (p.mount ~= 0 and p.keys.altJump == KEYS_PRESSED) or ((isOnGround(p) or forceJump) and shouldJump) then
-		Audio.sounds[1].muted = true
-		Audio.sounds[33].muted = true
-		if allowSpin  -- lessens the jumpheight when spinjumping
-		and p.keys.altJump and p.mount == 0
-		and p.character ~= CHARACTER_PEACH
-		and p.character ~= CHARACTER_LINK then 
-			finalHeight = jumpheights[p.character] - 10
-			p:mem(0x50,FIELD_BOOL, true)
-			if playSFX then SFX.play(33) end
-		else
-			if playSFX then SFX.play(1) end
-		end
-		Routine.run(function()
-			Routine.skip()
-			p:mem(0x11C,FIELD_WORD, finalHeight) -- this handles jumpheights (this trick doesn't affect springs :[ )
-			Audio.sounds[1].muted = wasMuted1
-			Audio.sounds[33].muted = wasMuted2
-		end)
-	end
-end
-
 local function canPlayShootAnim(p)
     return (
         p.forcedState == 0
@@ -178,6 +131,7 @@ end
 
 -- runs once when the powerup gets activated, passes the player
 function astroSuit.onEnable(p)
+	jumper.registerPowerup(cp.getCurrentName(p),jumpheights)
 	p.data.astroSuit = {
 		animTimer = 0,
 		ownedLasers = {}
@@ -203,26 +157,9 @@ function astroSuit.onTickPowerup(p)
 		p:mem(0x162, FIELD_WORD, 5)
     end
 	
-	-- replaces the default SMBX jump with a replica that allows extended jumpheights
-	if isOnGround(p) or (not isOnGround(p) and p.mount ~= 0) then
-		handleJumping(p,true,false,true,"tap")
-	end
-	
-	if p:mem(0x50,FIELD_BOOL) or p.mount ~= 0 then
-		for _, n in NPC.iterateIntersecting(p.x, p.y+p.height, p.x+p.width, p.y+p.height+32+math.max(p.speedY,0)) do
-			if n.isValid and not n.isHidden and n.despawnTimer > 0 and NPC.config[n.id].spinjumpsafe then
-				local isColliding, isSpinjumping = Colliders.bounce(p, n)
-				if isColliding and (isSpinjumping or p.mount ~= 0) then
-					handleJumping(p,false,true,false,"hold")
-					return
-				end
-			end
-		end
-	end
-	
 	if p.mount ~= MOUNT_CLOWNCAR and p.speedY > 0 and not p.keys.down and astroSuit.settings.allowSlowfall then
 		p.speedY = math.min(p.speedY ,4.5)
-	elseif p.mount ~= MOUNT_CLOWNCAR and not isOnGround(p) and p.keys.down and astroSuit.settings.allowFastfall then
+	elseif p.mount ~= MOUNT_CLOWNCAR and not jumper.isOnGround(p) and p.keys.down and astroSuit.settings.allowFastfall then
 		p.speedY = math.min(p.speedY + 0.4,Defines.gravity)
 	end
 	
@@ -276,35 +213,6 @@ function astroSuit.onTickEndPowerup(p)
     if data.animTimer > 0 and canPlay and curFrame then
         p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
     end
-end
-
--- the following chunks of code all refreshes the player's jump replica
-function astroSuit.onNPCHarm(token,v,harm,c)
-	if not c or type(c) ~= "Player" then return end
-	if harm ~= 1 or harm ~= 8 then return end
-	if cp.getCurrentPowerup(c) ~= astroSuit or not c.data.astroSuit then return end 	
-	handleJumping(c,false,true,false,"hold")
-end
-
--- check if a player was right above the NPC whenever it was transformed
-function astroSuit.onNPCTransform(v,oldID,harm)
-	if harm ~= 1 or harm ~= 8 then return end
-	for _,p in ipairs(Player.getIntersecting(v.x - 2,v.y - 4,v.x + v.width + 2,v.y + v.height)) do 
-		if cp.getCurrentPowerup(p) == astroSuit and p.data.astroSuit then
-			-- refreshes the player's jump replica
-			handleJumping(p,false,true,false,"hold")
-		end
-	end
-end
-
--- check if a player was right above the noteblock whenever it was hit from above
-function astroSuit.onBlockHit(token,v,above,p)
-	if v.id ~= 55 or not above then return end
-	for _,p in ipairs(Player.getIntersecting(v.x,v.y - 4,v.x + v.width,v.y + v.height)) do  -- refreshes the player's jump replica after hitting a note block
-		if cp.getCurrentPowerup(p) == astroSuit and p.data.astroSuit then
-			handleJumping(p,false,true,true,"hold")
-		end
-	end
 end
 
 function astroSuit.onNPCKill(token,v,harm,c)

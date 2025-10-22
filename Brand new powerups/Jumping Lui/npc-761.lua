@@ -65,7 +65,6 @@ function jumper.onTickNPC(v)
 	--If despawned
 	if v.despawnTimer <= 0 or v.forcedState ~= 0 or v.heldIndex ~= 0 then return end
 	
-	
 	if v.collidesBlockBottom and not v.dontMove then 
 		v.speedY = -9
 	end

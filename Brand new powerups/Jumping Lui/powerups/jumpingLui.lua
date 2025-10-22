@@ -17,17 +17,19 @@
 	Horikwawa Otane - Made classexpander.lua, which chunks of code from that were used here to draw afterimages of mounts.
 	Emral - Made the original afterimages.lua which this script uses a modified version of in order to be accurate to Mario Forever (https://www.smbxgame.com/forums/viewtopic.php?t=25809)
 	
-	Version 2.0.0
+	Version 3.0.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 ]]--
 
 local cp = require("customPowerups")
 
+local jumper = require("powerups/customJumps")
+
 local jumpingLui = {}
 
 jumpingLui.settings = {
-	rngJumpheight = false, -- should the jumpheight be random? (false by default)
+	rngJumpheight = false, -- should the jumpheight be random? (false by default) 
 	allowAfterImages = true, -- should the player be allowed to emit after images when in midair? (true by default)
 	afterImagePriority = -26, -- (requires Emral's afterimages.lua) what priority should the after images be drawn on? (26 by default)
 }
@@ -78,62 +80,11 @@ local smb2Chars = table.map{3,4,6,9,10,11,16}
 local linkChars = table.map{5,12,16}
 
 -- jump heights for mario, luigi, peach, toad, link, ""megaman"", & wario respectively
-local jumpheights = {40,45,40,35,40,nil,40}
+local jumpheights = {40,45,40,35,40}
 
 -- calls in a modified version Emral's afterimages if it's in the same level folder as this script (https://www.smbxgame.com/forums/viewtopic.php?t=25809)
 local afterimages
-pcall(function() afterimages = require("afterimages_jumpingLui") end)
-
-local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scripts
-	return (
-		p.speedY == 0 -- "on a block"
-		or p:isGroundTouching() -- on a block (fallback if the former check fails)
-		or p:mem(0x176,FIELD_WORD) ~= 0 -- on an NPC
-		or p:mem(0x48,FIELD_WORD) ~= 0 -- on a slope
-		or (p.mount == MOUNT_BOOT and p:mem(0x10C, FIELD_WORD) ~= 0) -- hopping around while wearing a boot
-	)
-end
-
-local function handleJumping(p,allowSpin,forceJump,playSFX,inputCheck) -- "replaces" the default SMBX jump with a replica that allows adjustable jumpheight
-	if p.deathTimer > 0 then return end
-	if not p.keys.jump and not p.keys.altJump then return end
-	
-	local wasMuted1 = Audio.sounds[1].muted
-	local wasMuted2 = Audio.sounds[33].muted
-	
-	local shouldJump = false
-	local holdingJump = p.keys.jump or p.keys.altJump
-	local tappingJump = p.keys.jump == KEYS_PRESSED or p.keys.altJump == KEYS_PRESSED
-
-	if ((inputCheck == "tap" and tappingJump) or (inputCheck == "hold" and holdingJump))
-	and p.mount ~= MOUNT_CLOWNCAR
-	and p:mem(0x26,FIELD_WORD) == 0	
-	then
-		shouldJump = true
-	end
-	
-	local finalHeight = jumpheights[p.character]
-	if (p.mount ~= 0 and p.keys.altJump == KEYS_PRESSED) or ((isOnGround(p) or forceJump) and shouldJump) then
-		Audio.sounds[1].muted = true
-		Audio.sounds[33].muted = true
-		if allowSpin  -- lessens the jumpheight when spinjumping
-		and p.keys.altJump and p.mount == 0
-		and p.character ~= CHARACTER_PEACH 
-		and not linkChars[p.character] then 
-			finalHeight = jumpheights[p.character] - 10
-			p:mem(0x50,FIELD_BOOL, true)
-			if playSFX then SFX.play(33) end
-		else
-			if playSFX then SFX.play(1) end
-		end
-		Routine.run(function()
-			Routine.skip()
-			p:mem(0x11C,FIELD_WORD, finalHeight) -- this handles jumpheights (this trick doesn't affect springs :[ )
-			Audio.sounds[1].muted = wasMuted1
-			Audio.sounds[33].muted = wasMuted2
-		end)
-	end
-end
+pcall(function() afterimages = require("powerups/afterimages_jumpingLui") end)
 
 -- adds an after image to whatever mount the player's riding (excluding the clown car lol)
 local function drawMount(self, x, y, color, width, height, frame, img, sceneCoords, priority,lifetime)
@@ -153,17 +104,12 @@ local function drawMount(self, x, y, color, width, height, frame, img, sceneCoor
 	}
 end
 
-function jumpingLui.onInitAPI()
-	registerEvent(jumpingLui, "onNPCHarm")
-	registerEvent(jumpingLui, "onNPCTransform")
-	registerEvent(jumpingLui, "onBlockHit")
-end
-
 -- runs once when the powerup gets activated, passes the player
 function jumpingLui.onEnable(p)
-
+	jumper.registerPowerup(cp.getCurrentName(p),jumpheights)
 	p.data.jumpingLui = {
 		luiTimer = 0,
+		wasGrounded = false,
 	}
 end
 
@@ -182,31 +128,26 @@ function jumpingLui.onTickPowerup(p)
 		p:mem(0x162, FIELD_WORD, 2)
     end
 	
-	if p.forcedState ~= 0 then return end
 	local data = p.data.jumpingLui
 	
-	data.luiTimer = data.luiTimer + 1
+	if jumpingLui.settings.rngJumpheight then 
+		local requiredHeight = jumpheights[p.character] or jumpheights[1]
+		if jumper.isOnGround(p) then
+			data.wasGrounded = true
+		elseif data.wasGrounded and p:mem(0x11C,FIELD_WORD) >= requiredHeight - 5 then
+			p:mem(0x11C,FIELD_WORD,p:mem(0x11C,FIELD_WORD) - RNG.randomInt(0,10)) -- handles randomizing jumpheight
+			data.wasGrounded = false
+		end
+	end
 	
-	if p:mem(0x11C,FIELD_WORD) <= 0 and p.forcedState == 0 and not p:mem(0x36,FIELD_BOOL) 
+	if p.forcedState ~= 0 then return end
+	
+	if p:mem(0x11C,FIELD_WORD) <= 0 and not p:mem(0x36,FIELD_BOOL) 
 	and not p:mem(0x0C,FIELD_BOOL) and p.speedY < 0 then
 		p.speedY = p.speedY + 0.125
 	end
 	
-	-- replaces the default SMBX jump with a replica that allows extended jumpheights
-	if isOnGround(p) or (not isOnGround(p) and p.mount ~= 0) then
-		handleJumping(p,true,false,true,"tap")
-	end
-
-	if not p:mem(0x50,FIELD_BOOL) and p.mount == 0 then return end
-	for _, n in NPC.iterateIntersecting(p.x, p.y+p.height, p.x+p.width, p.y+p.height+32+math.max(p.speedY,0)) do
-		if n.isValid and not n.isHidden and n.despawnTimer > 0 and NPC.config[n.id].spinjumpsafe then
-			local isColliding, isSpinjumping = Colliders.bounce(p, n)
-			if isColliding and (isSpinjumping or p.mount ~= 0) then
-				handleJumping(p,false,true,false,"hold")
-				return
-			end
-		end
-	end
+	data.luiTimer = data.luiTimer + 1
 end
 
 -- runs when the powerup is active, passes the player
@@ -214,7 +155,7 @@ function jumpingLui.onDrawPowerup(p)
 	if Misc.isPaused() then return end
 	if not p.data.jumpingLui then return end -- check if the powerup is currenly active
 	if p.forcedState ~= 0 then return end
-	if isOnGround(p) then return end
+	if jumper.isOnGround(p) then return end
 	
 	local data = p.data.jumpingLui
 	
@@ -270,42 +211,13 @@ function jumpingLui.onDrawPowerup(p)
 	end
 	
 	-- draws an afterimage of the player's held NPC
-	if p.holdingNPC then
+	if p.holdingNPC and p.holdingNPC.isValid and p.holdingNPC.id > 0 then
 		afterimages.create(p.holdingNPC, 32, Color.black .. 1, false, -30 - 0.1)
 	end
 
 	-- draws an afterimage of the player themselves
 	if not (p:mem(0x12E,FIELD_BOOL) and p.mount == MOUNT_BOOT) then 
 		afterimages.create(p, 32, Color.black .. 1, false, jumpingLui.settings.afterImagePriority -.1) 
-	end
-end
-
--- the following chunks of code all refreshes the player's jump replica
-
-function jumpingLui.onNPCHarm(token,v,harm,c)
-	if not c or type(c) ~= "Player" then return end
-	if harm ~= 1 and harm ~= 8 then return end
-	if cp.getCurrentPowerup(c) ~= jumpingLui or not c.data.jumpingLui then return end 	
-	handleJumping(c,false,true,false,"hold")
-end
-
--- check if a player was right above the NPC whenever it was transformed by a jump/sword harmtype
-function jumpingLui.onNPCTransform(v,oldID,harm)
-	if harm ~= 1 and harm ~= 8 then return end
-	for _,p in ipairs(Player.getIntersecting(v.x - 2,v.y - 4,v.x + v.width + 2,v.y + v.height)) do 
-		if cp.getCurrentPowerup(p) == jumpingLui and p.data.jumpingLui then
-			handleJumping(p,false,true,false,"hold")
-		end
-	end
-end
-
--- check if a player was right above a noteblock whenever it was hit from above
-function jumpingLui.onBlockHit(token,v,upper,p)
-	if v.id ~= 55 or not upper then return end
-	for _,p in ipairs(Player.getIntersecting(v.x,v.y - 4,v.x + v.width,v.y + v.height)) do
-		if cp.getCurrentPowerup(p) == jumpingLui and p.data.jumpingLui then
-			handleJumping(p,false,true,true,"hold")
-		end
 	end
 end
 

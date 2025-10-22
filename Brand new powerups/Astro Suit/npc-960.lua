@@ -200,7 +200,8 @@ function laser.onTickEndNPC(v)
 	for i,n in NPC.iterateIntersecting(v.x,v.y-2,v.x+v.width,v.y+v.height+2) do
 		if (not n.friendly) and n.despawnTimer > 0 
 		and (not n.isGenerator) and n.heldIndex == 0 
-		and NPC.HITTABLE_MAP[n.id] and n.id ~= v.id then
+		and NPC.HITTABLE_MAP[n.id] and not NPC.config[n.id].isinteractable  
+		and n.id ~= v.id then
 			if NPC.config[n.id].nofireball then
 				n:harm(3)
 				SFX.play(3)

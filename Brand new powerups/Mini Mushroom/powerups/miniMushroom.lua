@@ -12,14 +12,14 @@
 	AwesomeZack - made the powerup NPC sprite for the mini mushroom. (https://mfgg.net/index.php?act=resdb&param=02&c=1&id=27528)
 	DeltomX3 - made the powering up SFX used when the player gets a mini mushroom.
 	
-	Version 2.0.0
+	Version 3.0.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 ]]--
 
--- TO MARIOMAN: Refer to lines 164 and 408 & try spinjumping on an enemy ingame
-
 local cp = require("customPowerups")
+
+local jumper = require("powerups/customJumps")
 
 local miniMush = {}
 
@@ -42,7 +42,7 @@ function miniMush.onInitPowerupLib()
 	}
 end
 
-miniMush.basePowerup = 1
+miniMush.basePowerup = PLAYER_SMALL
 miniMush.items = {}
 miniMush.collectSounds = {
     upgrade = Misc.resolveFile("powerups/mini-mushroom-grow.ogg"),
@@ -63,6 +63,13 @@ if Misc.inEditor() then
 	testMenu = require("engine/testmodemenu")
 end
 
+local beachKoopaIDs = {
+	[109] = 117,
+	[110] = 118,
+	[111] = 119,
+	[112] = 120,
+}
+
 -- Peach, Toad, Megaman, Klonoa, Ninja Bomberman, Rosalina, and Ultimate-Rinka respectively
 local smb2Chars = table.map{3,4,6,9,10,11,16}
 
@@ -81,58 +88,6 @@ pcall(function() aw = aw or require("aw") end)
 -- calls in Marioman2007's Ground Pound if it's in the same level folder as this script (https://www.smbxgame.com/forums/viewtopic.php?t=28456)
 local GP
 pcall(function() GP = require("GroundPound") end)
-
-
-local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scripts
-	return (
-		p.speedY == 0 -- "on a block"
-		or p:isGroundTouching() -- on a block (fallback if the former check fails)
-		or p:mem(0x176,FIELD_WORD) ~= 0 -- on an NPC
-		or p:mem(0x48,FIELD_WORD) ~= 0 -- on a slope
-		or (p.mount == MOUNT_BOOT and p:mem(0x10C, FIELD_WORD) ~= 0) -- hopping around while wearing a boot
-	)
-end
-
-local function handleJumping(p,allowSpin,forceJump,playSFX,inputCheck) -- "replaces" the default SMBX jump with a replica that allows adjustable jumpheight
-	if p.deathTimer > 0 then return end
-	if not p.keys.jump and not p.keys.altJump then return end
-	
-	local wasMuted1 = Audio.sounds[1].muted
-	local wasMuted2 = Audio.sounds[33].muted
-	
-	local shouldJump = false
-	local holdingJump = p.keys.jump or p.keys.altJump
-	local tappingJump = p.keys.jump == KEYS_PRESSED or p.keys.altJump == KEYS_PRESSED
-	
-	if ((inputCheck == "tap" and tappingJump) or (inputCheck == "hold" and holdingJump))
-	and p.mount ~= MOUNT_CLOWNCAR
-	and p:mem(0x26,FIELD_WORD) == 0	
-	then
-		shouldJump = true
-	end
-	
-	local finalHeight = jumpheights[p.character]
-	if (p.mount ~= 0 and p.keys.altJump == KEYS_PRESSED) or ((isOnGround(p) or forceJump) and shouldJump) then
-		Audio.sounds[1].muted = true
-		Audio.sounds[33].muted = true
-		if allowSpin  -- lessens the jumpheight when spinjumping
-		and p.keys.altJump and p.mount == 0
-		and p.character ~= CHARACTER_PEACH 
-		and p.character ~= CHARACTER_LINK then
-			finalHeight = jumpheights[p.character] - 10
-			p:mem(0x50,FIELD_BOOL, true)
-			if playSFX then SFX.play(33) end
-		else
-			if playSFX then SFX.play(1) end
-		end
-		Routine.run(function()
-			Routine.skip()
-			p:mem(0x11C,FIELD_WORD, finalHeight) -- this handles jumpheights (this trick doesn't affect springs :[ )
-			Audio.sounds[1].muted = wasMuted1
-			Audio.sounds[33].muted = wasMuted2
-		end)
-	end
-end
 
 local function notTouchingBounds(p)
 	local section = Section(p.section)
@@ -168,6 +123,7 @@ end
 
 -- runs once when the powerup gets activated, passes the player
 function miniMush.onEnable(p)
+	jumper.registerPowerup(cp.getCurrentName(p),jumpheights)
 	p.keys.run = KEYS_UP
 	p.keys.altRun = KEYS_UP
 	Defines.player_grabSideEnabled = false -- prevents the player from holding items
@@ -227,29 +183,13 @@ function miniMush.onTickPowerup(p)
 	end
 	
 	-- gives the player slower fallspeed
-	if p.speedY > Defines.player_grav and p.forcedState == 0 and p.mount == 0 and not p:mem(0x36,FIELD_BOOL) and not p:mem(0x0C,FIELD_BOOL) then 
+	if p.speedY > 0 and p.forcedState == 0 and p.mount == 0
+	and not p:mem(0x36,FIELD_BOOL) and not p:mem(0x0C,FIELD_BOOL) then 
 		local modifier = 0.8
 		if p.character == CHARACTER_LUIGI then
 			modifier = 0.7
 		end
 		p.speedY = math.max(p.speedY - Defines.player_grav * modifier, Defines.player_grav)
-	end
-	
-	-- replaces the default SMBX jump with a replica that allows extended jumpheights
-	if isOnGround(p) or (not isOnGround(p) and p.mount ~= 0) then
-		handleJumping(p,true,false,true,"tap")
-	end
-
-	if not p:mem(0x50,FIELD_BOOL) and p.mount == 0 then return end
-	
-	for _, n in NPC.iterateIntersecting(p.x, p.y+p.height, p.x+p.width, p.y+p.height+32+math.max(p.speedY,0)) do
-		if n.isValid and not n.isHidden and n.despawnTimer > 0 and NPC.config[n.id].spinjumpsafe then
-			local isColliding, isSpinjumping = Colliders.bounce(p, n)
-			if isColliding and (isSpinjumping or p.mount ~= 0) then
-				handleJumping(p,false,true,false,"hold")
-				return
-			end
-		end
 	end
 end
 
@@ -419,8 +359,6 @@ function miniMush.onNPCHarm(token,v,harm,c)
 		token.cancelled = true
 		SFX.play(2)
 	end
-	
-	handleJumping(c,false,true,false,"hold")
 end
 
 -- check if a player was right above the NPC whenever it was transformed by a jump/sword harmtype
@@ -431,21 +369,22 @@ function miniMush.onNPCTransform(v,oldID,harm)
 			-- attempts to """cancel""" the npc from changing into it's new id
 			if not miniMush.settings.whitelistedNPCs[v.id] then
 				Routine.run(function()	-- nameless's notes: making a method of "cancelling" a transformation was utter HELL I HATED MAKING THIS SO MUCH
-					local lastConfig = NPC.config[oldID]
-					local oldScore = NPC.config[v.id].score
 					v.dontMove = v:mem(0x4A, FIELD_BOOL) -- prevents the npc from losing their dontMove property
-					p:mem(0x56, FIELD_WORD, 0) -- prevents the player from gaining score
+					local oldScore = NPC.config[v.id].score
 					NPC.config[v.id].score = 0
-					if v.height < lastConfig.height then v.y = v.y - 4 end --			--v.y = (v.y + v.height) - (lastConfig.height - v.height) end
-					v.id = oldID
-					v.width = lastConfig.width
-					v.height = lastConfig.height
+					p:mem(0x56, FIELD_WORD, 0) -- prevents the player from gaining score
 					Routine.skip() -- delays the intersect check & score reverting by 1 frame/tick
+					v.x = v.x + v.width
+					v.y = v.y + v.height
+					v:transform(oldID,false)
+					v.x = v.x - v.width
+					v.y = v.y - v.height
 					local intersect = NPC.getIntersecting(v.x - 2,v.y - 2,v.x + v.width + 2,v.y + v.height + 2)
 					for i,n in ipairs(intersect) do 
-						if n.isValid and not n.isHidden and n ~= v and i == #intersect then
-							n:kill(9) -- deals with SMW koopa shells & killing the beach koopa spawned by it's shell
-							break
+						if i == #intersect then
+							if n.isValid and not n.isHidden and n.id == beachKoopaIDs[v.id] then
+								n:kill(9) -- deals with SMW koopa shells & killing the beach koopa spawned by it's shell
+							end
 						end
 					end
 					local effects = Effect.getIntersecting(v.x - 2,v.y - 2,v.x + v.width + 2,v.y + v.height + 2) 
@@ -458,12 +397,9 @@ function miniMush.onNPCTransform(v,oldID,harm)
 					NPC.config[v.id].score = oldScore -- gives the npc id back it's original score
 				end)
 			end
-			-- refreshes the player's jump replica
-			handleJumping(p,false,true,false,"hold")
 		end
 	end
 end
-
 
 function miniMush.onBlockHit(token,v,above,p)
 	-- this code however stops the player from wall running upon hitting a block above them
@@ -472,13 +408,6 @@ function miniMush.onBlockHit(token,v,above,p)
 			p.keys.left = KEYS_UP
 			p.keys.right = KEYS_UP
 			p.data.miniMushroom.isWallRunning = false
-		end
-	end
-	-- check if a player was right above the noteblock whenever it was hit from above
-	if v.id ~= 55 or not above then return end
-	for _,p in ipairs(Player.getIntersecting(v.x,v.y - 4,v.x + v.width,v.y + v.height)) do  -- refreshes the player's jump replica after hitting a note block
-		if cp.getCurrentPowerup(p) == miniMush and p.data.miniMushroom and (p.keys.jump or p.keys.altJump) then 
-			handleJumping(p,false,true,true,"hold")
 		end
 	end
 end
