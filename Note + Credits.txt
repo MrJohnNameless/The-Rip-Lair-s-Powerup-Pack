@@ -11,4 +11,4 @@ Thanks to Emral as well, for without his original powerup script this would not 
 
 Thanks to DisasterMaster for converting and organising so many of the powerups in this pack from older packs!
 
-Also, a special thanks to SleepyVA, as he made most of the sprites to the player spritesheets. So please check the folders to see who sprited what.
+Also, a special thanks to Sleepy Dee, as he made most of the sprites to the player spritesheets. So please check the folders to see who sprited what.
