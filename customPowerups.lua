@@ -1,5 +1,5 @@
 --[[
-    By Marioman2007 [v1.3] (unreleased LATEST)
+    By Marioman2007 [v1.3.1] (unreleased LATEST)
     uses code from anotherpowerup.lua by Emral
 ]]
 
@@ -38,19 +38,19 @@ local transformations = {}
 local apFields = {"apSounds", "onTick", "onTickEnd", "onDraw"}
 local apFieldsReplacement = {"collectSounds", "onTickPowerup", "onTickEndPowerup", "onDrawPowerup"}
 
-local testModeMenu
-if Misc.inEditor() and not isOverworld then
-    testModeMenu = require("engine/testmodemenu")
-end
-
 local apdl
 local GP
 local respawnRooms
+local testModeMenu
 
 if not isOverworld then
     pcall(function() apdl = require("anotherPowerDownLibrary") end)
     pcall(function() GP = require("GroundPound") end)
     pcall(function() respawnRooms = require("respawnRooms") end)
+end
+
+if Misc.inEditor() and not isOverworld then
+    testModeMenu = require("engine/testmodemenu")
 end
 
 respawnRooms = respawnRooms or {respawnSettings = {respawnPowerup = 1}}
@@ -151,7 +151,9 @@ local function getPowerupFile(lib, tableName, character, defaultFile)
 end
 
 local function loadAssets(lib, p)
-    if not lib then return end
+    if not lib then
+        return
+    end
 
     Misc.loadCharacterHitBoxes(p.character, lib.basePowerup, getPowerupFile(
         lib, "iniFiles", p.character, pm.getHitboxPath(p.character, lib.basePowerup)
@@ -277,7 +279,9 @@ local function fixHitboxOnMap(p)
 end
 
 local function dropItem(id)
-    if isOverworld or not id then return end
+    if isOverworld or not id then
+        return
+    end
 
     if Graphics.getHUDType(player.character) == Graphics.HUD_ITEMBOX then
         player.reservePowerup = id
@@ -308,6 +312,22 @@ local function initData(p)
     }
 
     savedata[p.idx] = savedata[p.idx] or {}
+end
+
+local function getPowerupReplacement(character, powerName)
+    if not powerName then
+        return nil
+    end
+
+    local replacement = blacklistedChars[character] or {}
+
+    if type(replacement) == "string" then
+        return replacement
+    elseif replacement[powerName] ~= nil then
+        return replacement[powerName]
+    end
+
+    return nil
 end
 
 
@@ -495,16 +515,15 @@ function cp.setPowerup(name, p, noEffects)
     end
 
     local data = playerData[p.idx]
-    local replacement = blacklistedChars[p.character] or {}
-    
-    -- check if the player is blacklisted
-    if type(replacement) == "string" then
+    local replacement = getPowerupReplacement(p.character, name)
+
+    if replacement ~= nil then
         name = replacement
-    elseif replacement[name] then
-        name = replacement[name]
     end
 
-    if not data or name == "__none__" then return end
+    if not data or name == "__none__" then
+        return
+    end
 
     local lib = powerMap[name]
     local currentPowerup = data.currentPowerup
@@ -698,11 +717,13 @@ end
 
 
 -----------------------
--- Library Functions --
+-- Local Functions --
 -----------------------
 
 local function handleChanges(p, data, currentPowerup)
-    if data.checkedThisFrame then return end
+    if data.checkedThisFrame then
+        return
+    end
 
     if p.isMega and currentPowerup then
         cp.setPowerup(2, p, true)
@@ -756,6 +777,12 @@ local function exitForcedState(p, data)
 end
 
 
+-- REMOVE AT YOUR OWN RISK
+for char = 11, 16 do
+    cp.blacklistCharacter(char)
+end
+
+
 -----------------------
 -- Library Functions --
 -----------------------
@@ -798,7 +825,9 @@ end
 function cp.onBlockHit(e, v, upper, p)
     local nextID = transformations[v.contentID - 1000]
     
-    if e.cancelled or not nextID or v.data._custom_alreadyCancelled then return end
+    if e.cancelled or not nextID or v.data._custom_alreadyCancelled then
+        return
+    end
 
     if not p then
         for _, n in NPC.iterateIntersecting(v.x - 1, v.y - 1, v.x + v.width + 1, v.y + v.height + 1) do
@@ -819,6 +848,7 @@ function cp.onBlockHit(e, v, upper, p)
         e.cancelled = true
 	end
 end
+
 
 -- carry powerups between levels
 function cp.onStart()
@@ -1033,9 +1063,13 @@ function cp.onNPCCollect(e, v, p)
         return
     end
 
+    -- handle replacements
+    if getPowerupReplacement(p.character, powerName) == "__none__" then
+        return
+    end
+
     -- a powerup doesn't want to go to the basegame
     if powerName and cp.getPowerupByName(powerName).dontGoToReserve then
-
         cp.setPowerup(powerName, p)
 
         if p:mem(0x46, FIELD_WORD) > 0 then
