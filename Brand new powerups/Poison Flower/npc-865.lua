@@ -196,7 +196,7 @@ function bubble.onTickEndNPC(v)
 	for _,n in NPC.iterateIntersecting(v.x + v.speedX - 4, v.y + v.speedY, v.x + v.width + v.speedX + 4, v.y + v.height + v.speedY) do
 		if n.despawnTimer > 0 and (not n.isHidden)
 		and n.forcedState == 0 and (not n.friendly) 
-		and n.heldIndex == 0 and n.idx ~= v.idx then
+		and n.heldIndex == 0 and n.idx ~= v.idx and n.isValid then
 			if NPC.COIN_MAP[n.id] or NPC.POWERUP_MAP[n.id] or n.id == 310 and v.heldIndex == 0 then
 				n:collect(p)
 			elseif NPC.HITTABLE_MAP[n.id] then
