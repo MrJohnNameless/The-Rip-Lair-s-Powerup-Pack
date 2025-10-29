@@ -154,7 +154,7 @@ function blueShell.onTickPowerup(p)
 	local data = p.data.blueShell 
 	local settings = blueShell.settings
 	
-	if p.forcedState > 0 or p.deathTimer > 0 or p:mem(0x0C, FIELD_BOOL) then
+	if Level.endState() ~= 0 or p.forcedState > 0 or p.deathTimer > 0 or p:mem(0x0C, FIELD_BOOL) then
 		data.isInShell = false
 		p:mem(0x3C,FIELD_BOOL,false)
 		p:mem(0x12E,FIELD_WORD,0)

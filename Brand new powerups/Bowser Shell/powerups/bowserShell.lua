@@ -88,7 +88,8 @@ end
 
 local function isUnoccupied(p)
     return (
-        p.forcedState == 0
+		Level.endState() == 0
+        and p.forcedState == 0
         and p.deathTimer == 0 -- not dead
         and (p.mount == 0 or p.mount == MOUNT_BOOT)
         and not p.climbing
@@ -164,7 +165,7 @@ function bowsershell.onTickPowerup(p)
 	local data = p.data.bowsershell 
 	local settings = bowsershell.settings
 	
-	if p.forcedState > 0 or p.deathTimer > 0 or p:mem(0x0C, FIELD_BOOL) then
+	if Level.endState() ~= 0 or p.forcedState > 0 or p.deathTimer > 0 or p:mem(0x0C, FIELD_BOOL) then
 		data.isInShell = false
 		data.shootTimer = 0
 		p:mem(0x3C,FIELD_BOOL,false)
