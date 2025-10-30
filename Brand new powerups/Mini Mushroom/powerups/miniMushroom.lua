@@ -278,7 +278,6 @@ function miniMush.onTickEndPowerup(p)
 				p.y = l.y - 2 - p.height
 				p.speedY = -Defines.player_grav
 				data.onWater = true
-				handleJumping(p,true,true,true,"hold")
 				if lunatime.tick() % 5 == 0 then -- spawn a water splashing effect every 3 frames
 					local e = Effect.spawn(114, (p.x + p.width*0.5), l.y) 
 					e.xAlign = 0.5
