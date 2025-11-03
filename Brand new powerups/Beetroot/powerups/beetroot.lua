@@ -1,6 +1,6 @@
 
 --[[
-				beetroot.lua by MrNameless
+				beetroot.lua by John Nameless
 				
 		A customPowerups script for Beta 5 that's made to be
 	a successor to Tempest's original beetroot powerup script for Beta 3/4
@@ -29,6 +29,8 @@ function beetroot.onInitPowerupLib()
 		beetroot:registerAsset(3, "peach-beetroot.png"),
 		beetroot:registerAsset(4, "toad-beetroot.png"),
 		beetroot:registerAsset(5, "link-beetroot.png"),
+		false
+		beetroot:registerAsset(7, "wario-beetroot.png"),
 	}
 
 	-- needed to align the sprites relative to the player's hurtbox
@@ -38,6 +40,8 @@ function beetroot.onInitPowerupLib()
 		beetroot:registerAsset(3, "peach-beetroot.ini"),
 		beetroot:registerAsset(4, "toad-beetroot.ini"),
 		beetroot:registerAsset(5, "link-beetroot.ini"),
+		false,
+		beetroot:registerAsset(7, "wario-beetroot.png"),
 	}
 	
 	beetroot.gpImages = {
