@@ -1,3 +1,6 @@
+local cp = require("customPowerups")
+local jumper = require("powerups/customJumps")
+
 local froggy = {}
 
 local activePlayer
@@ -55,40 +58,6 @@ local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scr
 	)
 end
 
-local function handleJumping(p,allowSpin,forceJump,playSFX,inputCheck) -- "replaces" the default SMBX jump with a replica that allows adjustable jumpheight
-	if p.deathTimer > 0 then return end
-	if not p.keys.jump and not p.keys.altJump then return end
-	local shouldJump = false
-	local holdingJump = p.keys.jump or p.keys.altJump
-	local tappingJump = p.keys.jump == KEYS_PRESSED or p.keys.altJump == KEYS_PRESSED
-	
-	if ((inputCheck == "tap" and tappingJump) or (inputCheck == "hold" and holdingJump))
-	and p.mount ~= MOUNT_CLOWNCAR
-	and p:mem(0x26,FIELD_WORD) == 0	
-	then
-		shouldJump = true
-	end
-	
-	local finalHeight = jumpheights[p.character]
-	if (p.mount ~= 0 and p.keys.altJump == KEYS_PRESSED) or ((isOnGround(p) or forceJump) and shouldJump) then
-		Audio.sounds[1].muted = true
-		Audio.sounds[33].muted = true
-		if allowSpin  -- lessens the jumpheight when spinjumping
-		and p.keys.altJump and p.mount == 0
-		and p.character ~= CHARACTER_PEACH then 
-			p.direction = -p.direction
-		end
-		p:mem(0x50, FIELD_BOOL, false)
-		if playSFX then SFX.play(1) end
-		Routine.run(function()
-			Routine.skip()
-			p:mem(0x11C,FIELD_WORD, finalHeight) -- this handles jumpheights (this trick doesn't affect springs :[ )
-			Audio.sounds[1].muted = wasMuted1
-			Audio.sounds[33].muted = wasMuted2
-		end)
-	end
-end
-
 function froggy.onInitAPI()
 	registerEvent(froggy, "onNPCHarm")
 	registerEvent(froggy, "onNPCTransform")
@@ -113,8 +82,7 @@ end
 
 -- runs once when the powerup gets activated, passes the player
 function froggy.onEnable(p)
-	local wasMuted1 = Audio.sounds[1].muted
-	local wasMuted2 = Audio.sounds[33].muted
+	jumper.registerPowerup(cp.getCurrentName(p), jumpheights)
 	
 	p.data.froggy = {
 		wasGrounded = false,
@@ -318,6 +286,10 @@ function froggy.onTickPowerup(p)
 				end
 			end
 		else
+			-- No spinjumping
+			p:mem(0x50, FIELD_BOOL, false)
+			p.keys.jump = p.keys.jump or p.keys.altJump
+
 			--If exiting the water, leap out
 			if data.wasSwimming then
 				data.wasSwimming = false
@@ -325,9 +297,6 @@ function froggy.onTickPowerup(p)
 					p.speedY = p.speedY - 6
 				end
 			end
-
-			-- No spinjumping
-			if p:mem(0x50, FIELD_BOOL) then p:mem(0x50, FIELD_BOOL, false) end
 
 			--The code that makes him hop
 			if isOnGround(p) and not p:mem(0x3C, FIELD_BOOL) and p.holdingNPC == nil and p.mount == 0 then
@@ -370,24 +339,7 @@ function froggy.onTickPowerup(p)
 				data.hopTimer = 4
 				data.isInAir = true
 			end
-			
-			-- replaces the default SMBX jump with a replica that allows extended jumpheights
-			if isOnGround(p) or (not isOnGround(p) and p.mount ~= 0) then
-				handleJumping(p,true,false,true,"tap")
-			end
 
-			if p:mem(0x50,FIELD_BOOL) and p.mount ~= 0 then
-				for _, n in NPC.iterateIntersecting(p.x, p.y+p.height, p.x+p.width, p.y+p.height+32+math.max(p.speedY,0)) do
-					if n.isValid and not n.isHidden and n.despawnTimer > 0 and NPC.config[n.id].spinjumpsafe then
-						local isColliding, isSpinjumping = Colliders.bounce(p, n)
-						if isColliding and (isSpinjumping or p.mount ~= 0) then
-							handleJumping(p,false,true,false,"hold")
-							break
-						end
-					end
-				end
-			end
-			
 			data.onWater = false
 			data.isWaterRunning = math.max(data.isWaterRunning - 1, 0)
 			
@@ -395,21 +347,32 @@ function froggy.onTickPowerup(p)
 				-- Code by MrNameless!
 				for k, l in ipairs(Liquid.getIntersecting(p.x,p.y,p.x+p.width,p.y+p.height + 2 + p.speedY/2)) do 
 					-- if the player's above water & is running fast enough
-					if p.mount == 0 and p.y + p.height < l.y + 2 and not p.keys.down and (math.abs(p.speedX) >= 5.5) then -- speed check has to be 5.5 because peach has a slower max speed of 5.58 for some god forsaken reason
+					if p.mount == 0 and not p.keys.down and p.y + p.height < l.y + 2 and (math.abs(p.speedX) >= 5.5) then -- speed check has to be 5.5 because peach has a slower max speed of 5.58 for some god forsaken reason
 						p.y = l.y - 2 - p.height
 						p.speedY = -Defines.player_grav
 						data.wasGrounded = true
 						data.onWater = true
 						data.isWaterRunning = 2
-						Routine.run(function()
-							Routine.skip() -- delays jump handling check by 1 frame/tick
-							handleJumping(p,true,false,true,"tap")
-						end)
 						if lunatime.tick() % 3 == 0 then -- spawn a water splashing effect every 3 frames
 							local e = Effect.spawn(114, (p.x + p.width*0.5) + 4 + p.speedX, l.y) 
 							e.xAlign = 0.5
 							e.x = (e.x - (e.width * 0.5)) - (p.width * p.direction)
 						end
+
+						local wasMuted1
+						Routine.run(function()
+							Routine.skip() -- delays jump handling check by 1 frame/tick
+							if p.mount ~= MOUNT_CLOWNCAR and p:mem(0x26,FIELD_WORD) == 0 then
+								if p.keys.jump == KEYS_PRESSED or (p.mount == 0 and p.keys.altJump == KEYS_PRESSED) then
+									wasMuted1 = Audio.sounds[1].muted
+									Audio.sounds[1].muted = true
+									p:mem(0x11C,FIELD_WORD, 20)
+									SFX.play(1)
+									Audio.sounds[1].muted = wasMuted1
+									wasMuted1 = nil
+								end
+							end
+						end)
 					end
 				end
 			end
@@ -528,36 +491,6 @@ function froggy.onDrawPowerup(p)
 					end
 				end
 			end
-		end
-	end
-end
-
--- the following chunks of code all refreshes the player's jump replica
-
-function froggy.onNPCHarm(token,v,harm,c)
-	if not c or type(c) ~= "Player" then return end
-	if harm ~= 1 and harm ~= 8 then return end
-	if not c.data.froggy then return end 	
-	handleJumping(c,false,true,false,"hold")
-end
-
--- check if a player was right above the NPC whenever it was transformed by a jump/sword harmtype
-function froggy.onNPCTransform(v,oldID,harm)
-	if harm ~= 1 and harm ~= 8 then return end
-	for _,p in ipairs(Player.getIntersecting(v.x - 2,v.y - 4,v.x + v.width + 2,v.y + v.height)) do 
-		if p.data.froggy then
-			-- refreshes the player's jump replica
-			handleJumping(p,false,true,false,"hold")
-		end
-	end
-end
-
--- check if a player was right above the noteblock whenever it was hit from above
-function froggy.onBlockHit(token,v,upper,p)
-	if v.id ~= 55 or not upper then return end
-	for _,p in ipairs(Player.getIntersecting(v.x,v.y - 4,v.x + v.width,v.y + v.height)) do  -- refreshes the player's jump replica after hitting a note block
-		if p.data.froggy then
-			handleJumping(p,false,true,true,"hold")
 		end
 	end
 end
