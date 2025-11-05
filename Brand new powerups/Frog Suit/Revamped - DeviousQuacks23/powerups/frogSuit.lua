@@ -5,12 +5,6 @@ local froggy = {}
 
 local activePlayer
 
-local normalWalkSpeed = Defines.player_walkspeed
-local normalRunSpeed = Defines.player_runspeed
-
-local wasMuted1 = false
-local wasMuted2 = false
-
 froggy.settings = {
 	allowWaterRun = true, -- should the player be able to run on water, while holding an item?
 	waterAccelerationConstant = 1.5,
@@ -59,11 +53,7 @@ local function isOnGround(p) -- ripped straight from MrDoubleA's SMW Costume scr
 end
 
 function froggy.onInitAPI()
-	registerEvent(froggy, "onNPCHarm")
-	registerEvent(froggy, "onNPCTransform")
-	registerEvent(froggy, "onBlockHit")
-	registerEvent(froggy, "onExitLevel", "onExitLevel")
-	registerEvent(froggy, "onExit", "onExit")
+	registerEvent(froggy, "onExit")
 end
 
 function froggy.onExit()
@@ -72,12 +62,6 @@ function froggy.onExit()
 		activePlayer.hitboxDuckHeight = 32
 		activePlayer.data.keepYPositionForSuit = nil
 	end
-end
-
---Reset walk and run speed cause being in the water doubles it
-function froggy.onExitLevel(winType)
-	Defines.player_walkspeed = normalWalkSpeed
-	Defines.player_runspeed = normalRunSpeed
 end
 
 -- runs once when the powerup gets activated, passes the player
@@ -107,9 +91,6 @@ end
 
 -- runs once when the powerup gets deactivated, passes the player
 function froggy.onDisable(p)
-	Defines.player_walkspeed = normalWalkSpeed
-	Defines.player_runspeed = normalRunSpeed
-
 	p.data.keepYPositionForSuit = nil
 	p.data.froggy = nil
 	
@@ -195,14 +176,12 @@ function froggy.onTickPowerup(p)
 		--Swimming code by Cpt. Monochrome, with edits by me
 		if p:mem(0x36, FIELD_BOOL) then
 			if not data.wasSwimming then
-				Defines.player_runspeed = Defines.player_runspeed*2
-				Defines.player_walkspeed = Defines.player_walkspeed*2
 				data.wasSwimming = true
 				data.swimSpeedY = p.speedY
 			end
 			if data.swimSpeedY < -4 and not checkBlockAbove(p, p.speedY-data.swimSpeedY) then
 				p.y = p.y+(data.swimSpeedY-p.speedY)
-			elseif data.swimSpeedY > 3 and not p:isOnGround() and not checkBlockBelow(p, data.swimSpeedY-p.speedY) then
+			elseif data.swimSpeedY > 3 and not isOnGround(p) and not checkBlockBelow(p, data.swimSpeedY-p.speedY) then
 				p.y = p.y+(data.swimSpeedY-p.speedY)
 			end
 			
@@ -241,6 +220,10 @@ function froggy.onTickPowerup(p)
 					else
 						p.speedX = math.min(0, p.speedX+froggy.settings.waterDecelerationConstant)
 					end
+
+					-- Bypass the water physics limitations
+					p:mem(0x138, FIELD_FLOAT, p.speedX)
+					p.speedX = 0
 				
 					if data.wasSwimming then
 						if p.keys.up and p:mem(0x14A, FIELD_WORD) == 0 then
@@ -313,7 +296,7 @@ function froggy.onTickPowerup(p)
 					--Animation for the hop, and let the player move
 					data.hopTimer = data.hopTimer - 1
 					--If dashing, hop further
-					if (p.keys.run or p.keys.altRun) and (p.keys.left or p.keys.right) and math.abs(p.speedX) < normalRunSpeed then
+					if (p.keys.run or p.keys.altRun) and (p.keys.left or p.keys.right) and math.abs(p.speedX) < Defines.player_walkspeed then
 						if p.direction == data.runDirection then
 							p.speedX = p.speedX * 1.075
 						end
@@ -379,8 +362,6 @@ function froggy.onTickPowerup(p)
 			
 			--Make all the movement stuff work properly
 			p:mem(0x36, FIELD_BOOL, false)
-			Defines.player_walkspeed = normalWalkSpeed
-			Defines.player_runspeed = normalRunSpeed
 			data.canPlaySwimSound  = 0
 		end
 	else
