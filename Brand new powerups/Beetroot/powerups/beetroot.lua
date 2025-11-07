@@ -29,7 +29,7 @@ function beetroot.onInitPowerupLib()
 		beetroot:registerAsset(3, "peach-beetroot.png"),
 		beetroot:registerAsset(4, "toad-beetroot.png"),
 		beetroot:registerAsset(5, "link-beetroot.png"),
-		false
+		false,
 		beetroot:registerAsset(7, "wario-beetroot.png"),
 	}
 
@@ -41,7 +41,7 @@ function beetroot.onInitPowerupLib()
 		beetroot:registerAsset(4, "toad-beetroot.ini"),
 		beetroot:registerAsset(5, "link-beetroot.ini"),
 		false,
-		beetroot:registerAsset(7, "wario-beetroot.png"),
+		beetroot:registerAsset(7, "wario-beetroot.ini"),
 	}
 	
 	beetroot.gpImages = {
@@ -146,7 +146,7 @@ function beetroot.onTickPowerup(p)
 			end
 			v.x = v.x + (16 * dir)
 			v.isProjectile = true
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
+			v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/2.5
 			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
 			SFX.play(82)
 			if flamethrowerActive then
@@ -169,12 +169,12 @@ function beetroot.onTickPowerup(p)
 					v.speedY = -4
 				end
 				v.isProjectile = true
-				v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
+				v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/2.5
 				v.direction = dir
 				p:mem(0x118, FIELD_FLOAT,110)
 			end
 			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
-			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 			SFX.play(18)
 	
 			if flamethrowerActive then
