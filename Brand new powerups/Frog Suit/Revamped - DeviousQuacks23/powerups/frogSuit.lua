@@ -249,8 +249,6 @@ function froggy.onTickPowerup(p)
 					p:mem(0x38, FIELD_WORD, 2)
 					if p:mem(0x14E, FIELD_WORD) > 0 then	
 						p.keys.down = false
-					--elseif (p.keys.down == KEYS_DOWN or p.keys.down == KEYS_PRESSED) and p:isOnGround() and p.holdingNPC ~= nil and (p.keys.run == KEYS_DOWN or p.keys.altRun == KEYS_DOWN) then
-						--handleSwimCrouch(p)
 					end
 					
 					data.canPlaySwimSound  = data.canPlaySwimSound  - 1
@@ -343,19 +341,17 @@ function froggy.onTickPowerup(p)
 						end
 
 						local wasMuted1
-						Routine.run(function()
-							Routine.skip() -- delays jump handling check by 1 frame/tick
-							if p.mount ~= MOUNT_CLOWNCAR and p:mem(0x26,FIELD_WORD) == 0 then
-								if p.keys.jump == KEYS_PRESSED or (p.mount == 0 and p.keys.altJump == KEYS_PRESSED) then
-									wasMuted1 = Audio.sounds[1].muted
-									Audio.sounds[1].muted = true
-									p:mem(0x11C,FIELD_WORD, 20)
-									SFX.play(1)
-									Audio.sounds[1].muted = wasMuted1
-									wasMuted1 = nil
-								end
+
+						if p.mount ~= MOUNT_CLOWNCAR and p:mem(0x26,FIELD_WORD) == 0 then
+							if p.keys.jump == KEYS_PRESSED or (p.mount == 0 and p.keys.altJump == KEYS_PRESSED) then
+								wasMuted1 = Audio.sounds[1].muted
+								Audio.sounds[1].muted = true
+								p:mem(0x11C,FIELD_WORD, 20)
+								SFX.play(1)
+								Audio.sounds[1].muted = wasMuted1
+								wasMuted1 = nil
 							end
-						end)
+						end
 					end
 				end
 			end
@@ -371,20 +367,26 @@ function froggy.onTickPowerup(p)
 			local sec = Section(p.section)
 			local liquid = Liquid.getIntersecting(p.x, p.y, p.x+p.width, p.y+p.height)
 			if sec.isUnderwater or #liquid ~= 0 and p.mount == 0 then
-				if (p.keys.jump or p.keys.altJump) then
-					if p.keys.up and p:mem(0x14A, FIELD_WORD) == 0 then
-						p.speedY = -6
-						p.speedX = 0
-					elseif p.keys.down then
-						p.speedY = 6
-						p.speedX = 0
-					elseif p.keys.right then
-						p.speedX = 6
-						p.speedY = -Defines.npc_grav
-					elseif p.keys.left then
-						p.speedX = -6
-						p.speedY = -Defines.npc_grav
-					end
+				if p.keys.jump == KEYS_PRESSED or p.keys.altJump == KEYS_PRESSED then -- Link stuff
+					Effect.spawn(10, p)
+
+					Routine.run(function()
+						Routine.skip() 
+
+						if p.keys.up and p:mem(0x14A, FIELD_WORD) == 0 then
+							p.speedY = -6
+							p.speedX = 0
+						elseif p.keys.down then
+							p.speedY = 6
+							p.speedX = 0
+						elseif p.keys.right then
+							p.speedX = 6
+							p.speedY = -Defines.npc_grav
+						elseif p.keys.left then
+							p.speedX = -6
+							p.speedY = -Defines.npc_grav
+						end
+					end)
 				end
 			end
 		end
@@ -461,7 +463,7 @@ function froggy.onDrawPowerup(p)
 						if (p.speedX > 0 and p.keys.left) or (p.speedX < 0 and p.keys.right) then
 							p.frame = 6
 						elseif data.hopTimer > 0 and not p.keys.down then
-							p.frame = math.floor(-(data.hopTimer - 8) / 10) % 4 + 2
+							p.frame = ({5, 2, 3, 4})[1 + math.floor(-(data.hopTimer - 8) / 10) % 4]
 						end
 					end
 				else
