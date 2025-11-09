@@ -31,7 +31,7 @@ end
 local function bouncingOnNPC(p)
 	for _, n in NPC.iterateIntersecting(p.x, p.y+p.height, p.x+p.width, p.y+p.height+16+math.max(p.speedY,0)) do
 		if n.isValid and not n.isHidden and not n.isGenerator and not n.friendly and n.despawnTimer > 0 
-		and (NPC.config[n.id].spinjumpsafe or not NPC.config[n.id].jumphurt) 
+		and ((NPC.config[n.id].spinjumpsafe and p.isSpinJumping) or not NPC.config[n.id].jumphurt) 
 		and not NPC.config[n.id].playerblocktop and not NPC.config[n.id].isinteractable 
 		and not NPC.config[n.id].isvine then
 			if Colliders.bounce(p, n) then
@@ -66,15 +66,11 @@ end
 function jumper.onTick()
 	for _,p in ipairs(Player.get()) do
 		if registeredPowerups[cp.getCurrentName(p)] then
-			if canJump[p.idx] then
-				local finalHeight = jumpheights[cp.getCurrentName(p)][p.character]
-				if finalHeight == nil then
-					finalHeight = jumpheights[cp.getCurrentName(p)][1]
-				end
+			if canJump[p.idx] then -- actually handles the changes of a player's jump
+				local finalHeight = jumpheights[cp.getCurrentName(p)][p.character] or jumpheights[cp.getCurrentName(p)][1]
 				if p.isSpinJumping and not spikeBounced[p.idx] then
 					finalHeight = finalHeight - 10
 				end
-				
 				p:mem(0x11C,FIELD_WORD,math.max(p:mem(0x11C,FIELD_WORD),finalHeight))
 				
 				wasGrounded[p.idx] = false
@@ -84,7 +80,7 @@ function jumper.onTick()
 			end
 
 			local bouncing,isSpiky = bouncingOnNPC(p)			
-			if (wasGrounded[p.idx] and p:mem(0x11C,FIELD_WORD) > 0) or bouncing then
+			if (wasGrounded[p.idx] and p:mem(0x11C,FIELD_WORD) > 0) or bouncing then -- handles preparing to change a player's jump on the next frame
 				wasGrounded[p.idx] = false
 				canJump[p.idx] = true
 				if bouncing and isSpiky then
