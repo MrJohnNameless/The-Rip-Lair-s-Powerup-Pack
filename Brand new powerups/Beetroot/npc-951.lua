@@ -6,7 +6,6 @@ local cp = require("customPowerups")
 local beetroot = cp.addPowerup("Beetroot", "powerups/beetroot", npcID)
 cp.transformWhenSmall(npcID, 9)
 
-
 local beetrootSettings = {
 	id = npcID,
 	gfxwidth = 32,

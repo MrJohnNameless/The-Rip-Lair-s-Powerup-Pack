@@ -3,7 +3,7 @@ local superbell = {}
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
-local catSuit = cp.addPowerup("catSuit", "powerups/catSuit", npcID)
+local catSuit = cp.addPowerup("Cat Suit", "powerups/catSuit", npcID)
 cp.transformWhenSmall(npcID, 9)
 
 local superbellSettings = {

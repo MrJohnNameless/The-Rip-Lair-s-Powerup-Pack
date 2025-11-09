@@ -4,7 +4,7 @@ local superWhip = {}
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
-local superWhip = cp.addPowerup("superWhip", "powerups/superWhip", npcID)
+local superWhip = cp.addPowerup("Super Whip", "powerups/superWhip", npcID)
 
 local templateSettings = {
 	id = npcID,

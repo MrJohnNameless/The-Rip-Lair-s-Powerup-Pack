@@ -3,7 +3,7 @@ local miniMush = {}
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
-local miniMushroom = cp.addPowerup("Mini-Mushroom", "powerups/miniMushroom", npcID)
+local miniMushroom = cp.addPowerup("Mini Mushroom", "powerups/miniMushroom", npcID)
 
 local miniMushSettings = {
 	id = npcID,

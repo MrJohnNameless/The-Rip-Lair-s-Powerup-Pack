@@ -4,6 +4,7 @@ local npcID = NPC_ID
 
 local cp = require("customPowerups")
 local jumpingLui = cp.addPowerup("Jumping Lui", "powerups/jumpingLui", npcID)
+cp.transformWhenSmall(npcID, 9)
 
 local jumperSettings = {
 	id = npcID,

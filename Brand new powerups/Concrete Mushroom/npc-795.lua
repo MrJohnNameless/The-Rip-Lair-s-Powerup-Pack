@@ -3,7 +3,7 @@ local template = {}
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
-local template = cp.addPowerup("concrete", "powerups/concreteMushroom", npcID)
+local template = cp.addPowerup("Concrete Mushroom", "powerups/concreteMushroom", npcID)
 cp.transformWhenSmall(npcID, 9)
 
 local templateSettings = {
