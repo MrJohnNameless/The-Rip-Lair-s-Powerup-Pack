@@ -71,6 +71,7 @@ function vanishCap.onInitAPI()
 	registerEvent(vanishCap, "onNPCHarm")
 	registerEvent(vanishCap, "onNPCCollect")
 	registerEvent(vanishCap, "onExit")
+	registerEvent(vanishCap, "onPlayerHarm")
 	registerEvent(vanishCap, "onPlayerKill")
 
 	Cheats.register("needavanishcap",{
@@ -93,6 +94,12 @@ local function deInitDataForCap(p)
 	Misc.groupsCollide["vanishPlayer"]["vanishBlock"] = true
 end
 
+function vanishCap.onPlayerHarm(e, p)
+	if p.data.vanishcapPowerupcapTimer then
+		e.cancelled = true
+	end
+end
+
 function vanishCap.onPlayerKill(e,p)
 	if not p.data.vanishcapPowerupcapTimer then return end
 
@@ -108,7 +115,7 @@ end
 
 local restrictMovement = {}
 
-function vanishCap.onTick(p)
+function vanishCap.onTick()
 	for i,p in ipairs(Player.get()) do
 		if not p.data.vanishcapPowerupcapTimer then return end
 
@@ -125,7 +132,7 @@ function vanishCap.onTick(p)
 			Audio.MusicPlay()
 		elseif data.vanishcapPowerupcapTimer == (lunatime.toTicks(config.duration) - 100) then
 			Audio.MusicStopFadeOut(1000)
-		elseif data.vanishcapPowerupcapTimer == lunatime.toTicks(config.duration) then
+		elseif data.vanishcapPowerupcapTimer >= lunatime.toTicks(config.duration) then
 			Audio.resetMciSections()
 			deInitDataForCap(p)
 
@@ -187,7 +194,7 @@ function vanishCap.onNPCCollect(eventObj, v, p)
 	
 end
 
-function vanishCap.onDraw(p)
+function vanishCap.onDraw()
 	for i,p in ipairs(Player.get()) do
 
 		local enabled = 0
@@ -214,7 +221,7 @@ function vanishCap.onDraw(p)
 			end
 		end
 		
-		if p.data.vanishcapPowerupcapTimer == 61 then restrictMovement[p.idx] = false end
+		if p.data.vanishcapPowerupcapTimer >= 61 and restrictMovement[p.idx] then restrictMovement[p.idx] = false end
 		
 		if p.frame ~= -50 then p.data.vanishcapFrame = p.frame end
 		

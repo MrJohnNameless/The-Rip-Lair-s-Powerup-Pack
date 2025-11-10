@@ -81,6 +81,7 @@ function metalCap.onInitAPI()
 	registerEvent(metalCap, "onNPCHarm")
 	registerEvent(metalCap, "onNPCCollect")
 	registerEvent(metalCap, "onExit")
+	registerEvent(metalCap, "onPlayerHarm")
 	registerEvent(metalCap, "onPlayerKill")
 
 	Cheats.register("needametalcap",{
@@ -105,6 +106,12 @@ local function deInitDataForCap(p)
 	p.data.metalcapPowerupstartMusic = nil
 	p.data.metalcapisMetalCap = nil
 	p.data.metalcapQuakeTimer = nil
+end
+
+function metalCap.onPlayerHarm(e, p)
+	if p.data.metalcapPowerupcapTimer then
+		e.cancelled = true
+	end
 end
 
 function metalCap.onPlayerKill(e,p)
@@ -145,7 +152,7 @@ function metalCap.onTick()
 			else
 				metalcapPowerupflashTimer = 0
 			end
-		elseif data.metalcapPowerupcapTimer == lunatime.toTicks(config.duration) then
+		elseif data.metalcapPowerupcapTimer >= lunatime.toTicks(config.duration) then
 			Audio.resetMciSections()
 			deInitDataForCap(p)
 
@@ -282,7 +289,7 @@ function metalCap.onTick()
 	end
 end
 
-function metalCap.onTickEnd(p)
+function metalCap.onTickEnd()
 	for i,p in ipairs(Player.get()) do
 		if not p.data.metalcapPowerupcapTimer then return end
 
@@ -349,7 +356,7 @@ function metalCap.onNPCCollect(eventObj, v, p)
 	end
 end
 
-function metalCap.onDraw(p)
+function metalCap.onDraw()
 	for i,p in ipairs(Player.get()) do
 
 		local enabled = 0
@@ -376,7 +383,7 @@ function metalCap.onDraw(p)
 			end
 		end
 		
-		if p.data.metalcapPowerupcapTimer == 61 then restrictMovement[p.idx] = false end
+		if p.data.metalcapPowerupcapTimer >= 61 and restrictMovement[p.idx] then restrictMovement[p.idx] = false end
 		
 		p:render{
 			x = p.x,
