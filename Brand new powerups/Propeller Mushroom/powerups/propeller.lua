@@ -578,7 +578,11 @@ function propeller.onTickPowerup(p)
     local data = playerData[p.idx]
 
     if p.mount < 2 then
-        p:mem(0x160, FIELD_WORD, 2)
+		if p.character ~= CHARACTER_LINK then
+			p:mem(0x160, FIELD_WORD, 2)
+		else
+			p:mem(0x162, FIELD_WORD, 2)
+		end
     end
 
     if p:isOnGround() or (data.lastClimbing and not p.climbing) then
