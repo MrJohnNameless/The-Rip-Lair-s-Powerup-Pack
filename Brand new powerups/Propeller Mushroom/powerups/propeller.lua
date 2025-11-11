@@ -66,11 +66,17 @@ function propeller.onInitPowerupLib()
     propeller.spritesheets = {
         propeller:registerAsset(CHARACTER_MARIO, "propeller-mario.png"),
         propeller:registerAsset(CHARACTER_LUIGI, "propeller-luigi.png"),
+        propeller:registerAsset(CHARACTER_PEACH, "propeller-peach.png"),
+        propeller:registerAsset(CHARACTER_TOAD, "propeller-toad.png"),
+        propeller:registerAsset(CHARACTER_LINK, "propeller-link.png"),
     }
 
     propeller.iniFiles = {
         propeller:registerAsset(CHARACTER_MARIO, "propeller-mario.ini"),
         propeller:registerAsset(CHARACTER_LUIGI, "propeller-luigi.ini"),
+        propeller:registerAsset(CHARACTER_PEACH, "propeller-peach.ini"),
+        propeller:registerAsset(CHARACTER_TOAD, "propeller-toad.ini"),
+        propeller:registerAsset(CHARACTER_LINK, "propeller-link.ini"),
     }
 
     propeller.gpImages = {
@@ -81,6 +87,9 @@ function propeller.onInitPowerupLib()
     propeller.propellerImages = {
         propeller:registerAsset(CHARACTER_MARIO, "propeller-1.png"),
         propeller:registerAsset(CHARACTER_LUIGI, "propeller-2.png"),
+        propeller:registerAsset(CHARACTER_PEACH, "propeller-3.png"),
+        propeller:registerAsset(CHARACTER_TOAD, "propeller-4.png"),
+        propeller:registerAsset(CHARACTER_LINK, "propeller-5.png"),
     }
 
     propeller.propellerTiltedImages = {
@@ -91,6 +100,9 @@ function propeller.onInitPowerupLib()
     propeller.flyingImages = {
         propeller:registerAsset(CHARACTER_MARIO, "propeller-mario-flying.png"),
         propeller:registerAsset(CHARACTER_LUIGI, "propeller-luigi-flying.png"),
+        propeller:registerAsset(CHARACTER_PEACH, "propeller-peach-flying.png"),
+        propeller:registerAsset(CHARACTER_TOAD, "propeller-toad-flying.png"),
+        propeller:registerAsset(CHARACTER_LINK, "propeller-link-flying.png"),
     }
 
     cp = require("customPowerups")
