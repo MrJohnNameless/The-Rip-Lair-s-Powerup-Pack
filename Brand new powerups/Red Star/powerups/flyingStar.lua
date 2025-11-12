@@ -120,7 +120,7 @@ function flyingStar.onTickPowerup(p)
 	
 	if p.character ~= CHARACTER_LINK then
 		p:mem(0x160, FIELD_WORD, 2)
-	else
+	elseif p.mount < 2 then
 		p:mem(0x162, FIELD_WORD, 2)
 	end
 	
