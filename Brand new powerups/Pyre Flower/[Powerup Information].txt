@@ -1,0 +1,9 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needapyreflower
+* thebiggerthebetter
+
+The powerup also has some configs you can apply. Simple open the file "npc-799.lua", using something like notepad++ or visual studio code.
+
+durability - How many NPCs can the fireball destroy before it destroys itself?
