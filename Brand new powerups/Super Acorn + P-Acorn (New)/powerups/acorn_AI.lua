@@ -148,6 +148,12 @@ function acornStuffs.onTickAcorn(p, dataTerm, isCheating)
 
 	if isCheating then spawnSparkles(p) end -- Spawn sparkles if you have the P-Acorn
 
+	if p.character ~= CHARACTER_LINK then
+		p:mem(0x160, FIELD_WORD, 2)
+	else
+		p:mem(0x162, FIELD_WORD, 2)
+	end
+
 	-- GLIDING & BOOSTING
 
 	local glideSpeed = math.min(Defines.player_walkspeed * settings.glideConstant / math.min(Defines.player_walkspeed, math.abs(p.speedX)), Defines.gravity / settings.glideFloor)

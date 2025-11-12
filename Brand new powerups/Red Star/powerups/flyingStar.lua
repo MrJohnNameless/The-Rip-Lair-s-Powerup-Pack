@@ -117,7 +117,12 @@ end
 function flyingStar.onTickPowerup(p)
 	if not p.data.flyingStar then return end -- check if the powerup is currenly active
 	local data = p.data.flyingStar
-	p:mem(0x160, FIELD_WORD, 2)
+	
+	if p.character ~= CHARACTER_LINK then
+		p:mem(0x160, FIELD_WORD, 2)
+	else
+		p:mem(0x162, FIELD_WORD, 2)
+	end
 	
 	--Check the player's speed is at their max
 	if math.abs(p.speedX) >= Defines.player_runspeed then

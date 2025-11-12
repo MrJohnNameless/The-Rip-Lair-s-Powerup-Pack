@@ -6,7 +6,7 @@ local ai = require("powerups/acorn_AI")
 local superAcorn = {}
 
 superAcorn.forcedStateType = 2 
-superAcorn.basePowerup = PLAYER_BIG
+superAcorn.basePowerup = PLAYER_FIRE
 superAcorn.cheats = {"needasuperacorn","needanacorn","needaacorn","stockupforwinter","flyingsquirrel","nutcase","foragefreak"}
 superAcorn.collectSounds = {
     upgrade = 34,

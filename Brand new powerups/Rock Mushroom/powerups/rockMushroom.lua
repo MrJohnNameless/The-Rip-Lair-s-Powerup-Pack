@@ -9,7 +9,7 @@ local rockMushroom = {
 	rockWidth = 80,		-- width of the player hitbox when in a rock
 	rockHeight = 80,	-- height of yadda yadda
 	
-	cooldown = 100,		-- how many frames the player has to wait until they can start rollin' again
+	cooldown = 32,		-- how many frames the player has to wait until they can start rollin' again
 	
 	canCancel = 1,		-- if 0, you can't cancel anything. If 1, you can cancel the startup animation by holding down. If 2, you can cancel the rolling as well
 	
@@ -46,7 +46,7 @@ function rockMushroom.onInitPowerupLib()
 	}
 end
 
-rockMushroom.basePowerup = 2
+rockMushroom.basePowerup = 3
 rockMushroom.items = {}
 rockMushroom.cheats = {"needarockmushroom", "rocknroll", "theyseemerolling","wewillrockyou","ontherocks"}
 rockMushroom.collectSounds = {
@@ -92,7 +92,7 @@ local function canStartRolling(p)
         and not p.inClearPipe
 		and p.forcedState == 0
 		and not p:mem(0x50,FIELD_BOOL)		-- spinjumping
-		and p:mem(0x160,FIELD_WORD) == 0	-- not on a cooldown
+		and p.data.rockMushroom.rockCooldown == 0	-- not on a cooldown
         and p:mem(0x26,FIELD_WORD) <= 0 	-- pulling objects from top
 		and p:mem(0x06,FIELD_WORD) == 0		-- quicksand
 		and not p:mem(0x36,FIELD_BOOL)		-- underwater
@@ -118,7 +118,7 @@ local function canContinueRolling(p)
         and not p.inClearPipe
 		and p.forcedState == 0
 		and not p:mem(0x50,FIELD_BOOL)		-- spinjumping
-		and p:mem(0x160,FIELD_WORD) == 0	-- not on a cooldown
+		and p.data.rockMushroom.rockCooldown == 0	-- not on a cooldown
         and p:mem(0x26,FIELD_WORD) <= 0 	-- pulling objects from top
 		and p:mem(0x06,FIELD_WORD) == 0		-- quicksand
 		and not p:mem(0x36,FIELD_BOOL)		-- underwater
@@ -138,7 +138,7 @@ local function disableRoll(p,bump)
 	data.animTimer = 0
 	data.animFrame = 0
 	data.snowOpacity = 0
-	p:mem(0x160,FIELD_WORD,rockMushroom.cooldown)	-- a little bit of cooldown
+	data.rockCooldown = rockMushroom.cooldown	-- a little bit of cooldown
 	
 	local settings = PlayerSettings.get(p.character, p.powerup)	-- resize the player's hitbox to it's normal size again
 	settings.hitboxHeight = data.defaultHeight
@@ -195,6 +195,15 @@ end
 -- runs when the powerup is active, passes the player
 function rockMushroom.onTickPowerup(p)
 	local data = p.data.rockMushroom
+	
+	if p.character ~= CHARACTER_LINK then
+		p:mem(0x160, FIELD_WORD, 2)
+	else
+		p:mem(0x162, FIELD_WORD, 2)
+	end
+	
+	data.rockCooldown = math.clamp((data.rockCooldown or 0) - 1, 0, rockMushroom.cooldown) 
+	
 	data.collisionCheck = true
 	for c, b in ipairs(Colliders.getColliding{a = data.checkCollider, btype = Colliders.BLOCK, filter = blockFilterBump}) do
 		data.collisionCheck = false

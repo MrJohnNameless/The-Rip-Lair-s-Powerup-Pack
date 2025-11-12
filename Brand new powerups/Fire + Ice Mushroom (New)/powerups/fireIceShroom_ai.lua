@@ -81,7 +81,14 @@ local function canPulse(p)
 end
 
 function fireIceShroom.onTickShroom(p, data, isIceShroom)
-    data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
+
+   	if p.character ~= CHARACTER_LINK then
+		p:mem(0x160, FIELD_WORD, 2)
+	else
+		p:mem(0x162, FIELD_WORD, 2)
+	end
+	
+	data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
    	if (data.projectileTimer > 0 and not Cheats.get("flamethrower").active) or not canPulse(p) or Level.endState() ~= LEVEL_WIN_TYPE_NONE then return end
 
     	if p.keys.altRun == KEYS_PRESSED then

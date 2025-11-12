@@ -71,6 +71,9 @@ local starShader = Shader.fromFile(nil, Misc.multiResolveFile("starman.frag", "s
 local GP
 pcall(function() GP = require("GroundPound") end)
 
+local APDL
+pcall(function() APDL = require("anotherPowerDownLibrary") end)
+
 local aw
 pcall(function() aw = require("anotherwalljump") end)
 pcall(function() aw = aw or require("aw") end)
@@ -126,6 +129,10 @@ function cursedWart.onEnable(p, noEffects)
 
     curHealth = cursedWart.health
     changeState(STATE.IDLE, true)
+	
+	if APDL then
+		APDL.enabled = false
+	end
 end
 
 function cursedWart.onDisable(p, noEffects)
@@ -141,6 +148,10 @@ function cursedWart.onDisable(p, noEffects)
     Defines.player_runspeed = nil
 
     p:mem(0x164, FIELD_WORD, 0)
+	
+	if APDL then
+		APDL.enabled = true
+	end
 end
 
 function cursedWart.onTickPowerup(p)

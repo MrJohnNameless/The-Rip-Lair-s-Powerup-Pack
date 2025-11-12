@@ -50,7 +50,7 @@ function beeMushroom.onInitPowerupLib()
 	}
 end
 
-beeMushroom.basePowerup = 2
+beeMushroom.basePowerup = 3
 beeMushroom.items = {}
 beeMushroom.collectSounds = {
     upgrade = 6,
@@ -110,6 +110,12 @@ end
 -- runs when the powerup is active, passes the player
 function beeMushroom.onTickPowerup(p)
 	if not p.data.beeMushroom then return end
+	
+	if p.character ~= CHARACTER_LINK then
+		p:mem(0x160, FIELD_WORD, 2)
+	else
+		p:mem(0x162, FIELD_WORD, 2)
+	end
 	
 	if p.deathTimer ~= 0 or p.forcedState ~= 0 or p.mount ~= 0 or p:mem(0x0C, FIELD_BOOL) then p.data.beeMushroom.animTimer = 0 Defines.player_runspeed = 6 return end
 	

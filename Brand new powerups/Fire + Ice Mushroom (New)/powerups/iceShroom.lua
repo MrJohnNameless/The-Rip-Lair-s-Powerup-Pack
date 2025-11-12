@@ -4,7 +4,7 @@ local ai = require("powerups/fireIceShroom_ai")
 local iceShroom = {}
 
 iceShroom.forcedStateType = 2 
-iceShroom.basePowerup = PLAYER_BIG
+iceShroom.basePowerup = PLAYER_FIRE
 iceShroom.cheats = {"needaicemushroom","needaiceshroom","needanicemushroom","needaniceshroom","iceonthehill","liarliarpantsonthinice","subzero","finnland","snowballearth"}
 iceShroom.collectSounds = {
     upgrade = 6,
