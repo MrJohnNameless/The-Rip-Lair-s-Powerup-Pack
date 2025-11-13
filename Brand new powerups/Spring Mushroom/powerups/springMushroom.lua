@@ -252,6 +252,23 @@ local function canDraw(p)
     	)
 end
 
+local goalTape = require("npcs/AI/goalTape")
+
+local function getPriority(p)
+        local priority
+        local info = goalTape.playerInfo[p.idx]
+
+        if info and info.darkness > 0 then
+          	priority = (info.pausesGame and 0.5) or -6
+        elseif p.forcedState == 3 then
+            	priority = -70	
+	else
+		priority = -25
+        end
+
+	return priority
+end
+
 function springMushroom.onDrawPowerup(p)
 	if not p.data.springMushroom then return end
 	local data = p.data.springMushroom
@@ -261,7 +278,7 @@ function springMushroom.onDrawPowerup(p)
 
 		Graphics.drawBox{
 			texture = springMushroom:getAsset(p.character, springMushroom.playerImages[p.character]),
-			priority = (p.forcedState == 3 and -70) or -25,
+			priority = getPriority(p),
 			width = 100,
 			height = 100 * data.scale,
 			x = p.x + (p.width * 0.5),

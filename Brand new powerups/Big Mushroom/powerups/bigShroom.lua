@@ -116,7 +116,9 @@ function bigShroom.onEnable(p)
 end
 
 function bigShroom.onDisable(p)
-	p:detachWeight(p.data.bigShroom.weightGain) -- resets the player's weight by default
+	if p.data.bigShroom then
+		p:detachWeight(p.data.bigShroom.weightGain) -- resets the player's weight by default
+	end
 	p.data.bigShroom = nil
 	p.data.brickCollider = nil
 	p.data.brickColliderOffset = nil
