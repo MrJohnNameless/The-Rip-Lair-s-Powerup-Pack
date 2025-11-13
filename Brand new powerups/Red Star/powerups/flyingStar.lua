@@ -220,6 +220,23 @@ function flyingStar.onTickEndPowerup(p)
 	end
 end
 
+local goalTape = require("npcs/AI/goalTape")
+
+local function getPriority(p)
+        local priority
+        local info = goalTape.playerInfo[p.idx]
+
+        if info and info.darkness > 0 then
+          	priority = (info.pausesGame and 0.5) or -6
+        elseif p.forcedState == 3 then
+            	priority = -70	
+	else
+		priority = -25
+        end
+
+	return priority
+end
+
 function flyingStar.onDrawPowerup(p)
 	
 	if not p.data.flyingStar then return end -- check if the powerup is currenly active
@@ -242,7 +259,7 @@ function flyingStar.onDrawPowerup(p)
 		sourceHeight = slideTexture.height,
 		sceneCoords = true,
 		centered = true,
-		priority = -25,
+		priority = getPriority(p),
 		rotation = (p.speedY * 4) * p.direction,
 	}
 

@@ -192,6 +192,8 @@ function rockMushroom.onDisable(p)
 	end
 end
 
+local goalTape = require("npcs/AI/goalTape")
+
 -- runs when the powerup is active, passes the player
 function rockMushroom.onTickPowerup(p)
 	local data = p.data.rockMushroom
@@ -324,6 +326,11 @@ function rockMushroom.onTickPowerup(p)
 			disableRoll(p,bump)	-- stop rolling, and if the player hit a wall, bump them
 		end
 	end
+	
+    if goalTape.playerInfo[p.idx] and goalTape.playerInfo[p.idx].darkness > 0 then
+		disableRoll(p,true)
+	end
+	
 end
 
 -- runs when the powerup is active, passes the player

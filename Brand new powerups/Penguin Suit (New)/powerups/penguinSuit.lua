@@ -327,6 +327,8 @@ function penguinSuit.onTickPowerup(p)
 
 end
 
+local goalTape = require("npcs/AI/goalTape")
+
 function penguinSuit.onTickEndPowerup(p)
 	if not p.data.penguinSuit then return end
 	if not isUnoccupied(p) then 
@@ -335,7 +337,11 @@ function penguinSuit.onTickEndPowerup(p)
 	end
 	local data = p.data.penguinSuit
 	local settings = penguinSuit.settings
-
+	
+	if goalTape.playerInfo[p.idx] and goalTape.playerInfo[p.idx].darkness > 0 then
+		stopSlide(p)
+	end
+	
 	-- handles setting the player's held NPC to be aligned with the smaller hitbox when swimming
 	if inWater(p) then
 		p:mem(0x38,FIELD_WORD,2)
@@ -554,6 +560,7 @@ function penguinSuit.onTickEndPowerup(p)
 	else
 		data.slideSpeedX = p.speedX
 	end
+	
 	------------ END OF SLIDING HANDLING ------------
 end
 
