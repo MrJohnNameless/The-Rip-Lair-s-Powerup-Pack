@@ -70,6 +70,7 @@ local crateSettings = {
 	grabtop=true,
 	useclearpipe = true,
 	ignorethrownnpcs = true,
+	bubbleFlowerImmunity = true,
 
 	--Identity-related flags. Apply various vanilla AI based on the flag:
 	--iswalker = false,

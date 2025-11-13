@@ -67,6 +67,7 @@ local windChargeSettings = {
 
 	grabside=false,
 	grabtop=false,
+	bubbleFlowerImmunity = true,
 
 	ignorethrownnpcs = true,
 	useclearpipe = true,

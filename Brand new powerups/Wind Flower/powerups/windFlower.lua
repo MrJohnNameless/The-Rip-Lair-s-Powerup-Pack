@@ -120,9 +120,11 @@ function windFlower.onEnable(p)
 end
 
 -- runs once when the powerup gets deactivated, passes the player
-function windFlower.onDisable(p)	
-	if p.data.windFlower.scuttleSFX then stopSFX(p.data.windFlower.scuttleSFX) end
-	windFlower.scuttleAnim:stop(p)
+function windFlower.onDisable(p)
+	if p.data.windFlower then
+		if p.data.windFlower.scuttleSFX then stopSFX(p.data.windFlower.scuttleSFX) end
+		windFlower.scuttleAnim:stop(p)
+	end
 	p.data.windFlower = nil
 end
 

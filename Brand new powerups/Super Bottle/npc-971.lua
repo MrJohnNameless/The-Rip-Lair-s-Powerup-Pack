@@ -44,6 +44,7 @@ local pillSettings = {
 	harmlessgrab = false, --Held NPC hurts other NPCs if false
 	harmlessthrown = false, --Thrown NPC hurts other NPCs if false
 	useclearpipe = true,
+	bubbleFlowerImmunity = true,
 }
 
 --Applies NPC settings

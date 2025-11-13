@@ -31,7 +31,7 @@ function boo.onEnable(p)
 	p.collisionGroup = "booPlayer"
 	
 	for _,n in ipairs(NPC.get()) do
-		if n:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
+		if n:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] and not NPC.config[n.id].powerup and not NPC.config[n.id].nohurt then
 			n.collisionGroup = "booNPCs"
 			Misc.groupsCollide["booPlayer"]["booNPCs"] = false
 		end
@@ -75,7 +75,7 @@ function boo.onTickPowerup(p)
 	end
 	
 	for _,n in ipairs(NPC.get()) do
-		if n:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
+		if n:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] and not NPC.config[n.id].powerup and not NPC.config[n.id].nohurt then
 			if Colliders.collide(p, n) then p:harm() end
 		end
 	end

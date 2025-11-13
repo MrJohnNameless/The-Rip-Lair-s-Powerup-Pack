@@ -75,6 +75,7 @@ local sampleNPCSettings = {
 	lightoffsetx = 0,
 	lightoffsety = 0,
 	lightcolor = ffffff,
+	bubbleFlowerImmunity = true,
 
 	--Define custom properties below
 }

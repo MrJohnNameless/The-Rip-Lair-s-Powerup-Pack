@@ -15,7 +15,7 @@ local miniMushSettings = {
 	frames = 1,
 	framestyle = 0,
 	framespeed = 8,
-	speed = 1,
+	speed = 0.85,
 	score = SCORE_1000,
 	
 	npcblock = false,
@@ -65,7 +65,7 @@ end
 function miniMush.onTickNPC(v)
 	if Defines.levelFreeze or v.despawnTimer <= 0 or v.forcedState ~= 0 or v.isProjectile or v.dontMove then return end
 	
-	v.speedX = 0.85 * v.direction
+	v.speedX = NPC.config[v.id].speed * v.direction
 end
 
 function miniMush.onNPCHarm(token,v,harm,c)

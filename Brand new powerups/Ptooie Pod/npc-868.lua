@@ -38,6 +38,7 @@ npcManager.setNpcSettings({
 	noiceball=true,
 	noyoshi=true,
 	maxspeed = 4,
+	bubbleFlowerImmunity = true,
 	
 	bounceOnHit = powerup.settings.bounceOnHit or false,
 })

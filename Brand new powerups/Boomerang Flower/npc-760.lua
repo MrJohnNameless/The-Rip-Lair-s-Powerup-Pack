@@ -56,6 +56,7 @@ local boomerangSettings = {
 	harmlessgrab = true,
 	harmlessthrown = true,
 	useclearpipe = true,
+	bubbleFlowerImmunity = true,
 	
 	--These will cause the boomerang to return while harming the NPC
 	stopBoomerangNPCs = {39, 205, 564, 200, 262, 608, 201, 351, 256, 257, 15, 86, 267, 268, 37, 164, 642, 646, 437, 295, 432, 435, 180, 466, 467, 531, 532, 609, 641, 643, 645, 647, 648, 649},

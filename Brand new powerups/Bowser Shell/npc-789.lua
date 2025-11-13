@@ -44,6 +44,7 @@ local flameSettings = {
 	harmlessthrown = false, --Thrown NPC hurts other NPCs if false
 	ishot=true,
 	durability=2,
+	bubbleFlowerImmunity = true,
 }
 
 --Applies NPC settings

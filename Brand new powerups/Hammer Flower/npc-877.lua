@@ -33,6 +33,7 @@ local hammerSettings = {
 	harmlessthrown = true, 
 	ignorethrownnpcs = false,
 	nowalldeath = true, 
+	bubbleFlowerImmunity = true,
 
 	--Define custom properties below
 	rotateSprite = true, --enables sprite rotation

@@ -44,6 +44,7 @@ local lightningSettings = {
 	harmlessgrab = false, --Held NPC hurts other NPCs if false
 	harmlessthrown = false, --Thrown NPC hurts other NPCs if false
 	useclearpipe = true,
+	bubbleFlowerImmunity = true,
 
 	--Identity-related flags. Apply various vanilla AI based on the flag:
 	--iswalker = false,

@@ -76,6 +76,7 @@ local eggSettings = {
 
 	grabside=false,
 	grabtop=false,
+	bubbleFlowerImmunity = true,
 	
 	totalBounces = 2,
 	bounceSFX = Misc.resolveSoundFile("sound/extended/bowlingball.ogg"),

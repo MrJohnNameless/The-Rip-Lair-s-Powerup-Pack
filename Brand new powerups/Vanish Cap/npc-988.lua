@@ -117,45 +117,46 @@ local restrictMovement = {}
 
 function vanishCap.onTick()
 	for i,p in ipairs(Player.get()) do
-		if not p.data.vanishcapPowerupcapTimer then return end
+		if p.data.vanishcapPowerupcapTimer then
 
-		local data = p.data
-		local config = vanishCap.settings
-		
-		if data.vanishcapPowerupcapTimer == 0 and data.vanishcapPowerupstartMusic then
-			Audio.SeizeStream(-1)
-			Audio.MusicStopFadeOut(300)
+			local data = p.data
+			local config = vanishCap.settings
+			
+			if data.vanishcapPowerupcapTimer == 0 and data.vanishcapPowerupstartMusic then
+				Audio.SeizeStream(-1)
+				Audio.MusicStopFadeOut(300)
 
-			data.vanishcapPowerupstartMusic = false
-		elseif data.vanishcapPowerupcapTimer == 30 then
-			Audio.MusicOpen(config.music)
-			Audio.MusicPlay()
-		elseif data.vanishcapPowerupcapTimer == (lunatime.toTicks(config.duration) - 100) then
-			Audio.MusicStopFadeOut(1000)
-		elseif data.vanishcapPowerupcapTimer >= lunatime.toTicks(config.duration) then
-			Audio.resetMciSections()
-			deInitDataForCap(p)
+				data.vanishcapPowerupstartMusic = false
+			elseif data.vanishcapPowerupcapTimer == 30 then
+				Audio.MusicOpen(config.music)
+				Audio.MusicPlay()
+			elseif data.vanishcapPowerupcapTimer == (lunatime.toTicks(config.duration) - 100) then
+				Audio.MusicStopFadeOut(1000)
+			elseif data.vanishcapPowerupcapTimer >= lunatime.toTicks(config.duration) then
+				Audio.resetMciSections()
+				deInitDataForCap(p)
 
-			return
-		end
-		
-		if p.powerup == 1 then p.powerup = 2 end
-		
-		data.vanishcapPowerupcapTimer = data.vanishcapPowerupcapTimer + 1
-		
-		--Invincibility code taken from MegaDood's Invincibility Leaf
-		p:mem(0x140, FIELD_WORD, 1)
-		p:mem(0x142, FIELD_BOOL, true)
+				return
+			end
+			
+			if p.powerup == 1 then p.powerup = 2 end
+			
+			data.vanishcapPowerupcapTimer = data.vanishcapPowerupcapTimer + 1
+			
+			--Invincibility code taken from MegaDood's Invincibility Leaf
+			p:mem(0x140, FIELD_WORD, 1)
+			p:mem(0x142, FIELD_BOOL, true)
 
-		if restrictMovement[p.idx] then
-			p.keys.up = nil
-			p.keys.left = nil
-			p.keys.right = nil
-			p.keys.down = nil
-			p.keys.run = nil
-			p.keys.jump = nil
-			p.keys.altRun = nil
-			p.keys.altJump = nil
+			if restrictMovement[p.idx] then
+				p.keys.up = nil
+				p.keys.left = nil
+				p.keys.right = nil
+				p.keys.down = nil
+				p.keys.run = nil
+				p.keys.jump = nil
+				p.keys.altRun = nil
+				p.keys.altJump = nil
+			end
 		end
 	end
 end
@@ -202,49 +203,50 @@ function vanishCap.onDraw()
 
 		local config = vanishCap.settings
 
-		if not p.data.vanishcapPowerupcapTimer then return end
-		
-		if p.data.vanishcapPowerupcapTimer < 60 then speed = 8 else speed = 4 end
-		
-		if (p.data.vanishcapPowerupcapTimer < 60 and not p.data.vanishcapisvanishcap) or p.data.vanishcapPowerupcapTimer >= (lunatime.toTicks(config.duration) - 128) then
-			enabled = math.floor(p.data.vanishcapPowerupcapTimer / speed) % 2
-		else
-			enabled = 1
-			p.data.vanishcapisvanishcap = true
-		end
-		
-		--Stop the player's movement like they're transforming
-		if not p.data.vanishcapisvanishcap then
-			if speed == 8 then
-				restrictMovement[p.idx] = true
-				p.speedX = 0
+		if p.data.vanishcapPowerupcapTimer then
+			
+			if p.data.vanishcapPowerupcapTimer < 60 then speed = 8 else speed = 4 end
+			
+			if (p.data.vanishcapPowerupcapTimer < 60 and not p.data.vanishcapisvanishcap) or p.data.vanishcapPowerupcapTimer >= (lunatime.toTicks(config.duration) - 128) then
+				enabled = math.floor(p.data.vanishcapPowerupcapTimer / speed) % 2
+			else
+				enabled = 1
+				p.data.vanishcapisvanishcap = true
 			end
-		end
-		
-		if p.data.vanishcapPowerupcapTimer >= 61 and restrictMovement[p.idx] then restrictMovement[p.idx] = false end
-		
-		if p.frame ~= -50 then p.data.vanishcapFrame = p.frame end
-		
-		if enabled == 1 then
-			p:render{
-				frame = p.data.vanishcapFrame,
-				direction = p.direction,
-				powerup = p.powerup,
-				mount = p.mount,
-				character = p.character,
-				x = p.x,
-				y = p.y,
-				color = Color.white .. 0.5,
-				drawplayer = true,
-				ignorestate = false,
-				sceneCoords = true,
-				priority = -50,
-				shader = vanishShader,
-				uniforms = {
-					enabled = enabled,
-				},
-			}
-			p.frame = -50
+			
+			--Stop the player's movement like they're transforming
+			if not p.data.vanishcapisvanishcap then
+				if speed == 8 then
+					restrictMovement[p.idx] = true
+					p.speedX = 0
+				end
+			end
+			
+			if p.data.vanishcapPowerupcapTimer >= 61 and restrictMovement[p.idx] then restrictMovement[p.idx] = false end
+			
+			if p.frame ~= -50 then p.data.vanishcapFrame = p.frame end
+			
+			if enabled == 1 then
+				p:render{
+					frame = p.data.vanishcapFrame,
+					direction = p.direction,
+					powerup = p.powerup,
+					mount = p.mount,
+					character = p.character,
+					x = p.x,
+					y = p.y,
+					color = Color.white .. 0.5,
+					drawplayer = true,
+					ignorestate = false,
+					sceneCoords = true,
+					priority = -50,
+					shader = vanishShader,
+					uniforms = {
+						enabled = enabled,
+					},
+				}
+				p.frame = -50
+			end
 		end
 	end
 end

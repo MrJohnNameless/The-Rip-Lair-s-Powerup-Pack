@@ -76,6 +76,7 @@ local sampleNPCSettings = {
 	grabtop=false,
 
 	ignorethrownnpcs=true,
+	bubbleFlowerImmunity = true,
 
 	-- Add to this table if you want the block to be destroyed immediately.
 	filterblocks={1151} -- Makes the block insta-crumble if hitting a Hot Block.

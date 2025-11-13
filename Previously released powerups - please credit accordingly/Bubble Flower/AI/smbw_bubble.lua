@@ -149,7 +149,7 @@ function bubble.onTickEndNPC(v)
 	if not data.targetNPC and data.storedNPCID == 0 then
 		for k, n in NPC.iterateIntersecting(v.x - 16, v.y - 16, v.x + v.width + 16, v.y + v.height + 16) do
 			if not n.isHidden and not n.isGenerator and not n.friendly and v.id ~= n.id
-			and not blacklist[n.id] and not NPC.POWERUP_MAP[n.id] and (NPC.HITTABLE_MAP[n.id] or whitelist[n.id])
+			and not blacklist[n.id] and not NPC.POWERUP_MAP[n.id] and (NPC.HITTABLE_MAP[n.id] or whitelist[n.id]) and not NPC.config[n.id].bubbleFlowerImmunity
 			then
 				data.targetNPC = n
 				data.target.x = n.x + n.width/2

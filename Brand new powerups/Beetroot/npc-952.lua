@@ -68,6 +68,7 @@ local beetrootSettings = {
 
 	grabside=false,
 	grabtop=false,
+	bubbleFlowerImmunity = true,
 	
 	totalBounces = 3,
 	allowSpeedIncrement = false,

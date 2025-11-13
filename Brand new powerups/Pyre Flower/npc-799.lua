@@ -34,6 +34,7 @@ local sampleNPCSettings = {
 
 	ignorethrownnpcs = true,
 	notcointransformable = true,
+	bubbleFlowerImmunity = true,
 	
 	durability = 3,
 }

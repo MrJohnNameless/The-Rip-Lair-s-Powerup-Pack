@@ -42,6 +42,7 @@ local goldBallSettings = {
 	ignorethrownnpcs = true,
 	notcointransformable = true,
 	staticdirection = true,
+	bubbleFlowerImmunity = true,
 
 	useclearpipe = true,
 

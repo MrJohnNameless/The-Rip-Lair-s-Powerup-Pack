@@ -67,6 +67,7 @@ local smallWaterballSettings = {
 
 	grabside=false,
 	grabtop=false,
+	bubbleFlowerImmunity = true,
 
 	--Identity-related flags. Apply various vanilla AI based on the flag:
 	--iswalker = false,

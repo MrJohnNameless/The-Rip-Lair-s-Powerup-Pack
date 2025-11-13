@@ -54,6 +54,7 @@ local spikeballSettings = {
 	slopeAcceleration = 0.05,
 	useOldSlopeAcceleration = false,
 	maxSpeed = 16,
+	bubbleFlowerImmunity = true,
 }
 
 npcManager.setNpcSettings(spikeballSettings)

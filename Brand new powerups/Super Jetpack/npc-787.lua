@@ -36,6 +36,7 @@ local jetpackSettings = {
 	isinteractable = true,
 	ignorethrownnpcs = true,
 	notcointransformable = true,
+	bubbleFlowerImmunity = true,
 }
 
 npcManager.setNpcSettings(jetpackSettings)

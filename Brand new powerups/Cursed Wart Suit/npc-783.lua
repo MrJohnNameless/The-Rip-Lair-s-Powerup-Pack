@@ -42,6 +42,7 @@ local sampleNPCSettings = {
 	ignorethrownnpcs = true,
 	notcointransformable = true,
 	staticdirection = true,
+	bubbleFlowerImmunity = true,
 }
 
 npcManager.setNpcSettings(sampleNPCSettings)

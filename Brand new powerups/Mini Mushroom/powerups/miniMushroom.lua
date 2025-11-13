@@ -152,10 +152,12 @@ end
 function miniMush.onDisable(p)
 	Audio.sounds[1].muted = false
 	Audio.sounds[33].muted = false
-	p:detachWeight(p.data.miniMushroom.weightLoss) -- resets the player's weight by default
-	Defines.player_grabSideEnabled = nil
-	Defines.player_grabTopEnabled = nil
-	Defines.player_grabShellEnabled = nil
+	if p.data.miniMushroom then
+		p:detachWeight(p.data.miniMushroom.weightLoss) -- resets the player's weight by default
+		Defines.player_grabSideEnabled = nil
+		Defines.player_grabTopEnabled = nil
+		Defines.player_grabShellEnabled = nil
+	end
 	
 	p.data.miniMushroom = nil
 end

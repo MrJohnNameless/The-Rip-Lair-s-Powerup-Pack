@@ -52,6 +52,7 @@ local ballSettings = {
 	harmlessgrab = true,
 	harmlessthrown = true,
 	SMLDamageSystem = true,
+	bubbleFlowerImmunity = true,
 
 
 }
@@ -172,11 +173,13 @@ function ball.onTickNPC(v)
 	end
 
 	for k,npc in ipairs(Colliders.getColliding{a = v, atype = Colliders.NPC, b = NPC.HITTABLE}) do
-		if not (NPC.config[npc.id].nofireball and not npc.friendly and not npc.isHidden and not npc.isinteractable and not npc.iscoin and not NPC.POWERUP_MAP[npc.id]) and npc:mem(0x138, FIELD_WORD) == 0 then
-			npc:harm(HARM_TYPE_EXT_FIRE)
-			spuff(v)
-		else
-			spuff(v)
+		if not NPC.config[npc.id].powerup and not NPC.config[npc.id].ignorethrownnpcs then
+			if not (NPC.config[npc.id].nofireball and not npc.friendly and not npc.isHidden and not npc.isinteractable and not npc.iscoin and not NPC.POWERUP_MAP[npc.id]) and npc:mem(0x138, FIELD_WORD) == 0 then
+				npc:harm(HARM_TYPE_EXT_FIRE)
+				spuff(v)
+			else
+				spuff(v)
+			end
 		end
 	end
 	
