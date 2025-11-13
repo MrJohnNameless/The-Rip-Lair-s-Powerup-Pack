@@ -77,9 +77,9 @@ end
 local function getPlayerSide(p)
 	local side
 	if p.data.cloudFlower.lastDirection == DIR_RIGHT then
-		side = p.x -- sets the coord on the left edge of the player's hurtbox
+		side = p.x - 12 -- sets the coord on the left edge of the player's hurtbox
 	elseif p.data.cloudFlower.lastDirection == DIR_LEFT then 
-		side = p.x + p.width -- sets the coord on the right edge of the player's hurtbox
+		side = p.x + p.width + 12 -- sets the coord on the right edge of the player's hurtbox
 	end
 
 	return side
