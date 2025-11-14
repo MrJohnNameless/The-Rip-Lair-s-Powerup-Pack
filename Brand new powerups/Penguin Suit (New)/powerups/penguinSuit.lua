@@ -14,6 +14,8 @@
 	
 	Legend-Tony980 - made the sprites for Penguin Toad (https://www.deviantart.com/legend-tony980/art/SMBX-Toad-s-sprites-Fourth-Update-724628909)
 	
+	Davon/SonicTheBombhog - made the sprites for Penguin Link
+	
 	Emral & Marioman2007 - created customPowerups framework which this script used as a base here (https://www.smbxgame.com/forums/viewtopic.php?t=29435&sid=09762126985be58594941d2479968bbf)
 						 - also made the Bubble Flower powerup script which was also used as a base here
 	MrDoubleA - Provided the Uniformed Player Offsets used as a base here (https://www.smbxgame.com/forums/viewtopic.php?t=26127)
@@ -24,6 +26,7 @@
 
 local bumper = require("npcs/ai/bumper")
 local springs = require("npcs/ai/springs")
+local goalTape = require("npcs/ai/goalTape")
 
 local penguinSuit = {}
 
@@ -33,6 +36,7 @@ local defaultAnimations = {
 	["swimDown"] = 		 {frames = {37,38,37,36,36,36}, framespeed = 8},
 	["swimHorizontal"] = {frames = {42,43,42,44,44,44}, framespeed = 8},
 	["swimItemHold"] = 	 {frames = {20,21}, framespeed = 24},
+	["swimLinkStab"] = {frames = {20,21,21,21,20}, framespeed = 6, loops = false},
 	["sliding"] = {frames = {14,39,49}, framespeed = 4, loops = false},
 }
 
@@ -137,6 +141,48 @@ local function inWater(p)
 	)
 end
 
+local function shootIceball(p)
+	local dir = p.direction
+	local v = NPC.spawn(
+		265, p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
+		p.y + p.height/2 + p.speedY, p.section, false, true
+	)
+	local speedX = (4* dir) + p.speedX/2.5 
+	v:mem(0x134,FIELD_WORD,p.idx)
+	-- handles shooting as link/snake/samus
+	if linkChars[p.character] then 
+		-- shoot less higher when ducking
+		v.speedX = (5 * dir) + p.speedX/2.5 
+		v.speedY = 0
+		v.x = v.x + (16 * dir)
+		v.ai1 = 5
+		p:mem(0x162, FIELD_WORD,40 + 2)
+		SFX.play(82)
+		return
+	end
+	if p.keys.altRun and smb2Chars[p.character] and p.holdingNPC == nil then
+		v.speedY = 0
+		v.heldIndex = p.idx
+		p:mem(0x154, FIELD_WORD, v.idx+1)
+		SFX.play(18)
+	else
+		local speedYMod = p.speedY * 0.1
+		if p.standingNPC then
+			speedYMod = p.standingNPC.speedY * 0.1
+		end
+		if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
+			v.speedY = -8 + speedYMod
+		else
+			v.speedY = 5 + speedYMod
+		end
+		v.direction = dir
+		v.speedX = speedX
+		SFX.play(18)
+	end
+	p:mem(0x160, FIELD_WORD,30)
+	return
+end
+
 local function stopSlide(p)
 	if not p.data.penguinSuit then return end
 	local data = p.data.penguinSuit
@@ -148,6 +194,7 @@ local function stopSlide(p)
 	data.stuckTimer = 3
 	if not inWater(p) then
 		p:mem(0x12E,FIELD_WORD,0)
+		if linkChars[p.character] then return end
 		p:mem(0x160, FIELD_WORD,math.max(p:mem(0x160, FIELD_WORD),2))
 	end
 end
@@ -206,36 +253,11 @@ function penguinSuit.onTickPowerup(p)
 			stopSlide(p)
 		end
 		p:mem(0x12E,FIELD_WORD,1)
+		
 		-- handles shooting iceballs when swimming
 		if p:mem(0x160, FIELD_WORD) <= 0 and (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED) and not linkChars[p.character] then
-			local dir = p.direction
-			local v = NPC.spawn(
-				265, p.x + p.width/2 + (p.width/2 + 0) * dir + p.speedX,
-				p.y + p.height/2 + p.speedY, p.section, false, true
-			)
-			local speedX = (4 + p.speedX/3.5) * dir
-			if p.keys.altRun and smb2Chars[p.character] and p.holdingNPC == nil then
-				v.speedY = 0
-				v.heldIndex = p.idx
-				p:mem(0x154, FIELD_WORD, v.idx+1)
-				SFX.play(18)
-			else
-				local speedYMod = p.speedY * 0.1
-				if p.standingNPC then
-					speedYMod = p.standingNPC.speedY * 0.1
-				end
-				if p.keys.up then -- sets the projectile upwards if you're holding up while shooting
-					v.speedY = -8 + speedYMod
-				else
-					v.speedY = 5 + speedYMod
-				end
-				v.direction = dir
-				v.speedX = speedX
-				SFX.play(18)
-			end
-			p:mem(0x160, FIELD_WORD,30)
+			shootIceball(p)
 		end
-
 		local isMoving = false
 		local speedcap = Defines.player_runspeed - 4
 		local horizontalSpeed = 4
@@ -291,6 +313,20 @@ function penguinSuit.onTickPowerup(p)
 		if p.holdingNPC then
 			data.curAnim = "swimItemHold"
 		end
+		
+		if linkChars[p.character] then	-- link specific stuff
+			p:mem(0x162,FIELD_WORD,2)
+			if (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) then -- dont let link attack with the normal run button
+				if not p.keys.altRun then
+					p:mem(0x160,FIELD_WORD,1)
+				elseif p:mem(0x14, FIELD_WORD) == 0 or p:mem(0x14, FIELD_WORD) <= 16 then -- reset animation if trying to stab continously
+					data.animTimer = 0
+				end
+			end
+			if p:mem(0x14, FIELD_WORD) ~= 0 then
+				data.curAnim = "swimLinkStab"
+			end
+		end
 		return
 	end
 	------------ END OF SWIMMING HANDLING ------------
@@ -304,6 +340,7 @@ function penguinSuit.onTickPowerup(p)
 		p:mem(0x12E,FIELD_WORD,1)
 		p:mem(0x3C,FIELD_BOOL,false)
 		data.curAnim = "sliding"
+		return
 	elseif data.isSliding then -- handles preventing specific keys & actions being done while sliding
 		p.keys.down = KEYS_UP
 		p.keys.run = KEYS_UP
@@ -325,9 +362,14 @@ function penguinSuit.onTickPowerup(p)
 		end
 	end
 
+	if linkChars[p.character] and p:mem(0x12E,FIELD_BOOL) then -- properly shoot iceballs while ducking to fix a dumb issue with link's iceball being way lower floor while ducking & shooting
+		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
+		if p:mem(0x162,FIELD_WORD) > 2 then return end
+		if p:mem(0x14, FIELD_WORD) == 2 then
+			shootIceball(p)
+		end
+	end
 end
-
-local goalTape = require("npcs/AI/goalTape")
 
 function penguinSuit.onTickEndPowerup(p)
 	if not p.data.penguinSuit then return end
@@ -337,11 +379,11 @@ function penguinSuit.onTickEndPowerup(p)
 	end
 	local data = p.data.penguinSuit
 	local settings = penguinSuit.settings
-	
+
 	if goalTape.playerInfo[p.idx] and goalTape.playerInfo[p.idx].darkness > 0 then
 		stopSlide(p)
 	end
-	
+
 	-- handles setting the player's held NPC to be aligned with the smaller hitbox when swimming
 	if inWater(p) then
 		p:mem(0x38,FIELD_WORD,2)
@@ -378,6 +420,7 @@ function penguinSuit.onTickEndPowerup(p)
 		local goingUphill = false
 		local goingDownhill = false
 		p:mem(0x3C,FIELD_BOOL,false) 
+		p:mem(0x168,FIELD_FLOAT,0)
 		if isOnGround(p) and lunatime.tick() % 2 == 0 then
 			Effect.spawn(
 				74, 
@@ -560,7 +603,6 @@ function penguinSuit.onTickEndPowerup(p)
 	else
 		data.slideSpeedX = p.speedX
 	end
-	
 	------------ END OF SLIDING HANDLING ------------
 end
 
