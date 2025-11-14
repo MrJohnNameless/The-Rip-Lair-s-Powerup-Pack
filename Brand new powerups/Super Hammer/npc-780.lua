@@ -3,7 +3,7 @@ local superHammer = {}
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
-local builderSuit = cp.addPowerup("builderSuit", "powerups/builderSuit", npcID)
+local builderSuit = cp.addPowerup("Builder Suit", "powerups/builderSuit", npcID)
 cp.transformWhenSmall(npcID, 9)
 
 local superHammerSettings = {
