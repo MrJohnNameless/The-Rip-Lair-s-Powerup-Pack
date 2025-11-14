@@ -10,6 +10,12 @@ karate.cheats = {"needakaratesuit"}
 
 karate.cooldown = 16
 
+local blockWhitelist = {}
+
+function karate.whitelist(id)
+    blockWhitelist[id] = true
+end
+
 
 function karate.onInitPowerupLib()
     karate.spritesheets = {
@@ -314,7 +320,7 @@ function karate.onTickPowerup(p)
 
     if not data.knockedBack and data.canHarm then
         for k, v in ipairs(Colliders.getColliding{a = data.collider, b = Block.SOLID, btype = Colliders.BLOCK}) do
-            if v.contentID == 0 and Block.MEGA_SMASH_MAP[v.id] then
+            if v.contentID == 0 and Block.MEGA_SMASH_MAP[v.id] or blockWhitelist[v.id] then
                 v:remove(true)
             else
                 v:hit(true, p)

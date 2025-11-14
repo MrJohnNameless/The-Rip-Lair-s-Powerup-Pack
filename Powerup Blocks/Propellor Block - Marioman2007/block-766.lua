@@ -1,6 +1,7 @@
 local blockmanager = require("blockmanager")
 local blockutils = require("blocks/blockutils")
 local cp = require("customPowerups")
+local propeller = require("powerups/propeller")
 
 --Written by MegaDood
 --Collision detection written by Quine
@@ -8,6 +9,8 @@ local cp = require("customPowerups")
 local blockID = BLOCK_ID
 
 local block = {}
+
+propeller.whitelist(blockID)
 
 blockmanager.setBlockSettings({
 	id = blockID,
@@ -36,26 +39,12 @@ local function SpawnNPC(v)
 	end
 end
 
-local function killBlock(v)	
-	Animation.spawn(100,v.x,v.y)
+function block.onBlockRemove(e, v)
 	SpawnNPC(v)
-	v:remove()
-	SFX.play(4)
-end
-
-function block:onTickEndBlock()
-	if blockutils.hiddenFilter(self) then
-		for _,p in ipairs(Player.get()) do
-			if cp.getCurrentName(p) == "Super Whip" and Colliders.collide(self, p.data.superWhip.hitbox) and p.data.superWhip.projectileTimer == 44 then
-				killBlock(self)
-			end
-		end
-	end
 end
 
 function block.onInitAPI()
-    blockmanager.registerEvent(blockID, block, "onTickEndBlock")
-    blockmanager.registerEvent(blockID, blockutils, "onStartBlock", "storeContainedNPC")
+	registerEvent(block, "onBlockRemove")
 end
 
 return block

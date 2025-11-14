@@ -9,11 +9,6 @@ local blockID = BLOCK_ID
 
 local block = {}
 
-blockmanager.setBlockSettings({
-	id = blockID,
-	frames = 1
-})
-
 local function SpawnNPC(v)
 	local section = blockutils.getBlockSection(v)
 
@@ -43,10 +38,13 @@ local function killBlock(v)
 	SFX.play(4)
 end
 
+--Add NPCs here to make them able to break fiery blocks.
+local npcs = {210, 667}
+
 function block:onTickEndBlock()
 	if blockutils.hiddenFilter(self) then
-		for _,p in ipairs(Player.get()) do
-			if cp.getCurrentName(p) == "Super Whip" and Colliders.collide(self, p.data.superWhip.hitbox) and p.data.superWhip.projectileTimer == 44 then
+		for _,p in ipairs(Player.getIntersecting(self.x - 6, self.y - 6, self.x + self.width + 6, self.y + self.height + 6)) do
+			if cp.getCurrentName(p) == "Frog Suit" then
 				killBlock(self)
 			end
 		end
