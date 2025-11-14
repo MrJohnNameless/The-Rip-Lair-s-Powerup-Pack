@@ -30,6 +30,7 @@ local cp = require("customPowerups")
 local smallSwitch = require("npcs/ai/smallswitch")
 
 local catSuit = {}
+local checkedForLevelEnd = false
 
 -- reserved variable names are "name", "items", "id", "collectSounds", "basePowerup", "spritesheets", "cheats" and "iniFiles"
 -- everything except "name" and "id" can be safely modified
@@ -264,7 +265,7 @@ end
 registerEvent(catSuit, "onExit", "onExit")
 
 function catSuit.onExit()
-	if activePlayer and cp.getCurrentName(activePlayer) == "invincibleCatSuit" then cp.setPowerup("catSuit", activePlayer, true) end
+	if activePlayer and cp.getCurrentName(activePlayer) == "Invincible Cat Suit" then cp.setPowerup("Cat Suit", activePlayer, true) end
 end
 
 catSuit.ignore = {};
@@ -342,7 +343,7 @@ function catSuit.onTickPowerup(p)
 		return
 	end
 		
-	if unOccupied(p) and (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and data.state == STATE_NORMAL then
+	if unOccupied(p) and (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and data.state == STATE_NORMAL and Level.endState() == 0 then
 		-- initiates sliding
 		if settings.canSlide and not onSand(p) and (p:mem(0x12E, FIELD_BOOL) or p.keys.down) 
 		and p.rawKeys.altJump ~= KEYS_DOWN and not p:mem(0x36,FIELD_BOOL) and p:mem(0x176,FIELD_WORD) == 0 then
@@ -665,6 +666,31 @@ function catSuit.onPlayerHarm(token,p)
 			break
 		end
 	end
+end
+
+function catSuit.onInitAPI()
+    registerEvent(catSuit, "onTick")
+    cp = require("customPowerups")
+end
+
+function catSuit.onTick()
+    if checkedForLevelEnd then return end
+
+    if Level.endState() ~= 0 then
+        checkedForLevelEnd = true
+
+        for _, p in ipairs(Player.get()) do
+            if cp.getCurrentPowerup(p) == catSuit then
+                cp.setPowerup("Cat Suit", p, true)
+
+                for i = 1, 10 do
+                    local e =  Effect.spawn(80, p.x - 8 + RNG.random(p.width + 8), p.y - 4 + RNG.random(p.height + 8))
+                    e.speedX = RNG.random(6) - 3
+                    e.speedY = RNG.random(6) - 3
+                end
+            end
+        end
+    end
 end
 
 return catSuit

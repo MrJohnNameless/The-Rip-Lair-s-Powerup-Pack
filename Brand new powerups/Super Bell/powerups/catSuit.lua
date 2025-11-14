@@ -320,7 +320,7 @@ function catSuit.onTickPowerup(p)
 		return
 	end
 		
-	if unOccupied(p) and (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and data.state == STATE_NORMAL then
+	if unOccupied(p) and (p.keys.run == KEYS_PRESSED or p.keys.altRun == KEYS_PRESSED) and data.state == STATE_NORMAL and Level.endState() == 0 then
 		-- initiates sliding
 		if settings.canSlide and not onSand(p) and (p:mem(0x12E, FIELD_BOOL) or p.keys.down) 
 		and p.rawKeys.altJump ~= KEYS_DOWN and not p:mem(0x36,FIELD_BOOL) and p:mem(0x176,FIELD_WORD) == 0 then

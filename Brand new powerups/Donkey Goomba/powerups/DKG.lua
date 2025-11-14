@@ -2,6 +2,7 @@ local cp = require("customPowerups")
 local dkg = {}
 
 local activePlayer
+local checkedForLevelEnd = false
 
 dkg.basePowerup = PLAYER_FIREFLOWER
 dkg.items = {}
@@ -135,6 +136,31 @@ end
 function dkg.onTickEndPowerup(p)
 	if cp.getCurrentPowerup(p) ~= dkg or not p.data.dkg then return end -- check if the powerup is currently active
 	p.frame = math.floor(lunatime.tick() / 24) % 2 + 1
+end
+
+function dkg.onInitAPI()
+    registerEvent(dkg, "onTick")
+    cp = require("customPowerups")
+end
+
+function dkg.onTick()
+    if checkedForLevelEnd then return end
+
+    if Level.endState() ~= 0 then
+        checkedForLevelEnd = true
+
+        for _, p in ipairs(Player.get()) do
+            if cp.getCurrentPowerup(p) == dkg then
+                cp.setPowerup(1, p, true)
+
+                for i = 1, 10 do
+                    local e =  Effect.spawn(80, p.x - 8 + RNG.random(p.width + 8), p.y - 4 + RNG.random(p.height + 8))
+                    e.speedX = RNG.random(6) - 3
+                    e.speedY = RNG.random(6) - 3
+                end
+            end
+        end
+    end
 end
 
 return dkg
