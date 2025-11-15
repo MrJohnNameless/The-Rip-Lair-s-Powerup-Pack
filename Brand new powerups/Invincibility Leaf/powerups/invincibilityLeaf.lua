@@ -22,7 +22,7 @@ leaf.collectSounds = {
 }
 
 local powerupRevert = require("powerups/powerupRevert")
-powerupRevert.register(leaf, leaf.basePowerup)
+powerupRevert.register("Invincibility Leaf", leaf.basePowerup)
 
 function leaf.onEnable(p)
 end

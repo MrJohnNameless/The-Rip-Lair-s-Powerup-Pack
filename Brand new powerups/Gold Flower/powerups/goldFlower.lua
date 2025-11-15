@@ -39,7 +39,7 @@ local projectileTimerMax = {30, 35, 40, 25, 40}
 
 local powerupRevert = require("powerups/powerupRevert")
 if goldFlower.transformOnLevelEnd then
-	powerupRevert.register(goldFlower, goldFlower.basePowerup, goldFlower.projectileID, true)
+	powerupRevert.register("Gold Flower", goldFlower.basePowerup, goldFlower.projectileID, true)
 end
 
 local GP

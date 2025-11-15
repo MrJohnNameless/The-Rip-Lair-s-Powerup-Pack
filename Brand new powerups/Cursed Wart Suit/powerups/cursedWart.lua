@@ -32,7 +32,7 @@ cursedWart.animData = {
 }
 
 local powerupRevert = require("powerups/powerupRevert")
-powerupRevert.register(cursedWart, 2)
+powerupRevert.register("Cursed Wart Suit", 2)
 
 local emptyImage = Graphics.loadImageResolved("stock-32.png")
 local iniFile = Misc.resolveFile("powerups/cursedWart.ini")
