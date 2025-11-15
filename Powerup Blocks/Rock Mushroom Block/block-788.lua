@@ -40,8 +40,8 @@ end
 
 function block:onTickEndBlock()
 	if blockutils.hiddenFilter(self) then
-		for _,p in ipairs(Player.getIntersecting(self.x - 6, self.y - 6, self.x + self.width + 6, self.y + self.height + 6)) do
-			if cp.getCurrentName(p) == "Frog Suit" then
+		for _,p in ipairs(Player.getIntersecting(self.x - 16, self.y - 16, self.x + self.width + 16, self.y + self.height + 16)) do
+			if cp.getCurrentName(p) == "Rock Mushroom" and p.data.rockMushroom.isRockRolling then
 				killBlock(self)
 			end
 		end

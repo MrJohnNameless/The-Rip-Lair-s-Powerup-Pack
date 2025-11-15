@@ -38,10 +38,30 @@ local function killBlock(v)
 	SFX.play(4)
 end
 
+local function powerupAbilitiesDisabled(p)
+    return (
+        p.forcedState > 0 or p.deathTimer > 0 or p:mem(0x13C,FIELD_BOOL) -- In a forced state/dead
+        or p:mem(0x40,FIELD_WORD) > 0 -- Climbing
+        or p:mem(0x0C,FIELD_BOOL)     -- Fairy
+        or p.mount == MOUNT_CLOWNCAR
+    )
+end
+
+local function canSpin(p)
+    return (
+        not powerupAbilitiesDisabled(p)
+        and not p:mem(0x12E,FIELD_BOOL) -- Ducking
+        and not p:mem(0x3C,FIELD_BOOL)  -- Sliding
+        and p.character ~= CHARACTER_LINK
+        and p.mount == MOUNT_NONE
+        and p.holdingNPC == nil
+    )
+end
+
 function block:onTickEndBlock()
 	if blockutils.hiddenFilter(self) then
 		for _,p in ipairs(Player.getIntersecting(self.x - 6, self.y - 6, self.x + self.width + 6, self.y + self.height + 6)) do
-			if cp.getCurrentName(p) == "Frog Suit" then
+			if cp.getCurrentName(p) == "Cape Feather" and (Level.winState() == 0 and canSpin(p) and (p:mem(0x50,FIELD_BOOL) or p:mem(0x164,FIELD_WORD) == -1)) then
 				killBlock(self)
 			end
 		end
