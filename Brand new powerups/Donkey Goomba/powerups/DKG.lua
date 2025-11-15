@@ -1,9 +1,6 @@
 local cp = require("customPowerups")
 local dkg = {}
 
-local activePlayer
-local checkedForLevelEnd = false
-
 dkg.basePowerup = PLAYER_FIREFLOWER
 dkg.items = {}
 
@@ -11,6 +8,9 @@ dkg.collectSounds = {
     upgrade = ("powerups/Hey I can fly.wav"),
     reserve = 12,
 }
+
+local powerupRevert = require("powerupRevert")
+powerupRevert.register(dkg.name, 2)
 
 dkg.cheats = {"needadonkeygoomba"}
 dkg.blackListedBlocks = {766}
@@ -51,14 +51,6 @@ function dkg.onDisable(p)
 	p:mem(0x154,FIELD_WORD,0) -- lets the player hold items again
 end
 
-registerEvent(dkg, "onExit", "onExit")
-
-function dkg.onExit()
-	if activePlayer and cp.getCurrentName(activePlayer) == "Donkey Goomba" then
-		cp.setPowerup(1, activePlayer, true)
-	end
-end
-
 dkg.ignore = {};
 dkg.ignore[108] = true;
 
@@ -70,7 +62,6 @@ end
 function dkg.onTickPowerup(p)
 	if cp.getCurrentPowerup(p) ~= dkg or not p.data.dkg then return end -- check if the powerup is currenly active
 	local data = p.data.dkg
-	activePlayer = p
 	
 	if data.groundCollider == 0 then
 		data.groundCollider = Colliders.Box(p.x, p.y, 16, 256)
@@ -78,7 +69,6 @@ function dkg.onTickPowerup(p)
 	
 	p:mem(0x140, FIELD_WORD, 2);
 	p:mem(0x142, FIELD_WORD, 0);
-	activePlayer = p
 	
 	for _,n in ipairs(NPC.get()) do
 		if n:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
@@ -136,31 +126,6 @@ end
 function dkg.onTickEndPowerup(p)
 	if cp.getCurrentPowerup(p) ~= dkg or not p.data.dkg then return end -- check if the powerup is currently active
 	p.frame = math.floor(lunatime.tick() / 24) % 2 + 1
-end
-
-function dkg.onInitAPI()
-    registerEvent(dkg, "onTick")
-    cp = require("customPowerups")
-end
-
-function dkg.onTick()
-    if checkedForLevelEnd then return end
-
-    if Level.endState() ~= 0 then
-        checkedForLevelEnd = true
-
-        for _, p in ipairs(Player.get()) do
-            if cp.getCurrentPowerup(p) == dkg then
-                cp.setPowerup(1, p, true)
-
-                for i = 1, 10 do
-                    local e =  Effect.spawn(80, p.x - 8 + RNG.random(p.width + 8), p.y - 4 + RNG.random(p.height + 8))
-                    e.speedX = RNG.random(6) - 3
-                    e.speedY = RNG.random(6) - 3
-                end
-            end
-        end
-    end
 end
 
 return dkg

@@ -36,8 +36,11 @@ end
 
 local animFrames = {12, 12, 12, 11, 11, 11, 11, 11, 11}
 local projectileTimerMax = {30, 35, 40, 25, 40}
-local checkedForLevelEnd = false
 
+local powerupRevert = require("powerupRevert")
+if goldFlower.transformOnLevelEnd then
+	powerupRevert.register(goldFlower.name, goldFlower.basePowerup, goldFlower.projectileID, true)
+end
 
 local GP
 pcall(function() GP = require("GroundPound") end)
@@ -206,36 +209,6 @@ function goldFlower.onTickEndPowerup(p)
         p:setFrame(curFrame)
     end
 	--]]
-end
-
-
----------------------
--- Other Functions --
----------------------
-
-function goldFlower.onInitAPI()
-    registerEvent(goldFlower, "onTick")
-    cp = require("customPowerups")
-end
-
-function goldFlower.onTick()
-    if checkedForLevelEnd or not goldFlower.transformOnLevelEnd then return end
-
-    if Level.endState() ~= 0 then
-        checkedForLevelEnd = true
-
-        for _, p in ipairs(Player.get()) do
-            if cp.getCurrentPowerup(p) == goldFlower then
-                cp.setPowerup(goldFlower.basePowerup, p, true)
-
-                for i = 1, 10 do
-                    local e =  Effect.spawn(goldFlower.projectileID, p.x - 8 + RNG.random(p.width + 8), p.y - 4 + RNG.random(p.height + 8), p.character)
-                    e.speedX = RNG.random(6) - 3
-                    e.speedY = RNG.random(6) - 3
-                end
-            end
-        end
-    end
 end
 
 return goldFlower
