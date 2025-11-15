@@ -31,7 +31,7 @@ cursedWart.animData = {
     [STATE.HURT]  = {frames = 2, frameX = 3, framespeed = 8},
 }
 
-local powerupRevert = require("powerupRevert")
+local powerupRevert = require("powerups/powerupRevert")
 powerupRevert.register(cursedWart.name, 2)
 
 local emptyImage = Graphics.loadImageResolved("stock-32.png")

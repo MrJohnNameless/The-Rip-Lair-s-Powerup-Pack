@@ -37,7 +37,7 @@ end
 local animFrames = {12, 12, 12, 11, 11, 11, 11, 11, 11}
 local projectileTimerMax = {30, 35, 40, 25, 40}
 
-local powerupRevert = require("powerupRevert")
+local powerupRevert = require("powerups/powerupRevert")
 if goldFlower.transformOnLevelEnd then
 	powerupRevert.register(goldFlower.name, goldFlower.basePowerup, goldFlower.projectileID, true)
 end

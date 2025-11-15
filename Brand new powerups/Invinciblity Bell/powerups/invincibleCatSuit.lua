@@ -47,7 +47,7 @@ catSuit.settings = {
 	wallClimbLength = 260 -- how many ticks/frames is the player able to wall-climb for? (260 by default)
 }
 
-local powerupRevert = require("powerupRevert")
+local powerupRevert = require("powerups/powerupRevert")
 powerupRevert.register(catSuit.name, "Cat Suit")
 
 -- runs when customPowerups is done initializing the library

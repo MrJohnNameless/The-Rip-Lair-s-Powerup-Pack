@@ -21,7 +21,7 @@ leaf.collectSounds = {
     reserve = 12,
 }
 
-local powerupRevert = require("powerupRevert")
+local powerupRevert = require("powerups/powerupRevert")
 powerupRevert.register(leaf.name, leaf.basePowerup)
 
 function leaf.onEnable(p)

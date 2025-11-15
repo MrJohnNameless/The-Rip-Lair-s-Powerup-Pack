@@ -9,7 +9,7 @@ dkg.collectSounds = {
     reserve = 12,
 }
 
-local powerupRevert = require("powerupRevert")
+local powerupRevert = require("powerups/powerupRevert")
 powerupRevert.register(dkg.name, 2)
 
 dkg.cheats = {"needadonkeygoomba"}
