@@ -10,7 +10,7 @@ dkg.collectSounds = {
 }
 
 local powerupRevert = require("powerups/powerupRevert")
-powerupRevert.register(dkg.name, 2)
+powerupRevert.register(dkg, 2)
 
 dkg.cheats = {"needadonkeygoomba"}
 dkg.blackListedBlocks = {766}

@@ -17,7 +17,7 @@ superAcorn.collectSounds = {
 superAcorn.isCheating = true
 
 local powerupRevert = require("powerups/powerupRevert")
-powerupRevert.register(superAcorn.name, "Super Acorn")
+powerupRevert.register(superAcorn, "Super Acorn")
 
 -- Sprites and hitboxes
 function superAcorn.onInitPowerupLib()

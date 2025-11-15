@@ -48,7 +48,7 @@ catSuit.settings = {
 }
 
 local powerupRevert = require("powerups/powerupRevert")
-powerupRevert.register(catSuit.name, "Cat Suit")
+powerupRevert.register(catSuit, "Cat Suit")
 
 -- runs when customPowerups is done initializing the library
 function catSuit.onInitPowerupLib()
