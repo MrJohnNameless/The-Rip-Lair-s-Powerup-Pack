@@ -1,5 +1,6 @@
 local blockmanager = require("blockmanager")
 local blockutils = require("blocks/blockutils")
+local cp = require("customPowerups")
 
 --Written by MegaDood
 --Collision detection written by Quine
@@ -52,6 +53,13 @@ function block:onTickEndBlock()
 				end
 			end
 		end
+		
+		for _,p in ipairs(Player.getIntersecting(self.x - 6, self.y - 6, self.x + self.width + 6, self.y + self.height + 6)) do
+			if cp.getCurrentName(p) == "SPONGEBOB" and p.data.spongebob.state >= 2 then
+				killBlock(self)
+			end
+		end
+		
 	end
 end
 
