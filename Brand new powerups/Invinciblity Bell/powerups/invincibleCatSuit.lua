@@ -30,7 +30,6 @@ local cp = require("customPowerups")
 local smallSwitch = require("npcs/ai/smallswitch")
 
 local catSuit = {}
-local checkedForLevelEnd = false
 
 -- reserved variable names are "name", "items", "id", "collectSounds", "basePowerup", "spritesheets", "cheats" and "iniFiles"
 -- everything except "name" and "id" can be safely modified
@@ -47,6 +46,9 @@ catSuit.settings = {
 	canWallClimb = true, -- is the player allowed to wall-climb while using the cat suit? (true by default)
 	wallClimbLength = 260 -- how many ticks/frames is the player able to wall-climb for? (260 by default)
 }
+
+local powerupRevert = require("powerupRevert")
+powerupRevert.register(catSuit.name, "Cat Suit")
 
 -- runs when customPowerups is done initializing the library
 function catSuit.onInitPowerupLib()
@@ -260,12 +262,6 @@ end
 
 function catSuit.onInitAPI()
 	registerEvent(catSuit,"onPlayerHarm")
-end
-
-registerEvent(catSuit, "onExit", "onExit")
-
-function catSuit.onExit()
-	if activePlayer and cp.getCurrentName(activePlayer) == "Invincible Cat Suit" then cp.setPowerup("Cat Suit", activePlayer, true) end
 end
 
 catSuit.ignore = {};
@@ -666,31 +662,6 @@ function catSuit.onPlayerHarm(token,p)
 			break
 		end
 	end
-end
-
-function catSuit.onInitAPI()
-    registerEvent(catSuit, "onTick")
-    cp = require("customPowerups")
-end
-
-function catSuit.onTick()
-    if checkedForLevelEnd then return end
-
-    if Level.endState() ~= 0 then
-        checkedForLevelEnd = true
-
-        for _, p in ipairs(Player.get()) do
-            if cp.getCurrentPowerup(p) == catSuit then
-                cp.setPowerup("Cat Suit", p, true)
-
-                for i = 1, 10 do
-                    local e =  Effect.spawn(80, p.x - 8 + RNG.random(p.width + 8), p.y - 4 + RNG.random(p.height + 8))
-                    e.speedX = RNG.random(6) - 3
-                    e.speedY = RNG.random(6) - 3
-                end
-            end
-        end
-    end
 end
 
 return catSuit

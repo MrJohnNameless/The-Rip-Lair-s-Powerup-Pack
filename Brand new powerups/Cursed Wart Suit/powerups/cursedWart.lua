@@ -31,6 +31,9 @@ cursedWart.animData = {
     [STATE.HURT]  = {frames = 2, frameX = 3, framespeed = 8},
 }
 
+local powerupRevert = require("powerupRevert")
+powerupRevert.register(cursedWart.name, 2)
+
 local emptyImage = Graphics.loadImageResolved("stock-32.png")
 local iniFile = Misc.resolveFile("powerups/cursedWart.ini")
 
@@ -320,30 +323,9 @@ end
 ---------------------
 
 function cursedWart.onInitAPI()
-    registerEvent(cursedWart, "onTick")
     registerEvent(cursedWart, "onPlayerHarm")
 
     cp = require("customPowerups")
-end
-
-function cursedWart.onTick()
-    if checkedForLevelEnd then return end
-
-    if Level.endState() ~= 0 then
-        checkedForLevelEnd = true
-
-        for _, p in ipairs(Player.get()) do
-            if cp.getCurrentPowerup(p) == cursedWart then
-                cp.setPowerup(2, p, true)
-
-                for i = 1, 10 do
-                    local e =  Effect.spawn(80, p.x - 8 + RNG.random(p.width + 8), p.y - 4 + RNG.random(p.height + 8), p.character)
-                    e.speedX = RNG.random(6) - 3
-                    e.speedY = RNG.random(6) - 3
-                end
-            end
-        end
-    end
 end
 
 function cursedWart.onPlayerHarm(e, p)
