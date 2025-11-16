@@ -1,5 +1,6 @@
 local blockmanager = require("blockmanager")
 local blockutils = require("blocks/blockutils")
+local cp = require("customPowerups")
 
 --Written by MegaDood
 --Collision detection written by Quine
@@ -10,7 +11,7 @@ local block = {}
 
 blockmanager.setBlockSettings({
 	id = blockID,
-	frames = 4
+	frames = 1
 })
 
 local function SpawnNPC(v)
@@ -42,22 +43,30 @@ local function killBlock(v)
 	SFX.play(4)
 end
 
---Add NPCs here to make them able to break fiery blocks.
-local npcs = {790}
+local npcs = {5, 7, 73, 113, 114, 115, 116, 172, 174, 194, 195, 880}
 
 function block:onTickEndBlock()
 	if blockutils.hiddenFilter(self) then
+	
+		for _,p in ipairs(Player.getIntersecting(self.x - 6, self.y - 6, self.x + self.width + 6, self.y + self.height + 6)) do
+			if (cp.getCurrentName(p) == "Blue Shell" or cp.getCurrentName(p) == "Bowser Shell") and ((p.data.blueShell and p.data.blueShell.isInShell) or (p.data.bowsershell and p.data.bowsershell.isInShell)) then
+				killBlock(self)
+			end
+		end
+	
 		local c = Colliders.getColliding{a = blockutils.getHitbox(self, 10), btype = Colliders.NPC, filter = npcfilter }
 		for _,v in ipairs(c) do
 			for _,n in ipairs(npcs) do
 				if v.id == n then
 					killBlock(self)
-					v:kill()
+					if v.id == 880 then v:kill() end
 				end
 			end
 		end
+		
 	end
 end
+
 
 function block.onInitAPI()
     blockmanager.registerEvent(blockID, block, "onTickEndBlock")
