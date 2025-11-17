@@ -146,7 +146,7 @@ function flyingStar.onTickEndPowerup(p)
 		data.flyTimer = 0
 		if data.maxSpeed then
 			data.maxSpeedTimer = data.maxSpeedTimer + 1
-			--Animation for when the player cna fly
+			--Animation for when the player can fly
 			if p.mount == 0 and p.holdingNPC == nil and not p:mem(0x12E, FIELD_BOOL) and not p:mem(0x50, FIELD_BOOL) and not p:mem(0x4A, FIELD_BOOL) and not p:mem(0x44, FIELD_BOOL) and not p:mem(0x3C, FIELD_BOOL) and not p:mem(0x36, FIELD_BOOL) then
 				if p:isOnGround() then
 					p.frame = math.floor(data.maxSpeedTimer / 4) % 3 + 16
