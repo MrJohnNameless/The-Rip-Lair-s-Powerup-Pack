@@ -9,3 +9,5 @@ Shikaternia - made the sprites for Penguin Mario (https://mfgg.net/index.php?act
 Gatete - featured Penguin Luigi sprites for Gatete Mario Engine 9 which were used here (https://github.com/GateteVerde/Gatete-Mario-Engine-9/releases)
 
 Legend-Tony980 - made the sprites for Penguin Toad (https://www.deviantart.com/legend-tony980/art/SMBX-Toad-s-sprites-Fourth-Update-724628909)
+
+SonicTheBombhog - Made the sprites for Penguin Link, improved and edited by MrNameless

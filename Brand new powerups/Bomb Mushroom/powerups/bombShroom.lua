@@ -7,11 +7,17 @@ function bombShroom.onInitPowerupLib()
     bombShroom.spritesheets = {
         bombShroom:registerAsset(1, "bombShroom_mario.png"),
         bombShroom:registerAsset(2, "bombShroom_luigi.png"),
+		bombShroom:registerAsset(3, "bombShroom_peach.png"),
+		bombShroom:registerAsset(4, "bombShroom_toad.png"),
+		bombShroom:registerAsset(5, "bombShroom_link.png"),
     }
 
     bombShroom.iniFiles = {
         bombShroom:registerAsset(1, "bombShroom_mario.ini"),
         bombShroom:registerAsset(2, "bombShroom_luigi.ini"),
+		bombShroom:registerAsset(3, "bombShroom_peach.ini"),
+		bombShroom:registerAsset(4, "bombShroom_toad.ini"),
+		bombShroom:registerAsset(5, "bombShroom_link.ini"),
     }
 end
 

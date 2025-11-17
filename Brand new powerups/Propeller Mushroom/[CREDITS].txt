@@ -2,7 +2,9 @@ Powerup made by Marioman2007
 Sprites for Mario and Luigi by JR. Master and Marioman2007
 
 
-Toad, Peach and Link sprites by SonicTheBombhog, massive thank you for adding these to the pack!
+Toad sprites by LegendTony, converted to 16-bit by SonicTheBombhog.
+
+Peach and Link sprites by SonicTheBombhog, massive thank you for adding these to the pack!
 
 
 SMW styled sprites by GlacialSiren, ported by Lumsht
