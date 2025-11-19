@@ -313,7 +313,7 @@ function wingcap.onTickPowerup(p)
 		data.slow = math.clamp(data.slow + 0.02, 0, 9)
 		--Speed up the player if falling
 		if p.speedY >= 7 then
-			data.speedDown = math.clamp(data.speedDown + 0.2, 0, 8)
+			data.speedDown = math.clamp(data.speedDown + 0.2, 0, 9)
 			data.slow = data.slow - (p.speedY * 0.002)
 		end
 		
@@ -321,7 +321,7 @@ function wingcap.onTickPowerup(p)
 		
 			data.upBoostTimer = data.upBoostTimer + 1
 			data.canTurn = true
-			p.speedY = easing.inOutQuart(math.clamp(data.upBoostTimer, 0, 40), data.currentSpeedY / (math.clamp(3 + (data.currentSpeedY * 0.0625), 0, 3)), ((data.upSpeed * 0.6) - math.abs(p.speedX + 0.3 / 2)) + data.reduce + (7 - math.abs(data.upSpeed)), 40)
+			p.speedY = easing.inOutQuart(math.clamp(data.upBoostTimer, 0, 40), data.currentSpeedY / (math.clamp(3 + (data.currentSpeedY * 0.0625), 0, 3)), ((data.upSpeed * 0.8) - math.abs(p.speedX + 0.3 / 2)) + data.reduce + (7 - math.abs(data.upSpeed)), 40)
 			data.slow = easing.linear(math.clamp(data.upBoostTimer, 0, 40), data.currentSlow, data.currentSlow - 1, 40)
 			data.speedDown = math.clamp(data.speedDown - 0.025, 0, 5)
 			if data.upBoostTimer >= 40 then
