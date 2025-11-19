@@ -14,7 +14,7 @@
 	Buttercarsen - Made the player sprites
 	Linkys4Mario - Made the powerup sprite	
 	
-	Version 2.0.0
+	Version 2.5.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 ]]--
@@ -54,7 +54,7 @@ local smb2Chars = table.map{3,4,6,9,10,11,16}
 local linkChars = table.map{5,12,16}
 
 -- jump heights for mario, luigi, peach, toad, & link respectively
-local jumpheights = {40,45,40,35,40}
+local jumpheights = {35,40,35,30,35}
 
 local function handleJumpSFX(p,allowSpinjumpSFX)
 	local wasMuted1 = Audio.sounds[1].muted
@@ -77,15 +77,12 @@ local function handleJumpSFX(p,allowSpinjumpSFX)
 	end)
 end
 
-function weirdShroom.onInitAPI()
-	registerEvent(weirdShroom, "onBlockHit")
-end
-
 -- runs once when the powerup gets activated, passes the player
 function weirdShroom.onEnable(p)
 	jumper.registerPowerup(cp.getCurrentName(p),jumpheights)
 	p.data.weirdShroom = {
 		wasGrounded = false,
+		jumpAnimTimer = 0,
 	}
 end
 
@@ -117,22 +114,25 @@ function weirdShroom.onTickPowerup(p)
 
 	if p.forcedState ~= 0 then return end
 	
-	if p:mem(0x11C,FIELD_WORD) <= 0 and not p:mem(0x36,FIELD_BOOL) 
-	and not p:mem(0x0C,FIELD_BOOL) and p.speedY < 0 then
-		p.speedY = p.speedY + 0.1
+	if not p:mem(0x36,FIELD_BOOL) and not p:mem(0x0C,FIELD_BOOL) then
+		if p:mem(0x11C,FIELD_WORD) <= 0 and p.speedY > 0 then
+			p.speedY = p.speedY - (Defines.player_grav * 0.65)
+		end
+
+		if p:mem(0x11C,FIELD_WORD) == 1 and p.speedY < 0 and not p.isSpinJumping then
+			SFX.play(Misc.resolveFile("powerups/weirdScuttle.ogg")) 
+		end
 	end
 end
 
--- check if a player was right above the noteblock whenever it was hit from above
-function weirdShroom.onBlockHit(token,v,upper,p)
-	if v.id ~= 55 or not upper then return end
-	for _,p in ipairs(Player.getIntersecting(v.x,v.y - 4,v.x + v.width,v.y + v.height)) do  -- refreshes the player's jump replica after hitting a note block
-		if cp.getCurrentPowerup(p) == weirdShroom and p.data.weirdShroom 
-		and (p.keys.jump or p.keys.altJump) then
-			p.data.weirdShroom.wasGrounded = true
-			handleJumpSFX(p,false)
-			p.data.weirdShroom.wasGrounded = false
-		end
+function weirdShroom.onDrawPowerup(p)
+	if not p.data.weirdShroom then return end -- check if the powerup is currenly active
+
+	if p:mem(0x11C,FIELD_WORD) > 0 and not p.isSpinJumping and p.speedY < 0 and p.frame == 4 then
+		p.data.jumpAnimTimer = p.data.jumpAnimTimer + 1
+		p.frame = ({4, 36, 46})[1 + math.floor(p.data.jumpAnimTimer / 3) % 3]
+	else
+		p.data.jumpAnimTimer = 0
 	end
 end
 
