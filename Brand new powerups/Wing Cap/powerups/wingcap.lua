@@ -191,6 +191,8 @@ function wingcap.onEnable(p)
 		speedDown = 0,
 		reduce = 0,
 		capTimer = 80,
+		currentSpeedY = 0,
+		canTurn = false
 	}
 	p:mem(0x162, FIELD_WORD,5) -- prevents link from accidentally shooting a base projectile when getting the powerup via a sword
 end
@@ -257,6 +259,7 @@ function wingcap.onTickPowerup(p)
 		data.speedDown = 0
 		data.reduce = 0
 		data.capTimer = 0
+		data.canTurn = false
 	end
 	
 	p:mem(0x164, FIELD_WORD, 0)
@@ -304,6 +307,7 @@ function wingcap.onTickPowerup(p)
 				data.currentSlow = data.slow
 				if data.upSpeed <= -6 and math.abs(p.speedX) >= 4 then SFX.play("powerups/wingcapWhoosh.wav") end
 				data.reduce = data.reduce + (data.upSpeed * 0.05)
+				data.currentSpeedY = p.speedY
 			end
 		end
 		data.slow = math.clamp(data.slow + 0.02, 0, 9)
@@ -316,25 +320,13 @@ function wingcap.onTickPowerup(p)
 		if data.upBoostTimer then
 		
 			data.upBoostTimer = data.upBoostTimer + 1
-			
-			p.speedY = easing.outCubic(math.clamp(data.upBoostTimer, 0, 32), 0, ((data.upSpeed * 0.01) - math.abs(p.speedX + 0.3 / 2)) + data.reduce + (7 - math.abs(data.upSpeed)), 32)
-			data.slow = easing.linear(math.clamp(data.upBoostTimer, 0, 32), data.currentSlow, data.currentSlow - 1, 32)
+			data.canTurn = true
+			p.speedY = easing.inOutQuart(math.clamp(data.upBoostTimer, 0, 40), data.currentSpeedY / (math.clamp(3 + (data.currentSpeedY * 0.0625), 0, 3)), ((data.upSpeed * 0.6) - math.abs(p.speedX + 0.3 / 2)) + data.reduce + (7 - math.abs(data.upSpeed)), 40)
+			data.slow = easing.linear(math.clamp(data.upBoostTimer, 0, 40), data.currentSlow, data.currentSlow - 1, 40)
 			data.speedDown = math.clamp(data.speedDown - 0.025, 0, 5)
-			if data.upBoostTimer >= 32 then
+			if data.upBoostTimer >= 40 then
 				data.upSpeedActual = 0
 				data.upBoostTimer = nil
-			end
-						
-			--Turn around in midair
-			if  p.keys.altJump == KEYS_PRESSED then
-				data.currentSpeed = -data.currentSpeed
-				data.speedDown = -data.speedDown
-				data.lockXSpeed = -data.lockXSpeed
-				p.speedX = -p.speedX
-				data.upBoostTimer = nil
-				data.upSpeedActual = 0
-				data.reduce = 0
-				data.slow = data.slow - 1.5
 			end
 			
 			if data.upSpeed <= -6 and math.abs(p.speedX) >= 4 then
@@ -347,6 +339,19 @@ function wingcap.onTickPowerup(p)
 				end
 			end
 			
+		end
+		
+		if p.speedY < 0 and data.canTurn then
+			--Turn around in midair
+			if p.keys.altJump == KEYS_PRESSED then
+				data.currentSpeed = -data.currentSpeed
+				p.speedX = -p.speedX
+				data.upBoostTimer = nil
+				data.upSpeedActual = 0
+				data.reduce = 0
+				data.slow = data.slow - 1.5
+				data.canTurn = false
+			end
 		end
 		
 		if p.speedY > 0 and data.resetFlight and not data.upBoostTimer then
