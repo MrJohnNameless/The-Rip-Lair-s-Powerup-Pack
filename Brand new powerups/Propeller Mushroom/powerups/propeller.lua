@@ -95,6 +95,9 @@ function propeller.onInitPowerupLib()
     propeller.propellerTiltedImages = {
         propeller:registerAsset(CHARACTER_MARIO, "propeller-1-tilted.png"),
         propeller:registerAsset(CHARACTER_LUIGI, "propeller-2-tilted.png"),
+		false,
+		false,
+		propeller:registerAsset(CHARACTER_LINK, "propeller-5-tilted.png"),
     }
 
     propeller.flyingImages = {
@@ -305,6 +308,28 @@ propeller.perCharacterOffsets = {
             [45] = vector(-4, -6),
         },
     },
+    [CHARACTER_LINK] = {
+        ["__default"] = {
+			flying = vector(0, -8),
+			
+			[1] = vector(-2, -12),
+			[2] = vector(-2, -12),
+			[3] = vector(-2, -12),
+			[4] = vector(-0, -10),
+			
+			[5] = vector(2, -12),
+			
+			[6] = vector(-10, -10),
+			[7] = vector(10, -8),
+			[8] = vector(12, -10),
+			
+			[9] = vector(0, -4),
+			[10] = {vector(-17, 8), useTilted = true},
+			
+			[11] = vector(4, -4),
+			
+        },
+	},
 }
 
 
