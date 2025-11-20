@@ -12,3 +12,4 @@ temporary - If set to true, the powerup will last the duration set below, play m
 duration - How long (in seconds) should the wing cap last for? If set to 0 or lower, it will play the music indefinitely but never disappear
 music - The music file to play when the powerup is active
 fligthDelay - How many frames should the player have to recover before taking off again?
+invincibleWhenFalling - Should the player have some invulnerability frames when falling really fast?

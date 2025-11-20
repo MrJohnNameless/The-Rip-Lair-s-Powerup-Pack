@@ -19,6 +19,7 @@ wingcap.settings = {
 	flightDelay = 64,	-- How many frames should the player have to recover before taking off again?
 	duration = 30,	-- How long (in seconds) should the wing cap last for? If set to 0 or lower, it will play the music indefinitely but never disappear
 	music = "powerups/powerfulMario.ogg",	-- The music file to play when the powerup is active
+	invincibleWhenFalling = true,	--Should the player have some invulnerability frames when falling really fast?
 }
 
 
@@ -298,8 +299,8 @@ function wingcap.onTickPowerup(p)
 		end
 		
 		--Invincibility when going really fast
-		if p.speedY >= 11 or data.speedDown >= 6 then
-			data.invincible = 48
+		if p.speedY >= 12 or data.speedDown >= 7 then
+			data.invincible = 32
 		end
 		
 		data.flightDelay = data.flightDelay + 1
@@ -333,6 +334,7 @@ function wingcap.onTickPowerup(p)
 			data.canTurn = true
 			p.speedY = easing.inOutQuart(math.clamp(data.upBoostTimer, 0, 40), data.currentSpeedY / (math.clamp(3 + (data.currentSpeedY * 0.0625), 0, 3)), ((data.upSpeed * 0.8) - math.abs(p.speedX + 0.3 / 2)) + data.reduce + (7 - math.abs(data.upSpeed)), 40)
 			data.slow = easing.linear(math.clamp(data.upBoostTimer, 0, 40), data.currentSlow, data.currentSlow - 1, 40)
+			data.invincible = data.invincible - 0.5
 			data.speedDown = math.clamp(data.speedDown - 0.025, 0, 5)
 			if data.upBoostTimer >= 40 then
 				data.upSpeedActual = 0
@@ -444,12 +446,16 @@ function wingcap.onDrawPowerup(p)
 	if not p.data.wingcap then return end
 	local data = p.data.wingcap
 	
+	local wid = "-".. (p.width*0.5)..":"..(p.width*0.5)
+	local hei = "-"..(p.height*0.5)..":"..(p.height*0.5)
+	sparkle:setParam("xOffset",wid)
+	sparkle:setParam("yOffset",hei)
+	sparkle:Draw(-1000000000000000)
+	
 	--Invincibility code
-	if data.invincible > 0 then
+	if data.invincible > 0 and wingcap.settings.invincibleWhenFalling then
 		local priority = -25
-		local wid = "-".. (p.width*0.5)..":"..(p.width*0.5)
-		local hei = "-"..(p.height*0.5)..":"..(p.height*0.5)
-
+		
 		if (p.forcedState == 3) then
 			priority = -70
 		else
@@ -458,8 +464,7 @@ function wingcap.onDrawPowerup(p)
 
 		p:mem(0x140, FIELD_WORD, 2)
 		p:mem(0x142, FIELD_WORD, 0);
-		sparkle:setParam("xOffset",wid)
-		sparkle:setParam("yOffset",hei)
+
 		sparkle:Draw(priority)
 	end
 	
