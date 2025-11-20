@@ -2,6 +2,8 @@ local wingcap = {}
 local cp = require("customPowerups")
 local easing = require("ext/easing")
 
+local sparkle = Particles.Emitter(0, 0, Misc.resolveFile("particles/p_starman_sparkle.ini"))
+
 wingcap.forcedStateType = 1 -- 0 for instant, 1 for normal/flickering, 2 for poof/raccoon
 wingcap.basePowerup = PLAYER_FIREFLOWER
 wingcap.cheats = {"needawingcap","overtherainbow","sm63pilled"}
@@ -192,8 +194,10 @@ function wingcap.onEnable(p)
 		reduce = 0,
 		capTimer = 80,
 		currentSpeedY = 0,
-		canTurn = false
+		canTurn = false,
+		invincible = 0
 	}
+	sparkle:Attach(p)
 	p:mem(0x162, FIELD_WORD,5) -- prevents link from accidentally shooting a base projectile when getting the powerup via a sword
 end
 
@@ -214,6 +218,7 @@ function wingcap.onTickPowerup(p)
 	end
 	
 	data.capTimer = data.capTimer + 1
+	data.invincible = data.invincible - 1
 	
 	--Optional code to make the wingcap temporary
 	if wingcap.settings.temporary then
@@ -290,6 +295,11 @@ function wingcap.onTickPowerup(p)
 		
 		if p.keys.down == KEYS_DOWN then
 			data.down = 0.2
+		end
+		
+		--Invincibility when going really fast
+		if p.speedY >= 11 or data.speedDown >= 6 then
+			data.invincible = 48
 		end
 		
 		data.flightDelay = data.flightDelay + 1
@@ -405,7 +415,7 @@ function wingcap.onTickEndPowerup(p)
 			e.y = e.y - e.height * 0.5
         end
 		
-		if not p.isSpinJumping then
+		if not p.isSpinJumping and p.mount ~= 3 then
 			if lunatime.tick() % 11 <= 5 then
 				p:setFrame(14)
 			else
@@ -433,6 +443,25 @@ end
 function wingcap.onDrawPowerup(p)
 	if not p.data.wingcap then return end
 	local data = p.data.wingcap
+	
+	--Invincibility code
+	if data.invincible > 0 then
+		local priority = -25
+		local wid = "-".. (p.width*0.5)..":"..(p.width*0.5)
+		local hei = "-"..(p.height*0.5)..":"..(p.height*0.5)
+
+		if (p.forcedState == 3) then
+			priority = -70
+		else
+			priority = -25
+		end
+
+		p:mem(0x140, FIELD_WORD, 2)
+		p:mem(0x142, FIELD_WORD, 0);
+		sparkle:setParam("xOffset",wid)
+		sparkle:setParam("yOffset",hei)
+		sparkle:Draw(priority)
+	end
 	
 	if not data.isFlying then return end
 	
