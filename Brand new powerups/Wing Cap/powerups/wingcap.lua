@@ -332,7 +332,7 @@ function wingcap.onTickPowerup(p)
 		
 			data.upBoostTimer = data.upBoostTimer + 1
 			data.canTurn = true
-			p.speedY = easing.inOutQuart(math.clamp(data.upBoostTimer, 0, 40), data.currentSpeedY / (math.clamp(3 + (data.currentSpeedY * 0.0625), 0, 3)), ((data.upSpeed * 0.7) - math.abs(p.speedX + 0.3 / 2)) + data.reduce + (7 - math.abs(data.upSpeed)), 40)
+			p.speedY = easing.inOutQuart(math.clamp(data.upBoostTimer, 0, 40), data.currentSpeedY / (math.clamp(3 + (data.currentSpeedY * 0.0625), 0, 3)), ((data.upSpeed * 0.8) - math.abs(p.speedX + 0.3 / 2)) + data.reduce + (7 - math.abs(data.upSpeed)), 40)
 			data.slow = easing.linear(math.clamp(data.upBoostTimer, 0, 40), data.currentSlow, data.currentSlow - 1, 40)
 			data.invincible = data.invincible - 0.125
 			data.speedDown = math.clamp(data.speedDown - 0.025, 0, 5)
@@ -360,8 +360,8 @@ function wingcap.onTickPowerup(p)
 				p.speedX = -p.speedX
 				data.upBoostTimer = nil
 				data.upSpeedActual = 0
-				data.reduce = math.clamp(data.reduce - 1, 0, 999)
-				data.slow = data.slow - 1.3
+				data.reduce = math.clamp(data.reduce - 2, 0, 999)
+				data.slow = data.slow - 1.8
 				data.canTurn = false
 			end
 		end
@@ -446,15 +446,19 @@ function wingcap.onDrawPowerup(p)
 	if not p.data.wingcap then return end
 	local data = p.data.wingcap
 	
+	local priority = -1000000000000000
+	
 	local wid = "-".. (p.width*0.5)..":"..(p.width*0.5)
 	local hei = "-"..(p.height*0.5)..":"..(p.height*0.5)
 	sparkle:setParam("xOffset",wid)
 	sparkle:setParam("yOffset",hei)
-	sparkle:Draw(-1000000000000000)
+	
+	sparkle:Draw(priority)
 	
 	--Invincibility code
 	if data.invincible > 0 and wingcap.settings.invincibleWhenFalling then
-		local priority = -25
+		
+		priority = -25
 		
 		if (p.forcedState == 3) then
 			priority = -70
