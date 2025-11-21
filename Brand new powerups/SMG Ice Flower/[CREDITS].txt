@@ -1,2 +1,3 @@
 Sprites made by Sleepy
 Powerup made by Marioman2007
+Solid color shader by MrDoubleA
