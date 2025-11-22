@@ -1,0 +1,11 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needalasesuit
+* notahoax
+
+You can also give the laser projectile a different way of behaving!
+Open the file "npc-777.lua" with something like notepad++ or visual studio code to apply this change.
+
+laserBounce - If set to true, the laser will reflect off of slopes surfaces, similar to how it does in the Kirby series.
+lifetime - How long, in frames, should the laser be active before disappearing?

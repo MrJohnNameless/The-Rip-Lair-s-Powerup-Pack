@@ -1,0 +1,9 @@
+Orignal NPC by MrDoubleA
+Converted to customPowerups.lua by DisasterMaster
+
+SMB3 sprites by Sleepy Dee
+SMW sprites by MegaDood + the original creator
+
+Laser Suit made by MegaDood
+
+Based on a hoax from early YouTube.
