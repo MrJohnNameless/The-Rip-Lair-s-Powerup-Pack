@@ -1,5 +1,4 @@
 local npcManager = require("npcManager")
-local powerup = require("powerups/iceFlower")
 local sampleNPC = {}
 local npcID = NPC_ID
 
@@ -58,22 +57,12 @@ npcManager.registerHarmTypes(npcID,
 
 function sampleNPC.onInitAPI()
 	npcManager.registerEvent(npcID, sampleNPC, "onTickNPC")
-	Cheats.register("needaniceflower",{
-		isCheat = true,
-		activateSFX = 12,
-		aliases = powerup.aliases,
-		onActivate = (function() 
-			for i,p in ipairs(Player.get()) do
-				p.reservePowerup = npcID
-			end
-			
-			return true
-		end)
-	})
 end
 
 function sampleNPC.onTickNPC(v)
-	if Defines.levelFreeze or v.forcedState > 0 then return end
+	if Defines.levelFreeze or v.forcedState > 0 then
+		return
+	end
 
 	if RNG.randomInt(1, 15) == 1 then
 		local e = Effect.spawn(NPC.config[v.id].sparkleEffect, v.x + RNG.randomInt(0, v.width), v.y + RNG.randomInt(0, v.height))

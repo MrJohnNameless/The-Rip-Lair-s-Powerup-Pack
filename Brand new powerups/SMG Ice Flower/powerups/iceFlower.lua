@@ -1,4 +1,5 @@
 local blockutils = require("blocks/blockutils")
+local pm = require("playerManager")
 
 local iceFlower = {}
 local cp
@@ -8,6 +9,24 @@ local cp
 
 -- Not multiplayer compatible
 
+iceFlower.basePowerup = PLAYER_ICE
+iceFlower.forcedStateType = 2
+iceFlower.cheats = {"needacoolflower", "immadeofice"}
+
+iceFlower.skateFramespeed = 8
+
+iceFlower.waterFallBGOMap = table.map{66, 172}
+iceFlower.waterPlatformSize = vector(32, 12)
+
+iceFlower.skateOnWater = true
+iceFlower.skateOnLava = true
+iceFlower.skateDuration = -1
+
+iceFlower.afterImageColor = Color.fromHexRGB(0x4090F0)
+iceFlower.afterImageEnabled = true
+iceFlower.afterImageFrequency = 4
+iceFlower.afterImageFadespeed = 0.075
+
 iceFlower.iceBlockSettings = {
     frames = 1,
 	framespeed = 8,
@@ -15,17 +34,11 @@ iceFlower.iceBlockSettings = {
     lifetime = 32,
 }
 
-iceFlower.basePowerup = PLAYER_ICE
-iceFlower.forcedStateType = 2
-iceFlower.cheats = {"needacoolflower", "immadeofice"}
-
-iceFlower.skateFramespeed = 12
-
-iceFlower.waterFallBGOMap = table.map{66, 172}
-iceFlower.waterPlatformSize = vector(32, 12)
-
-iceFlower.skateOnWater = true
-iceFlower.skateOnLava = true
+iceFlower.images = {
+    plain   = Graphics.loadImageResolved("iceblock-images/plain.png"),
+    slope45 = Graphics.loadImageResolved("iceblock-images/slope-45.png"),
+    slope26 = Graphics.loadImageResolved("iceblock-images/slope-26.png"),
+}
 
 
 function iceFlower.onInitPowerupLib()
@@ -51,6 +64,9 @@ local playerData = {}
 local spawnedBlocks = {}
 local lavaBlacklist = table.map{405, 406, 420, 467, 468, 469, 470, 471, 473, 475, 477, 478, 481, 483, 484, 487}
 
+local maskShader = Shader.fromFile(nil, "sh_solidColor.frag")
+local afterImages = {}
+
 local oldWeakLava = nil
 
 local GP
@@ -62,11 +78,8 @@ pcall(function() aw = aw or require("aw") end)
 
 local respawnRooms
 pcall(function() respawnRooms = require("respawnRooms") end)
-respawnRooms = respawnRooms or {}
 
-local storedConfigs = {}
-local blockList = {1006, 1378, 1379, 1380, 1381, 1382, 1383, 1384, 1385}
-local imageMap = {}
+respawnRooms = respawnRooms or {}
 
 local effectOffsets = {
     vector(0, 1),
@@ -109,13 +122,6 @@ local blockData = {
     [1385] = {name = "30_CEIL_LR",  ends = {[2] = {vector(0, 1), vector(1, 0)}, [3] = {vector(0, 1), vector(1, 0)}}},
     [1384] = {name = "30_CEIL_RL",  ends = {[3] = {vector(0, 0), vector(1, 1)}, [4] = {vector(0, 0), vector(1, 1)}}},
 }
-
-for k, id in ipairs(blockList) do
-    local n = blockData[id].name
-    imageMap[n] = Graphics.loadImageResolved("iceblock-images/"..n..".png")
-end
-
-imageMap["WATER_PLATFORM"] = Graphics.loadImageResolved("iceblock-images/WATER_PLATFORM.png")
 
 
 ---------------------
@@ -270,7 +276,9 @@ local function getCollidingSide(v, p, collisionFunc, offset, thickness)
 end
 
 local function removeIceBlock(v)
-    if not v.isValid then return end
+    if not v.isValid then
+        return
+    end
 
     local parent = v.data._iceFlower.parent
 
@@ -282,7 +290,9 @@ local function removeIceBlock(v)
 end
 
 local function onTickIceBlock(v, data)
-    if v.isHidden or v:mem(0x5A, FIELD_BOOL) then return end
+    if v.isHidden or v:mem(0x5A, FIELD_BOOL) then
+        return
+    end
 
     local config = iceFlower.iceBlockSettings
 
@@ -321,26 +331,95 @@ local function onTickIceBlock(v, data)
     end
 end
 
+local PLAYER_UP    = 1
+local PLAYER_RIGHT = 2
+local PLAYER_DOWN  = 3
+local PLAYER_LEFT  = 4
+
+local function getVisualDetails(v, collidingDir)
+    local config = Block.config[v.id]
+
+    local offset = vector(0, 0)
+    local img = iceFlower.images.plain
+    local rotation = 0
+
+    local slopeRotation = math.deg(math.atan2(v.height, v.width))
+
+    if (config.floorslope == -1 and collidingDir == PLAYER_LEFT)
+    or (config.floorslope == 1 and collidingDir == PLAYER_RIGHT)
+    or (config.ceilingslope == -1 and collidingDir == PLAYER_RIGHT)
+    or (config.ceilingslope == 1 and collidingDir == PLAYER_LEFT)
+    then
+        return nil
+    end
+
+    -- draw a floor slope
+    if config.floorslope ~= 0 and collidingDir == PLAYER_UP then
+        if v.width == v.height then
+            img = iceFlower.images.slope45
+        else
+            img = iceFlower.images.slope26
+        end
+
+        rotation = slopeRotation * config.floorslope
+        offset.y = 4
+
+    -- draw a ceiling slope
+    elseif config.ceilingslope ~= 0 and collidingDir == PLAYER_DOWN then
+        if v.width == v.height then
+            img = iceFlower.images.slope45
+        else
+            img = iceFlower.images.slope26
+        end
+
+        rotation = slopeRotation * config.ceilingslope
+        offset.y = -4
+
+    -- draw the rest of the fucking blocks
+    elseif collidingDir == PLAYER_UP then
+        offset.y = img.height/2 - v.height/2
+    elseif collidingDir == PLAYER_DOWN then
+        offset.y = -(img.height/2 - v.height/2)
+    elseif collidingDir == PLAYER_RIGHT then
+        rotation = 90
+        offset.x = -(img.height/2 - v.width/2)
+    elseif collidingDir == PLAYER_LEFT then
+        rotation = 90
+        offset.x = img.height/2 - v.width/2
+    end
+
+    return img, offset, rotation
+end
+
 local function onCameraDrawIceBlock(v, data, camIdx)
-    if v.isHidden or v:mem(0x5A, FIELD_BOOL) or not blockutils.visible(Camera(camIdx), v.x, v.y, v.width, v.height) then return end
+    if v.isHidden or v:mem(0x5A, FIELD_BOOL) or not blockutils.visible(Camera(camIdx), v.x, v.y, v.width, v.height) then
+        return
+    end
 
 	local config = iceFlower.iceBlockSettings
-	local img = data.image
+	local img, offset, rotation = getVisualDetails(v, data.collidingDir)
+
+    if img == nil then
+        return
+    end
+
 	local frame = math.floor(lunatime.drawtick() / config.framespeed) % config.frames
-    local width = img.width/4
+    local width = img.width
     local height = img.height/config.frames
+
 	data.scale = data.scale or 0
 
 	Graphics.drawBox{
 		texture = img,
-		x = v.x + v.width/2,
-		y = v.y + v.height/2,
+		x = v.x + v.width/2 + offset.x,
+		y = v.y + v.height/2 + offset.y,
         width = width * data.scale,
         height = height * data.scale,
-		sourceX = (data.collidingDir - 1) * width,
+		sourceX = 0,
 		sourceY = frame * height,
 		sourceWidth = width,
 		sourceHeight = height,
+        rotation = rotation,
 		sceneCoords = true,
         centered = true,
 		priority = config.priority,
@@ -365,12 +444,20 @@ function iceFlower.onEnable(p)
             inKnockBack = false,
             knockBackTimer = 0,
             initialDirection = 0,
+            skateTimer = 0,
+            canSpawnBlocks = true,
         }
     end
+
+    local data = playerData[p.idx]
 
     if iceFlower.skateOnLava then
         oldWeakLava = Defines.weak_lava
         Defines.weak_lava = true
+    end
+
+    if p:isUnderwater() then
+        data.canSpawnBlocks = false
     end
 end
 
@@ -378,6 +465,7 @@ function iceFlower.onDisable(p)
     local data = playerData[p.idx]
 
     data.skating = false
+    data.skateTimer = 0
     data.currentFrame = 0
     data.inKnockBack = false
     data.knockBackTimer = 0
@@ -396,7 +484,9 @@ function iceFlower.onTickPowerup(p)
 
     p:mem(0x0A, FIELD_BOOL, false)
 
-    if p.deathTimer > 0 then return end
+    if p.deathTimer > 0 then
+        return
+    end
 
     if canSpawnSparkles(p) and RNG.random(10) > 9 then
         local e =  Effect.spawn(80, p.x - 12 + RNG.random(p.width + 16), p.y - 8 + RNG.random(p.height + 16), p.character)
@@ -404,189 +494,192 @@ function iceFlower.onTickPowerup(p)
         e.speedY = RNG.random(0.5) - 0.25
 	end
 
+    if not p:isUnderwater() and not data.canSpawnBlocks then
+        data.canSpawnBlocks = true
+    end
+
 
     ------------------------------
     -- Ice Block Spawning logic --
     ------------------------------
 
-    if iceFlower.skateOnLava then
-        for k, b in ipairs(Colliders.getColliding{a = data.collider, b = Block.LAVA, btype = Colliders.BLOCK}) do
-            local collidingDir = getCollidingSide(b, p)
+    if data.canSpawnBlocks then
+        if iceFlower.skateOnLava then
+            for k, b in ipairs(Colliders.getColliding{a = data.collider, b = Block.LAVA, btype = Colliders.BLOCK}) do
+                local collidingDir = getCollidingSide(b, p)
 
-            if collidingDir > 0 and not lavaBlacklist[b.id] then
-                if not b.data._iceFlower_children then
-                    b.data._iceFlower_children = {}
+                if collidingDir > 0 and not lavaBlacklist[b.id] then
+                    if not b.data._iceFlower_children then
+                        b.data._iceFlower_children = {}
+                    end
+
+                    local children = b.data._iceFlower_children
+                    local child = children[collidingDir]
+                    local iceID = getCorrectBlockID(b.id, b.width/b.height ~= 1)
+
+                    if not child or not child.isValid then
+                        local newB = Block.spawn(iceID, b.x, b.y)
+
+                        newB.data._iceFlower = {
+                            parent = b,
+                            collidingDir = collidingDir,
+                        }
+
+                        local img = Graphics.sprites.block[iceID].img
+                        newB.width = img.width
+                        newB.height = img.height
+
+                        children[collidingDir] = newB
+                        table.insert(spawnedBlocks, newB)
+                    else
+                        child.data._iceFlower.reset = true
+                    end
+                end
+            end
+        end
+
+        if math.abs(p.speedX) > Defines.player_walkspeed then
+            p.x = p.x + (p.width * p.direction * 2 + p.speedX)
+            data.colliderTheSecond.x = data.colliderTheSecond.x + (p.width * p.direction * 2 + p.speedX)
+        end
+
+        if iceFlower.skateOnWater then
+            for k, l in ipairs(Liquid.getIntersecting(
+                p.x - 1 - iceFlower.waterPlatformSize.x + p.speedX,
+                p.y - 1 - iceFlower.waterPlatformSize.y + p.speedY,
+                p.x + p.width + 1 + iceFlower.waterPlatformSize.x + p.speedX,
+                p.y + p.height + 1 + iceFlower.waterPlatformSize.y + p.speedY
+            )) do
+                -- intentional to not use l.isHidden, because I want compatibility with icantswim.lua
+                if not l.isQuicksand and not l.layer.isHidden then
+                    local collidingDir = getCollidingSide(l, p, getCollisionFunc(l, col, l.x, l.y, l.width, l.height), 8, iceFlower.waterPlatformSize.y + 2)
+
+                    if collidingDir > 0 then
+                        local x, y
+                        local w, h = iceFlower.waterPlatformSize.x, iceFlower.waterPlatformSize.y
+
+                        if collidingDir == 1 then
+                            x = p.x + p.width/2 - w/2
+                            y = l.y - h
+                            p.y = math.min(y - p.height, p.y)
+
+                        elseif collidingDir == 2 then
+                            w, h = h, w
+                            x = l.x + l.width
+                            y = p.y + p.height/2 - h/2
+                            p.x = math.max(x + w, p.x)
+
+                        elseif collidingDir == 3 then
+                            x = p.x + p.width/2 - w/2
+                            y = l.y + l.height
+                            p.y = math.max(y + h, p.y)
+
+                        elseif collidingDir == 4 then
+                            w, h = h, w
+                            x = l.x - w
+                            y = p.y + p.height/2 - h/2
+                            p.x = math.min(x - p.width, p.x)
+                        end
+
+                        if collidingDir % 2 ~= 0 then
+                            x = math.clamp(x, l.x, l.x + l.width - w)
+                        else
+                            y = math.clamp(y, l.y, l.y + l.height - h)
+                        end
+
+                        local canSpawn = true
+                        local b = nil
+
+                        for k, v in ipairs(spawnedBlocks) do
+                            if v.isValid and getCollisionFunc(l, v, x,y,w,h)(l, v) then
+                                if collidingDir % 2 ~= 0 and math.abs((x+w/2) - (v.x+v.width/2)) < 16 then
+                                    canSpawn = false
+                                    break
+                                elseif collidingDir % 2 == 0 and math.abs((y+h/2) - (v.y+v.height/2)) < 16 then
+                                    canSpawn = false
+                                    break
+                                end
+
+                                b = v
+                            end
+                        end
+
+                        if b then
+                            if collidingDir % 2 ~= 0 then
+                                local dir = math.sign((x+w/2) - (b.x+b.width/2))
+                                x = (b.x + b.width/2) + dir * (b.width/2 + w/2) - w/2
+
+                                if x < l.x or x > (l.x + l.width - w) then
+                                    canSpawn = false
+                                end
+                            else
+                                local dir = math.sign((y+h/2) - (b.y+b.height/2))
+                                y = (b.y + b.height/2) + dir * (b.height/2 + h/2) - h/2
+
+                                if y < l.y or y > (l.y + l.height - h) then
+                                    canSpawn = false
+                                end
+                            end
+                        end
+
+                        if canSpawn then
+                            local newB = Block.spawn(invisibleBlocks["SOLID"], x, y)
+
+                            newB.width = w
+                            newB.height = h
+
+                            newB.data._iceFlower = {
+                                collidingDir = collidingDir,
+                            }
+
+                            table.insert(spawnedBlocks, newB)
+                        end
+                    end
+                end
+            end
+        end
+
+        if math.abs(p.speedX) > Defines.player_walkspeed then
+            p.x = p.x - (p.width * p.direction * 2 + p.speedX)
+            data.colliderTheSecond.x = data.colliderTheSecond.x - (p.width * p.direction * 2 + p.speedX)
+        end
+
+        for k, b in BGO.iterateIntersecting(
+            p.x - iceFlower.waterPlatformSize.y - 2,
+            p.y,
+            p.x + p.width + iceFlower.waterPlatformSize.y + 2,
+            p.y + p.height
+        ) do
+            local sign = math.sign(p.x + p.width/2 - b.x - b.width/2)
+            
+            if iceFlower.waterFallBGOMap[b.id] and sign ~= 0 then
+                local x
+
+                if sign == 1 then
+                    x = b.x + b.width
+                    p.x = math.max(x + iceFlower.waterPlatformSize.y, p.x)
+                elseif sign == -1 then
+                    x = b.x - iceFlower.waterPlatformSize.y
+                    p.x = math.min(x - p.width, p.x)
                 end
 
-                local children = b.data._iceFlower_children
-                local child = children[collidingDir]
-                local iceID = getCorrectBlockID(b.id, b.width/b.height ~= 1)
+                local child = b.data._iceFlower_children
 
                 if not child or not child.isValid then
-                    local newB = Block.spawn(iceID, b.x, b.y)
+                    local newB = Block.spawn(invisibleBlocks["SOLID"], x, b.y)
+
+                    newB.width = iceFlower.waterPlatformSize.y
+                    newB.height = iceFlower.waterPlatformSize.x
 
                     newB.data._iceFlower = {
-                        parent = b,
-                        collidingDir = collidingDir,
-                        image = imageMap[blockData[iceID].name]
+                        collidingDir = sign + 3,
                     }
 
-                    local img = Graphics.sprites.block[iceID].img
-                    newB.width = img.width
-                    newB.height = img.height
-
-                    children[collidingDir] = newB
                     table.insert(spawnedBlocks, newB)
+                    b.data._iceFlower_children = newB
                 else
                     child.data._iceFlower.reset = true
                 end
-            end
-        end
-    end
-
-    if math.abs(p.speedX) > Defines.player_walkspeed then
-        p.x = p.x + (p.width * p.direction * 2 + p.speedX)
-        data.colliderTheSecond.x = data.colliderTheSecond.x + (p.width * p.direction * 2 + p.speedX)
-    end
-
-    if iceFlower.skateOnWater then
-        for k, l in ipairs(Liquid.getIntersecting(
-            p.x - 1 - iceFlower.waterPlatformSize.x,
-            p.y - 1 - iceFlower.waterPlatformSize.y,
-            p.x + p.width + 1 + iceFlower.waterPlatformSize.x,
-            p.y + p.height + 1 + iceFlower.waterPlatformSize.y
-        )) do
-            -- intentional to not use l.isHidden, because I want compatibility with icantswim.lua
-            if not l.isQuicksand and not l.layer.isHidden then
-                local collidingDir = getCollidingSide(l, p, getCollisionFunc(l, col, l.x, l.y, l.width, l.height), 8, iceFlower.waterPlatformSize.y + 2)
-
-                if collidingDir > 0 then
-                    local x, y
-                    local w, h = iceFlower.waterPlatformSize.x, iceFlower.waterPlatformSize.y
-
-                    if collidingDir == 1 then
-                        x = p.x + p.width/2 - w/2
-                        y = l.y - h
-                        p.y = math.min(y - p.height, p.y)
-
-                    elseif collidingDir == 2 then
-                        w, h = h, w
-                        x = l.x + l.width
-                        y = p.y + p.height/2 - h/2
-                        p.x = math.max(x + w, p.x)
-
-                    elseif collidingDir == 3 then
-                        x = p.x + p.width/2 - w/2
-                        y = l.y + l.height
-                        p.y = math.max(y + h, p.y)
-
-                    elseif collidingDir == 4 then
-                        w, h = h, w
-                        x = l.x - w
-                        y = p.y + p.height/2 - h/2
-                        p.x = math.min(x - p.width, p.x)
-                    end
-
-                    if collidingDir % 2 ~= 0 then
-                        x = math.clamp(x, l.x, l.x + l.width - w)
-                    else
-                        y = math.clamp(y, l.y, l.y + l.height - h)
-                    end
-
-                    local canSpawn = true
-                    local b = nil
-
-                    for k, v in ipairs(spawnedBlocks) do
-                        if v.isValid and getCollisionFunc(l, v, x,y,w,h)(l, v) then
-                            if collidingDir % 2 ~= 0 and math.abs((x+w/2) - (v.x+v.width/2)) < 16 then
-                                canSpawn = false
-                                break
-                            elseif collidingDir % 2 == 0 and math.abs((y+h/2) - (v.y+v.height/2)) < 16 then
-                                canSpawn = false
-                                break
-                            end
-
-                            b = v
-                        end
-                    end
-
-                    if b then
-                        if collidingDir % 2 ~= 0 then
-                            local dir = math.sign((x+w/2) - (b.x+b.width/2))
-                            x = (b.x + b.width/2) + dir * (b.width/2 + w/2) - w/2
-
-                            if x < l.x or x > (l.x + l.width - w) then
-                                canSpawn = false
-                            end
-                        else
-                            local dir = math.sign((y+h/2) - (b.y+b.height/2))
-                            y = (b.y + b.height/2) + dir * (b.height/2 + h/2) - h/2
-
-                            if y < l.y or y > (l.y + l.height - h) then
-                                canSpawn = false
-                            end
-                        end
-                    end
-
-                    if canSpawn then
-                        local newB = Block.spawn(invisibleBlocks["SOLID"], x, y)
-
-                        newB.width = w
-                        newB.height = h
-
-                        newB.data._iceFlower = {
-                            collidingDir = collidingDir,
-                            image = imageMap["WATER_PLATFORM"],
-                        }
-
-                        table.insert(spawnedBlocks, newB)
-                    end
-                end
-            end
-        end
-    end
-
-    if math.abs(p.speedX) > Defines.player_walkspeed then
-        p.x = p.x - (p.width * p.direction * 2 + p.speedX)
-        data.colliderTheSecond.x = data.colliderTheSecond.x - (p.width * p.direction * 2 + p.speedX)
-    end
-
-    for k, b in BGO.iterateIntersecting(
-        p.x - iceFlower.waterPlatformSize.y - 2,
-        p.y,
-        p.x + p.width + iceFlower.waterPlatformSize.y + 2,
-        p.y + p.height
-    ) do
-        local sign = math.sign(p.x + p.width/2 - b.x - b.width/2)
-        
-        if iceFlower.waterFallBGOMap[b.id] and sign ~= 0 then
-            local x
-
-            if sign == 1 then
-                x = b.x + b.width
-                p.x = math.max(x + iceFlower.waterPlatformSize.y, p.x)
-            elseif sign == -1 then
-                x = b.x - iceFlower.waterPlatformSize.y
-                p.x = math.min(x - p.width, p.x)
-            end
-
-            local child = b.data._iceFlower_children
-
-            if not child or not child.isValid then
-                local newB = Block.spawn(invisibleBlocks["SOLID"], x, b.y)
-
-                newB.width = iceFlower.waterPlatformSize.y
-                newB.height = iceFlower.waterPlatformSize.x
-
-                newB.data._iceFlower = {
-                    collidingDir = sign + 3,
-                    image = imageMap["WATER_PLATFORM"],
-                }
-
-                table.insert(spawnedBlocks, newB)
-                b.data._iceFlower_children = newB
-            else
-                child.data._iceFlower.reset = true
             end
         end
     end
@@ -598,12 +691,15 @@ function iceFlower.onTickPowerup(p)
 
     if canSkate(p) and p:isOnGround() and p.keys.altRun == KEYS_PRESSED and not data.skating and (not aw or aw.isWallSliding(p) == 0) then
         data.skating = true
+        data.skateTimer = 0
         p.speedX = math.max(math.abs(p.speedX), Defines.player_walkspeed) * p.direction
         data.initialDirection = p.direction
     end
 
     if data.skating then
         local stopSkaing = false
+
+        data.skateTimer = data.skateTimer + 1
 
         if p:isOnGround() then
             data.animTimer = data.animTimer + 1
@@ -635,8 +731,9 @@ function iceFlower.onTickPowerup(p)
             aw.preventWallSlide(p)
         end
 
-        if not canSkate(p) or stopSkaing then
+        if not canSkate(p) or stopSkaing or (iceFlower.skateDuration > 0 and data.skateTimer >= iceFlower.skateDuration) then
             data.skating = false
+            data.skateTimer = 0
             data.currentFrame = 0
             data.animTimer = 0
         end
@@ -681,6 +778,18 @@ function iceFlower.onTickEndPowerup(p)
     if data.inKnockBack and not p:mem(0x12E, FIELD_BOOL) then
         p:setFrame(6)
     end
+
+    if data.skating and iceFlower.afterImageEnabled and data.skateTimer % iceFlower.afterImageFrequency == 0 then
+        table.insert(afterImages, {
+            texture = Graphics.sprites[pm.getName(p.character)][iceFlower.basePowerup].img,
+            x = p.x,
+            y = p.y,
+            opacity = 1,
+            direction = p.direction,
+            frame = p:getFrame(),
+            player = p,
+        })
+    end
 end
 
 
@@ -690,6 +799,7 @@ end
 
 function iceFlower.onInitAPI()
     registerEvent(iceFlower, "onTick")
+    registerEvent(iceFlower, "onDraw")
     registerEvent(iceFlower, "onCameraDraw")
     registerEvent(iceFlower, "onPlayerHarm")
 
@@ -708,6 +818,37 @@ function iceFlower.onTick()
             table.remove(spawnedBlocks, k)
         end
     end
+
+    for k = #afterImages, 1, -1 do
+        local v = afterImages[k]
+
+        v.opacity = v.opacity - iceFlower.afterImageFadespeed
+
+        if v.opacity <= 0 then
+            table.remove(afterImages, k)
+        end
+    end
+end
+
+function iceFlower.onDraw()
+    for k, v in ipairs(afterImages) do
+        v.player:render{
+            texture = v.texture,
+            x = v.x,
+            y = v.y,
+            frame = v.frame,
+            direction = v.direction,
+            ignorestate = true,
+            color = Color.white .. v.opacity,
+            mount = 0,
+            sceneCoords = true,
+            priority = -26,
+            shader = maskShader,
+            uniforms = {
+                color = iceFlower.afterImageColor,
+            },
+        }
+    end
 end
 
 function iceFlower.onCameraDraw(camIdx)
@@ -717,7 +858,9 @@ function iceFlower.onCameraDraw(camIdx)
 end
 
 function iceFlower.onPlayerHarm(e, p)
-    if not iceFlower.skateOnLava or cp.getCurrentPowerup(p) ~= iceFlower then return end
+    if not iceFlower.skateOnLava or cp.getCurrentPowerup(p) ~= iceFlower then
+        return
+    end
     
     local data = playerData[p.idx]
     local diedToLava = false
@@ -742,6 +885,7 @@ function respawnRooms.onPreReset(fromRespawn)
     end
 
     spawnedBlocks = {}
+    afterImages = {}
 end
 
 return iceFlower

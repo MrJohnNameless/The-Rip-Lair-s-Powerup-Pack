@@ -67,9 +67,9 @@ local function handleJumpSFX(p,allowSpinjumpSFX)
 		Routine.skip()
 		if p:mem(0x11C,FIELD_WORD) > 0 then
 			if p.isSpinJumping and allowSpinjumpSFX then
-				SFX.play(Misc.resolveFile("powerups/weirdSpinjump.ogg")) 
+				SFX.play(Misc.resolveFile("powerups/weirdSpinjump")) 
 			else 
-				SFX.play(Misc.resolveFile("powerups/weirdJump.ogg")) 
+				SFX.play(Misc.resolveFile("powerups/weirdJump")) 
 			end
 		end
 		Audio.sounds[1].muted = wasMuted1
@@ -120,7 +120,7 @@ function weirdShroom.onTickPowerup(p)
 		end
 
 		if p:mem(0x11C,FIELD_WORD) == 1 and p.speedY < 0 and not p.isSpinJumping then
-			SFX.play(Misc.resolveFile("powerups/weirdScuttle.ogg")) 
+			SFX.play(Misc.resolveFile("powerups/weirdScuttle")) 
 		end
 	end
 end
