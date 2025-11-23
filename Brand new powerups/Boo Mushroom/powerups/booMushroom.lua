@@ -18,11 +18,17 @@ function boo.onInitPowerupLib()
 	boo.spritesheets = {
 		boo:registerAsset(1, "boo-mario.png"),
 		boo:registerAsset(2, "boo-luigi.png"),
+		boo:registerAsset(3, "boo-peach.png"),
+		boo:registerAsset(4, "boo-toad.png"),
+		boo:registerAsset(5, "boo-link.png"),
 	}
  
 	boo.iniFiles = {
 		boo:registerAsset(1, "boo-mario.ini"),
 		boo:registerAsset(2, "boo-luigi.ini"),
+		boo:registerAsset(3, "boo-peach.ini"),
+		boo:registerAsset(4, "boo-toad.ini"),
+		boo:registerAsset(5, "boo-link.ini"),
 	}
 end
 
@@ -119,6 +125,8 @@ function boo.onTickPowerup(p)
 		end
 	end
 	
+	p:mem(0x160, FIELD_WORD, 0)
+	p:mem(0x1C, FIELD_WORD, 0)
 	if p:mem(0x146, FIELD_WORD) == 2 then p.speedY = -6 end
 	if p:mem(0x148, FIELD_WORD) == 2 then p.speedX = 3 end
 	if p:mem(0x14A, FIELD_WORD) == 2 then p.speedY = 3 end

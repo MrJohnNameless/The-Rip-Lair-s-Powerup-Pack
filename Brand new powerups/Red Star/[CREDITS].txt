@@ -1,4 +1,6 @@
 Powerup made by MegaDood
 Afterimages shader by Emral
-Sprites by SleepyVA
+Mario + Luigi sprites by SleepyVA
 Some bugs and improvements by MarioBrigade
+
+Peach, Toad and Link sprites by SonicTheBombhog, massive thank you for adding these to the pack!

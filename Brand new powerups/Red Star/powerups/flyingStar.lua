@@ -10,22 +10,34 @@ function flyingStar.onInitPowerupLib()
 	flyingStar.spritesheets = {
 		flyingStar:registerAsset(1, "flying-mario.png"),
 		flyingStar:registerAsset(2, "flying-luigi.png"),
+		flyingStar:registerAsset(3, "flying-peach.png"),
+		flyingStar:registerAsset(4, "flying-toad.png"),
+		flyingStar:registerAsset(5, "flying-link.png"),
 	}
 
 	flyingStar.iniFiles = {
 		flyingStar:registerAsset(1, "flying-mario.ini"),
 		flyingStar:registerAsset(2, "flying-luigi.ini"),
+		flyingStar:registerAsset(3, "flying-peach.ini"),
+		flyingStar:registerAsset(4, "flying-toad.ini"),
+		flyingStar:registerAsset(5, "flying-link.ini"),
 	}
 
 	flyingStar.flyingSprites = {
 		flyingStar:registerAsset(1, "mario-flyingSprite.png"),
 		flyingStar:registerAsset(2, "luigi-flyingSprite.png"),
+		flyingStar:registerAsset(3, "peach-flyingSprite.png"),
+		flyingStar:registerAsset(4, "toad-flyingSprite.png"),
+		flyingStar:registerAsset(5, "link-flyingSprite.png"),
 	}
 end
 
 flyingStar.playerColors = {
 	[CHARACTER_MARIO] = Color.fromHexRGB(0xF82038),
 	[CHARACTER_LUIGI] = Color.fromHexRGB(0xA0D800),
+	[CHARACTER_PEACH] = Color.fromHexRGB(0xF85090),
+	[CHARACTER_TOAD] = Color.fromHexRGB(0x2078F8),
+	[CHARACTER_LINK] = Color.fromHexRGB(0xA0D800),
 }
 
 flyingStar.basePowerup = PLAYER_FIREFLOWER
@@ -125,7 +137,7 @@ function flyingStar.onTickPowerup(p)
 	end
 	
 	--Check the player's speed is at their max
-	if math.abs(p.speedX) >= Defines.player_runspeed then
+	if (math.abs(p.speedX) >= Defines.player_runspeed and p.character ~= 3) or (math.abs(p.speedX) >= Defines.player_runspeed - 1 and p.character == 3) then
 		data.maxSpeed = true
 		if not p:isOnGround() and p.keys.altRun == KEYS_PRESSED and data.canFly and not data.isFlying and p.mount == 0 and not p:mem(0x0C, FIELD_BOOL) and not p:mem(0x50, FIELD_BOOL) then
 			data.isFlying = true

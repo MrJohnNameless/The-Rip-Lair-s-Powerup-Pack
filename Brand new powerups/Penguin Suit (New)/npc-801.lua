@@ -17,7 +17,8 @@ local penguinSettings = {
 	frames = 1,
 	framestyle = 0,
 	framespeed = 8,
-	speed = 0,
+	speed = 0.25,
+	luahandlesspeed = true,
 	score = SCORE_1000,
 	
 	npcblock = false,
