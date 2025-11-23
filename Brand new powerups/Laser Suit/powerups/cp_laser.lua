@@ -21,7 +21,6 @@ apt.apSounds = {
     reserve = 12
 }
 
-apt.items = {854}
 apt.cheats = {"needalasesuit","notahoax"}
 apt.forcedStateType = 2
 
