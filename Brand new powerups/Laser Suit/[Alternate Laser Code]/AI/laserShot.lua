@@ -227,7 +227,7 @@ function laserShot.onTickNPC(v)
 	local magnitude = data.magnitude
 
 	if data.initialMag then
-		data.accelLerp = math.min(data.accelLerp + 0.1, 4)
+		data.accelLerp = math.min(data.accelLerp + 0.075, 1)
 		magnitude = easing.inCubic(data.accelLerp, data.initialMag, data.magnitude - data.initialMag, 1)
 
 		if data.accelLerp == 1 then
