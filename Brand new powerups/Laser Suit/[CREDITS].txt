@@ -1,9 +1,11 @@
-Orignal NPC by MrDoubleA
+Orignal NPC (Cape Feather) by MrDoubleA
 Converted to customPowerups.lua by DisasterMaster
 
 SMB3 sprites by Sleepy Dee
-SMW sprites by MegaDood + the original creator
+SMW sprites by MegaDood + the original creator (KPhoenix)
 
 Laser Suit made by MegaDood
+Alternate Laser code by 9thCore
 
 Based on a hoax from early YouTube.
+https://www.youtube.com/watch?v=HJjYfjSWXx8

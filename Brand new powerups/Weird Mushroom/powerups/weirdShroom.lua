@@ -119,7 +119,7 @@ function weirdShroom.onTickPowerup(p)
 			p.speedY = p.speedY - (Defines.player_grav * 0.65)
 		end
 
-		if p:mem(0x11C,FIELD_WORD) == 1 and p.speedY < 0 and not p.isSpinJumping then
+		if p:mem(0x11C,FIELD_WORD) == 1 and p.speedY < 0 then
 			SFX.play(Misc.resolveSoundFile("powerups/weirdScuttle")) 
 		end
 	end
