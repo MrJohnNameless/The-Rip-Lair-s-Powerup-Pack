@@ -45,7 +45,7 @@ local sampleNPCSettings = {
 	realHeight = 10,
 
 	-- lifetime
-	lifetime = 320,
+	lifetime = 0,
 }
 
 npcManager.setNpcSettings(sampleNPCSettings)

@@ -568,7 +568,7 @@ function apt.onTick(library,p)
 
     -- Spin attack
 	local flamethrowerActive = Cheats.get("flamethrower").active
-    if ((not apt.laserAnim[p.idx] or apt.laserAnim[p.idx] <= 0) or flamethrowerActive) and Level.winState() == 0 then
+    if ((not apt.laserAnim[p.idx] or apt.laserAnim[p.idx] <= 0) or flamethrowerActive) and Level.winState() == 0 and canSpin(p) then
 	
 		--[[if linkChars[p.character] then
 			p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
