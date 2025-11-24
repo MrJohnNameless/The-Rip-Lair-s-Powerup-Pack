@@ -159,9 +159,11 @@ function laserShot.onTickNPC(v)
 		data.newScale = vector(1, 1)
 		data.scaleLerp = 0
 
-		data.initialMag = data.initialMag or 0
+		local speed = 16
+
+		data.initialMag = data.initialMag or (speed/3)
 		data.rotation = data.rotation or (90 - 90 * v.direction)
-		data.magnitude = data.magnitude or 5
+		data.magnitude = data.magnitude or speed
 		data.dirVec = data.dirVec or vector.right2:rotate(data.rotation)
 		data.accelLerp = 0
 	end
