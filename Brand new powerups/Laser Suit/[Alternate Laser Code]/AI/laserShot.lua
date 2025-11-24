@@ -117,7 +117,7 @@ local function explode(v)
 		filter = function(w)
 			if (not w.isHidden) and w:mem(0x156,FIELD_WORD) <= 0
 			and w:mem(0x64, FIELD_BOOL) == false and w:mem(0x12A, FIELD_WORD) > 0 
-			and w:mem(0x138, FIELD_WORD) == 0 and w:mem(0x12C, FIELD_WORD) == 0 then
+			and w:mem(0x138, FIELD_WORD) == 0 and w:mem(0x12C, FIELD_WORD) == 0 and w.idx ~= v.idx and w.id ~= v.id then
 				return true
 			end
 			return false
@@ -227,7 +227,7 @@ function laserShot.onTickNPC(v)
 	local magnitude = data.magnitude
 
 	if data.initialMag then
-		data.accelLerp = math.min(data.accelLerp + 0.075, 1)
+		data.accelLerp = math.min(data.accelLerp + 0.1, 4)
 		magnitude = easing.inCubic(data.accelLerp, data.initialMag, data.magnitude - data.initialMag, 1)
 
 		if data.accelLerp == 1 then
