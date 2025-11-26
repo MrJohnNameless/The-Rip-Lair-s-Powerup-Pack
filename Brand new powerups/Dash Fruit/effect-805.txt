@@ -1,0 +1,9 @@
+[Layer1]
+
+frames = 4
+framespeed = 8
+
+lifetime = 384
+delay = 0
+
+gravity = 0.4

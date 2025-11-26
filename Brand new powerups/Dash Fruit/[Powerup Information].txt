@@ -1,0 +1,21 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needadashfruit
+* transrights
+* itsameceleste
+* takeahike
+* thisisntcanonisit
+
+The powerup also has some configs you can apply. Simply open the file "dashFruit.lua", using something like notepad++ or visual studio code. They are as listed:
+
+* dashSpeed - How fast the dash is (12 by default)
+* cooldown - How long the dash cooldown is in frames (1  by default)
+* dashes - The default amount of available dashes the player has (1 by default)
+* freezeTime - How long the freeze frame when dashing is (3 by default)
+* dashSound - The sound when the dash is used
+* dashSound2 - The sound when the 2nd (or more) dash is used
+* dashVisual - If text shows up above the player with how many dashes they have left (false by default)
+* canClimb - If you can climb up walls (true by default)
+* stamina - How much stamina you have when climbing up walls in frames (192 by default)
+* disableScreenShake - Disables the screen shake (false by default)
