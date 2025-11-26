@@ -129,10 +129,10 @@ function weirdShroom.onDrawPowerup(p)
 	if not p.data.weirdShroom then return end -- check if the powerup is currenly active
 
 	if p:mem(0x11C,FIELD_WORD) > 0 and not p.isSpinJumping and p.speedY < 0 and p.frame == 4 then
-		p.data.jumpAnimTimer = p.data.jumpAnimTimer + 1
-		p.frame = ({4, 36, 46})[1 + math.floor(p.data.jumpAnimTimer / 3) % 3]
+		p.data.weirdShroom.jumpAnimTimer = p.data.weirdShroom.jumpAnimTimer + 1
+		p.frame = ({4, 36, 46})[1 + math.floor(p.data.weirdShroom.jumpAnimTimer / 3) % 3]
 	else
-		p.data.jumpAnimTimer = 0
+		p.data.weirdShroom.jumpAnimTimer = 0
 	end
 end
 
