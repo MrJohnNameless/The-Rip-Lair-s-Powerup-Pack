@@ -2,6 +2,14 @@ local npcManager = require("npcManager")
 local template = {}
 local npcID = NPC_ID
 
+local cp = require("customPowerups")
+
+local dashFruit = cp.addPowerup("Dash Fruit", "powerups/dashFruit", npcID)
+
+cp.blacklistCharacter(CHARACTER_PEACH, dashFruit.name)
+cp.blacklistCharacter(CHARACTER_TOAD, dashFruit.name)
+cp.blacklistCharacter(CHARACTER_LINK, dashFruit.name)
+
 local templateSettings = {
 	id = npcID,
 	gfxheight = 32,
