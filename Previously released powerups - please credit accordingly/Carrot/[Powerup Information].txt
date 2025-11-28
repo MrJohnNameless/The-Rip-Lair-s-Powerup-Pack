@@ -4,3 +4,8 @@ These are:
 * needacarrot
 * whatsupdoc
 * fallingwithstyle
+
+The powerup also has some configs you can apply. Simple open the file "ap_carrot.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+canSuperJump - Determines whether or not the player can perform a big jump when running fast enough (defaults to true)
+hoverTimerMax - For each character, you can set how long before they can perform a hover.

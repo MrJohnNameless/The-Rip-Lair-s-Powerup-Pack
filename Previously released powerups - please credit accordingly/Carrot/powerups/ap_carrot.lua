@@ -12,12 +12,20 @@ local carrot = {}
 -- variable "registerItems" is reserved
 
 carrot.basePowerup = PLAYER_FIREFLOWER
+
 carrot.items = {}
+
 carrot.aliases = {"whatsupdoc","fallingwithstyle"}
+
 carrot.forcedStateType = 2
+
 carrot.collectSounds = {
     upgrade = 34,
     reserve = 12,
+}
+
+carrot.settings = {
+	canSuperJump = true,
 }
 
 function carrot.onInitPowerupLib()
@@ -26,6 +34,7 @@ function carrot.onInitPowerupLib()
 		carrot:registerAsset(2, "luigi-ap_carrot.png"),
 		carrot:registerAsset(3, "peach-ap_carrot.png"),
 		carrot:registerAsset(4, "toad-ap_carrot.png"),
+		carrot:registerAsset(5, "link-ap_carrot.png"),
 	}
 	
 	carrot.iniFiles = {
@@ -33,6 +42,7 @@ function carrot.onInitPowerupLib()
 		carrot:registerAsset(2, "luigi-ap_carrot.ini"),
 		carrot:registerAsset(3, "peach-ap_carrot.ini"),
 		carrot:registerAsset(4, "toad-ap_carrot.ini"),
+		carrot:registerAsset(5, "link-ap_carrot.ini"),
 	}
 end
 
@@ -43,7 +53,8 @@ carrot.hoverTimerMax = {
     8,
     8,
     8,
-    8
+    8,
+	8
 }
 --------------------
 
@@ -105,6 +116,7 @@ end
 
 local canBigJump = false
 local bigJumpTimer = 0
+local bigJumpTimerActual = 0
 
 -- No need to register. Runs only when powerup is active.
 function carrot.onTickPowerup(p)
@@ -127,18 +139,22 @@ function carrot.onTickPowerup(p)
 		carrot.hoverTimer = carrot.hoverTimerMax[p.character]
     end
 	
+	bigJumpTimerActual = bigJumpTimerActual - 1
+	
 	--Perform a big jump
-	if math.abs(p.speedX) > 5.58 and isOnGround(p) then
+	if math.abs(p.speedX) > 5.58 and isOnGround(p) and carrot.settings.canSuperJump then
 		bigJumpTimer = bigJumpTimer + 1
 		if bigJumpTimer >= 34 then
 			if bigJumpTimer % 8 == 0 then
 				Effect.spawn(10,p.x,p.y)
-				Defines.jumpheight = 35
 			end
+			bigJumpTimerActual = 24
 		end
 	else
+		if bigJumpTimerActual > 0 and math.abs(p.speedX) > 4 then
+			p:mem(0x11C,FIELD_WORD,math.max(p:mem(0x11C,FIELD_WORD),14))
+		end
 		bigJumpTimer = 0
-		Defines.jumpheight = 20
 	end
 end
 
