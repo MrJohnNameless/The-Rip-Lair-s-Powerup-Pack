@@ -226,7 +226,7 @@ function vanishCap.onDraw()
 			
 			if p.frame ~= -50 then p.data.vanishcapFrame = p.frame end
 			
-			if enabled == 1 then
+			if enabled == 1 and p.frame ~= -50 * p.direction then
 				p:render{
 					frame = p.data.vanishcapFrame,
 					direction = p.direction,

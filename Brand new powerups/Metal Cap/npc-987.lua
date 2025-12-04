@@ -385,13 +385,15 @@ function metalCap.onDraw()
 			
 			if p.data.metalcapPowerupcapTimer >= 61 and restrictMovement[p.idx] then restrictMovement[p.idx] = false end
 			
-			p:render{
-				x = p.x,
-				shader = metalShader,
-				uniforms = {
-					enabled = enabled,
-				},
-			}
+			if p.frame ~= -50 * p.direction then
+				p:render{
+					x = p.x,
+					shader = metalShader,
+					uniforms = {
+						enabled = enabled,
+					},
+				}
+			end
 		end
 	end
 end
