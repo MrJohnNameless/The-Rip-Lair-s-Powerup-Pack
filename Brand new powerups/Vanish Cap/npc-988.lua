@@ -239,7 +239,7 @@ function vanishCap.onDraw()
 					drawplayer = true,
 					ignorestate = false,
 					sceneCoords = true,
-					priority = -50,
+					priority = -25,
 					shader = vanishShader,
 					uniforms = {
 						enabled = enabled,
