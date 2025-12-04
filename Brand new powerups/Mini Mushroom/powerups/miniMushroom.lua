@@ -14,7 +14,7 @@
 	
 	Version 3.0.0
 	
-	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
+	NOTE: This requires customPowerups.lua in order to work! Get it from the link above! ^^^
 ]]--
 
 local cp = require("customPowerups")
@@ -54,6 +54,7 @@ miniMush.settings = {
 	allowSpinjumpHarm = true, -- should the player still be able to harm NPCs by spinjumping while mini? (true by default)
 	allowPeachSpinjump = true, -- should be peach be given the ability to spinjump while mini? (true by default)
 	allowWaterRun = true, -- should the player be allowed to run on water while mini? (true by default)
+	keepPowerupOnDeath = true, -- should the player keep the powerup upon dying while using it? (true by default)
 	requiredWaterSpeed = 1, -- how much horizontal speed must the player reach to be able to walk on water (1 by default)
 	whitelistedNPCs = table.map{311,312,313,314,315,316,316,318,446,447,448,449,467,466} -- which npc IDs can you harm no matter what when you're mini?
 }
@@ -119,6 +120,7 @@ function miniMush.onInitAPI()
 	registerEvent(miniMush,"onNPCHarm")
 	registerEvent(miniMush,"onNPCTransform")
 	registerEvent(miniMush,"onBlockHit")
+	registerEvent(miniMush,"onPostPlayerKill")
 end
 
 -- runs once when the powerup gets activated, passes the player
@@ -402,14 +404,22 @@ function miniMush.onNPCTransform(v,oldID,harm)
 	end
 end
 
+-- handles stops the player from wall running upon hitting a block above them
 function miniMush.onBlockHit(token,v,above,p)
-	-- this code however stops the player from wall running upon hitting a block above them
 	if p and not above then 
 		if cp.getCurrentPowerup(p) == miniMush and p.data.miniMushroom then
 			p.keys.left = KEYS_UP
 			p.keys.right = KEYS_UP
 			p.data.miniMushroom.isWallRunning = false
 		end
+	end
+end
+
+-- handles making the player lose the powerup on death if the option to do so is enabled
+function miniMush.onPostPlayerKill(p)
+	if miniMush.settings.keepPowerupOnDeath then return end
+	if cp.getCurrentPowerup(p) == miniMush then
+		cp.setPowerup(1, p, true)
 	end
 end
 
