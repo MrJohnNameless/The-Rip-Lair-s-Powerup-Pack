@@ -3,7 +3,7 @@
 			
 	CREDITS:
 	Emral & Marioman2007 - created customPowerups framework which this script used as a base here (https://www.smbxgame.com/forums/viewtopic.php?t=29435&sid=09762126985be58594941d2479968bbf)
-	MrNameless - made the powerup template which I used for this script
+	John Nameless - made the powerup template which I used for this script
 	Soap - made the powerup sprite
 	
 	Version 1.0.0
@@ -23,6 +23,8 @@ smallFireFlower.collectSounds = {
     upgrade = 6,
     reserve = 12,
 }
+
+smallFireFlower.keepPowerupOnDeath = true -- should the player keep the powerup upon dying while using it? (true by default)
 
 function smallFireFlower.onInitPowerupLib()
 	smallFireFlower.spritesheets = {
@@ -85,6 +87,10 @@ local function canPlayShootAnim(p)
         and (not GP or not GP.isPounding(p))
         and (not aw or aw.isWallSliding(p) == 0)
     )
+end
+
+function smallFireFlower.onInitAPI()
+	registerEvent(smallFireFlower,"onPostPlayerKill")
 end
 
 function smallFireFlower.onEnable(p)	
@@ -189,6 +195,14 @@ function smallFireFlower.onDrawPowerup(p)
 
 	if data.projectileTimer > 0 and canPlay and curFrame then
 		p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
+	end
+end
+
+-- handles making the player lose the powerup on death if the option to do so is enabled
+function smallFireFlower.onPostPlayerKill(p)
+	if smallFireFlower.keepPowerupOnDeath then return end
+	if cp.getCurrentPowerup(p) == smallFireFlower then
+		cp.setPowerup(1, p, true)
 	end
 end
 

@@ -17,7 +17,6 @@ local playerManager = require("playerManager")
 
 local apt = {}
 
-
 local MOUNT_NONE     = 0
 local MOUNT_BOOT     = 1
 local MOUNT_CLOWNCAR = 2
@@ -31,7 +30,7 @@ apt.screenShake = 0
 	The following table variables below are supposed to be equivalents to "p.data.powerupName" values seen in other custom powerups.
 	Unforunately, due to MDA's cape feather being initially designed for single player, I had to resort to either this or restructure the code entirely.
 	I apologize if this method makes manipulating player data values of this powerup awful to work with, 
-	because it absolutely is awful to work with.
+	because it absolutely is awful to work with & you should probably never do stuff like this.
 		
 	- John Nameless
 --]]
