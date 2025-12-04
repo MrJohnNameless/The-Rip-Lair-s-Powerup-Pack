@@ -8,16 +8,14 @@
     Custom Peach sprites by Lx Xzit and Pakesho
     SMW Mario and Luigi graphics from AwesomeZack
 
-	Tweaked to work with multiplayer by John Nameless
-
     Credit to FyreNova for generally being cool (oh and maybe working on a SMBX38A version of this, too)
 
+	Poorly tweaked to work with multiplayer by John Nameless
 ]]
 
 local playerManager = require("playerManager")
 
 local apt = {}
-
 
 local MOUNT_NONE     = 0
 local MOUNT_BOOT     = 1
@@ -32,7 +30,7 @@ apt.screenShake = 0
 	The following table variables below are supposed to be equivalents to "p.data.powerupName" values seen in other custom powerups.
 	Unforunately, due to MDA's cape feather being initially designed for single player, I had to resort to either this or restructure the code entirely.
 	I apologize if this method makes manipulating player data values of this powerup awful to work with, 
-	because it absolutely is awful to work with.
+	because it absolutely is awful to work with & you should probably never do stuff like this.
 		
 	- John Nameless
 --]]
@@ -53,7 +51,7 @@ apt.slidingFromFlight = {}
 apt.walkingTimer = {}
 apt.ascentTimer = {}
 apt.sprite = {}
-
+apt.capeBuffer = {}
 
 -- Convenience functions
 local function isOnGround(p)
@@ -1009,7 +1007,11 @@ do
     function apt.onDraw(library,p)
         if not canDrawCape(p) or (apt.capeFrame[p.idx] ~= nil and apt.capeFrame[p.idx] < 1) then return end
         
-		local capeBuffer = Graphics.CaptureBuffer(capeImageSize,capeImageSize)
+		if apt.capeBuffer[p.idx] == nil then
+			apt.capeBuffer[p.idx] = Graphics.CaptureBuffer(capeImageSize,capeImageSize)
+		end
+		
+		local capeBuffer = apt.capeBuffer[p.idx]
 		
         local bufferSize = vector(capeBuffer.width,capeBuffer.height)
 
