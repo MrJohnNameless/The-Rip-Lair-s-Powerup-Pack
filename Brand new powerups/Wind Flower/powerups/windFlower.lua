@@ -133,6 +133,10 @@ function windFlower.onTickPowerup(p)
 	if not p.data.windFlower then return end -- check if the powerup is currenly active
 	local data = p.data.windFlower
 
+	if p.mount ~= 0 or p:mem(0x44, FIELD_BOOL) or p:mem(0x0C, FIELD_BOOL) or p.inLaunchBarrel or p.inClearPipe or p:isUnderwater() then
+		stopSFX(data.scuttleSFX)
+	end
+
 	-- GENERAL PROJECTILES
 	
     	data.projectileTimer = math.max(data.projectileTimer - 1, 0) -- decrement the projectile timer/cooldown
@@ -200,13 +204,13 @@ function windFlower.onTickPowerup(p)
     		data.canScuttle = false
     	end
 
-    	if data.canScuttle and p.keys.jump then
+    	if data.canScuttle and p.keys.jump and not p:isUnderwater() and p.mount == 0 then
     		data.isScuttling = true
     		p.speedY = p.speedY - (Defines.player_grav - 0.1)
     	else
     		data.isScuttling = false
     	end
-
+		
     	if data.isScuttling then
         	if not data.canPlayScuttleSFX then
         		data.scuttleSFX = SFX.play(scuttleSFX,1,0)
@@ -313,7 +317,7 @@ function windFlower.onTickEndPowerup(p)
         	p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above
     	end
 
-    	if (data.canScuttle) and (p.keys.jump) and (not p:mem(0x12E, FIELD_BOOL)) and (p:mem(0x146, FIELD_WORD) ~= 2) and (p.mount == 0) then
+    	if (data.canScuttle) and (p.keys.jump) and (not p:mem(0x12E, FIELD_BOOL)) and (p:mem(0x146, FIELD_WORD) ~= 2) and (p.mount == 0) and not p:isUnderwater() then
 		if not data.hasPlayed then
        			windFlower.scuttleAnim:play(p)
 			data.hasPlayed = true

@@ -8,3 +8,4 @@ These are:
 The powerup also has some configs you can apply. Simple open the file "booMushroom.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
 
 blackListedBlocks - Add and remove blocks to make certain blocks able to be passed through
+floatHeight - How high (in pixels) can the player float? (defaults to 256)

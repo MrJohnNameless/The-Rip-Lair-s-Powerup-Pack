@@ -80,6 +80,7 @@ local function canHover(p)
         and not p.climbing
         and not p.inLaunchBarrel
         and not p.inClearPipe
+		and not p:isUnderwater()
         and p:mem(0x26,FIELD_WORD) <= 0 -- pulling objects from top
         and not p:mem(0x3C,FIELD_BOOL) -- sliding
         and not p:mem(0x44,FIELD_BOOL) -- shell surfing

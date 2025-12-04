@@ -59,6 +59,7 @@ apt.walkingTimer = {}
 apt.ascentTimer = {}
 apt.sprite = {}
 apt.laserAnim = {}
+apt.capeBuffer = {}
 
 -- Link, Snake, and Samus respectively
 local linkChars = table.map{5,12,16}
@@ -559,7 +560,10 @@ function apt.onTick(library,p)
 	
 	apt.laserAnim[p.idx] = (apt.laserAnim[p.idx] or 0) - 1
 
-	if apt.laserAnim[p.idx] > 0 then p:setFrame(11) end
+	if apt.laserAnim[p.idx] > 0 then
+		p:setFrame(11)
+		p.keys.down = KEYS_UP
+	end
 
     -- Slow falling
     if canFallSlowly(p) and (p.keys.jump or p.keys.altJump) and Level.winState() == 0 then
@@ -584,7 +588,6 @@ function apt.onTick(library,p)
 			tryingToShoot = true
 		end
 		
-		--Edit this block of code to make it shoot the laser, MegaDood
         if p:mem(0x50,FIELD_BOOL) then -- Spin jumping
             resetSpinAttack(p)
             spinAttack(p)
@@ -1046,11 +1049,14 @@ do
         return position,sourcePosition,sourceSize
     end)
 
-
-    function apt.onDraw(library,p)
+     function apt.onDraw(library,p)
         if not canDrawCape(p) or (apt.capeFrame[p.idx] ~= nil and apt.capeFrame[p.idx] < 1) then return end
         
-		local capeBuffer = Graphics.CaptureBuffer(capeImageSize,capeImageSize)
+		if apt.capeBuffer[p.idx] == nil then
+			apt.capeBuffer[p.idx] = Graphics.CaptureBuffer(capeImageSize,capeImageSize)
+		end
+		
+		local capeBuffer = apt.capeBuffer[p.idx]
 		
         local bufferSize = vector(capeBuffer.width,capeBuffer.height)
 
@@ -1244,8 +1250,6 @@ apt.spinAttackSettings = {
     frames = {11},
     -- How many frames it takes to complete a full spin attack.
     length = 18,
-    -- The width/height of the spin attack's hitbox.
-    hitboxSize = vector(72,24),
 
     -- The sound effect played when using the spin attack.
     sfx = 18,

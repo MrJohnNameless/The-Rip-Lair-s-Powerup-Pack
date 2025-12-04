@@ -84,6 +84,7 @@ function randomizer.onTickNPC(v)
 	
 	if v.id == npcID then
 		v:transform(getRandomID(),false)
+		v.y = v.y - v.height + 32
 	end
 end
 

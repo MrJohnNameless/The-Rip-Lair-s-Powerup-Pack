@@ -46,7 +46,7 @@ function chickenSuit.onInitPowerupLib()
 	chickenSuit.spritesheets = {
 		chickenSuit:registerAsset(CHARACTER_MARIO, "mario-chickenSuit.png"),
 		chickenSuit:registerAsset(CHARACTER_LUIGI, "luigi-chickenSuit.png"),
-		false, --chickenSuit:registerAsset(CHARACTER_PEACH, "peach-chickenSuit.png"),
+		chickenSuit:registerAsset(CHARACTER_PEACH, "peach-chickenSuit.png"),
 		false, --chickenSuit:registerAsset(CHARACTER_TOAD,  "toad-chickenSuit.png"),
 		chickenSuit:registerAsset(CHARACTER_LINK,  "link-chickenSuit.png"),
 	}
@@ -55,7 +55,7 @@ function chickenSuit.onInitPowerupLib()
 	chickenSuit.iniFiles = {
 		chickenSuit:registerAsset(CHARACTER_MARIO, "mario-chickenSuit.ini"),
 		chickenSuit:registerAsset(CHARACTER_LUIGI, "luigi-chickenSuit.ini"),
-		false, --chickenSuit:registerAsset(CHARACTER_PEACH, "peach-chickenSuit.ini"),
+		chickenSuit:registerAsset(CHARACTER_PEACH, "peach-chickenSuit.ini"),
 		false, --chickenSuit:registerAsset(CHARACTER_TOAD,  "toad-chickenSuit.ini"),
 		chickenSuit:registerAsset(CHARACTER_LINK,  "link-chickenSuit.ini"),
 	}
@@ -171,11 +171,14 @@ function chickenSuit.onTickPowerup(p)
 		p.speedY = settings.matildaJumpHeight
 		SFX.play(settings.matildaJumpSFX)
 		data.touchedGround = false
+		local routine = Routine.run(function() Routine.waitFrames(8) p:mem(0x18, FIELD_BOOL, true) end)
 		data.matildaTimer = projectileTimerMax[p.character]
 		return
 	elseif isOnGround(p) then
 		data.touchedGround = true
 	end
+	
+	if data.touchedGround then p:mem(0x18, FIELD_BOOL, false) end
 
 	if linkChars[p.character] then
 		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
@@ -255,7 +258,7 @@ function chickenSuit.onTickEndPowerup(p)
 	local data = p.data.chickenSuit
     if not canPlayShootAnim(p) or p.mount ~= 0 or p:mem(0x50,FIELD_BOOL) or linkChars[p.character] then return end
 	if p.speedY >= -Defines.player_grav or data.touchedGround or data.matildaTimer <= 0 then return end
-	p:setFrame(24) 
+	if p:mem(0x1C, FIELD_WORD) == 0 then p:setFrame(24) end
 end
 
 function chickenSuit.onDrawPowerup(p)

@@ -134,7 +134,7 @@ function smallFireFlower.onTickPowerup(p)
         local v = NPC.spawn(
 			smallFireFlower.projectileID,
 			p.x + p.width/2 + (p.width/2) * dir + p.speedX,
-			p.y + p.height/2 + p.speedY, p.section, false, true
+			p.y + p.height/2 - 4 + p.speedY, p.section, false, true
         )
 		v.direction = dir
 		v.ai1 = projectileVariant[p.character]

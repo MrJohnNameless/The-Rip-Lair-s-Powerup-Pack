@@ -12,6 +12,10 @@ dkg.collectSounds = {
 local powerupRevert = require("powerups/powerupRevert")
 powerupRevert.register("Donkey Goomba", 1)
 
+dkg.settings = {
+	floatHeight = 256,	--How high (in pixels) can the player float? (defaults to 256)
+}
+
 dkg.cheats = {"needadonkeygoomba"}
 dkg.blackListedBlocks = {766}
 
@@ -63,16 +67,25 @@ function dkg.onTickPowerup(p)
 	if cp.getCurrentPowerup(p) ~= dkg or not p.data.dkg then return end -- check if the powerup is currenly active
 	local data = p.data.dkg
 	
+	data.climbOnVine = false
+	
 	if data.groundCollider == 0 then
-		data.groundCollider = Colliders.Box(p.x, p.y, 16, 256)
+		data.groundCollider = Colliders.Box(p.x, p.y, 16, dkg.settings.floatHeight)
 	end
 	
 	p:mem(0x140, FIELD_WORD, 2);
 	p:mem(0x142, FIELD_WORD, 0);
 	
 	for _,n in ipairs(NPC.get()) do
-		if n:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 and NPC.HITTABLE_MAP[n.id] then
-			if Colliders.collide(p, n) then n:harm(HARM_TYPE_EXT_HAMMER); end
+		if n:mem(0x138, FIELD_WORD) == 0 and (not n.isHidden) and (not n.friendly) and n:mem(0x12C, FIELD_WORD) == 0 then
+			if NPC.HITTABLE_MAP[n.id] and not NPC.config[n.id].powerup and not NPC.config[n.id].nohurt then
+				if Colliders.collide(p, n) then p:harm() end
+			end
+			if NPC.config[n.id].isvine and Colliders.collide(p, n) then
+				p.keys.up = KEYS_UP
+				p.keys.down = KEYS_UP
+				data.climbOnVine = true
+			end
 		end
 	end
 	
@@ -98,7 +111,20 @@ function dkg.onTickPowerup(p)
 		btype = Colliders.BLOCK
 	}
 	
-	if #collidingBlocksCollider > 0 then
+	local tbl2 = NPC.isValid
+	collidingNPCCollider = Colliders.getColliding {
+		a = data.groundCollider,
+		b = tbl2,
+		btype = Colliders.NPC,
+		filter = function(other)
+			if NPC.config[other.id].playerblocktop or NPC.config[other.id].playerblock or NPC.config[other.id].npcblocktop then
+				return true
+			end
+			return false
+		end
+	}
+	
+	if #collidingBlocksCollider > 0 or #collidingNPCCollider > 0 or data.climbOnVine then
 		if (p.keys.jump or p.keys.altJump) then
 			if p.speedY > -4 then p.speedY = p.speedY - 0.5 end
 			data.notColliding = false
@@ -117,6 +143,12 @@ function dkg.onTickPowerup(p)
 		end
 	end
 	
+	p:mem(0x160, FIELD_WORD, 0)
+	p:mem(0x1C, FIELD_WORD, 0)
+	
+	local warpTable = Warp.getIntersectingEntrance(p.x, p.y, p.x + p.width / 2, p.y + p.height / 2)
+	local w = warpTable[#warpTable]
+	if (w and w.isValid and not w.isHidden) and (w.warpType == 1 or w.warpType == 2) then return end
 	if p:mem(0x146, FIELD_WORD) == 2 then p.speedY = -6 end
 	if p:mem(0x148, FIELD_WORD) == 2 then p.speedX = 3 end
 	if p:mem(0x14A, FIELD_WORD) == 2 then p.speedY = 3 end

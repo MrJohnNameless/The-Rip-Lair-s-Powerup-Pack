@@ -2,3 +2,7 @@ This Powerup has various cheats you can do!
 These are:
 
 * needadonkeygoomba
+
+The powerup also has some configs you can apply. Simple open the file "DKG.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+floatHeight - How high (in pixels) can the player float? (defaults to 256)

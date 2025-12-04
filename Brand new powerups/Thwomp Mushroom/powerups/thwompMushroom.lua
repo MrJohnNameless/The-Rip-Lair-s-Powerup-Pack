@@ -178,9 +178,9 @@ function thwompMushroom.onTickPowerup(p)
 	
 	-- disables shooting the projectile of the respective basegame powerup used
     if linkChars[p.character] then
-		p:mem(0x162, FIELD_WORD, 5)
+		p:mem(0x162, FIELD_WORD, 2)
 	else
-		p:mem(0x160, FIELD_WORD, 5) 
+		p:mem(0x160, FIELD_WORD, 2) 
 	end
 	
 	if p.deathTimer ~= 0 or p.forcedState ~= 0 or p.mount ~= 0 or p:mem(0x0C, FIELD_BOOL) then p.data.thwompMushroom.animTimer = 0 return end

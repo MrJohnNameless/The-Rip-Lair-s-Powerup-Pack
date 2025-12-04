@@ -8,10 +8,9 @@
     Custom Peach sprites by Lx Xzit and Pakesho
     SMW Mario and Luigi graphics from AwesomeZack
 
-	Tweaked to work with multiplayer by John Nameless
-
     Credit to FyreNova for generally being cool (oh and maybe working on a SMBX38A version of this, too)
 
+	Poorly tweaked to work with multiplayer by John Nameless
 ]]
 
 local playerManager = require("playerManager")
@@ -53,7 +52,7 @@ apt.slidingFromFlight = {}
 apt.walkingTimer = {}
 apt.ascentTimer = {}
 apt.sprite = {}
-
+apt.capeBuffer = {}
 
 -- Convenience functions
 local function isOnGround(p)
@@ -1009,7 +1008,11 @@ do
     function apt.onDraw(library,p)
         if not canDrawCape(p) or (apt.capeFrame[p.idx] ~= nil and apt.capeFrame[p.idx] < 1) then return end
         
-		local capeBuffer = Graphics.CaptureBuffer(capeImageSize,capeImageSize)
+		if apt.capeBuffer[p.idx] == nil then
+			apt.capeBuffer[p.idx] = Graphics.CaptureBuffer(capeImageSize,capeImageSize)
+		end
+		
+		local capeBuffer = apt.capeBuffer[p.idx]
 		
         local bufferSize = vector(capeBuffer.width,capeBuffer.height)
 
