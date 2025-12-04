@@ -198,7 +198,7 @@ function blueShell.onTickPowerup(p)
 		p:mem(0x154,FIELD_WORD,0) -- lets the player hold items again
 	end
 	
-	-- handles moving around in a shell
+	-- handles miscellaneous stuff while in a shell
 	if data.isInShell then
 		p.keys.left = KEYS_UP -- stops the player from skidding
 		p.keys.right = KEYS_UP -- stops the player from skidding
@@ -209,6 +209,7 @@ function blueShell.onTickPowerup(p)
 		
 		p:mem(0x120,FIELD_BOOL,false) -- prevent spinjumping
 		p:mem(0x3C,FIELD_BOOL,false) -- stops the player from sliding
+		p:mem(0x0A,FIELD_BOOL,false) -- fixes an issue regarding using a shell on slippery slopes
 
 		p.direction = data.lockedDirection
 		p.speedX = data.lockedSpeed * data.lockedDirection

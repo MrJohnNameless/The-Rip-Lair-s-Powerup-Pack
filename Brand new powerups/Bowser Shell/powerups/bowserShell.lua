@@ -231,6 +231,7 @@ function bowsershell.onTickPowerup(p)
 		
 		p:mem(0x120,FIELD_BOOL,false) -- prevent spinjumping
 		p:mem(0x3C,FIELD_BOOL,false) -- stops the player from sliding
+		p:mem(0x0A,FIELD_BOOL,false) -- fixes an issue regarding using a shell on slippery slopes
 	end
 	
 	if p:mem(0x50, FIELD_BOOL) then
