@@ -77,6 +77,7 @@ local sm64_star = Misc.resolveFile("sm64_star.wav")
 function metalCap.onInitAPI()
 	registerEvent(metalCap, "onTick")
 	registerEvent(metalCap, "onDraw")
+	registerEvent(metalCap, "onDrawEnd")
 	registerEvent(metalCap, "onTickEnd")
 	registerEvent(metalCap, "onNPCHarm")
 	registerEvent(metalCap, "onNPCCollect")
@@ -357,8 +358,16 @@ function metalCap.onNPCCollect(eventObj, v, p)
 	end
 end
 
+function metalCap.onDrawEnd()
+	for i,p in ipairs(Player.get()) do
+		if p.frame == -50 * p.direction then p.data.metalCapVanishPlayer = true else p.data.metalCapVanishPlayer = false end
+	end
+end
+
 function metalCap.onDraw()
 	for i,p in ipairs(Player.get()) do
+	
+		if p.data.metalCapVanishPlayer then return end
 		
 		local enabled = 0
 		local speed = 0

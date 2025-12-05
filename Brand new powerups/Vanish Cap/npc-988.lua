@@ -68,6 +68,7 @@ local sm64_star = Misc.resolveFile("sm64_star.wav")
 function vanishCap.onInitAPI()
 	registerEvent(vanishCap, "onTick")
 	registerEvent(vanishCap, "onDraw")
+	registerEvent(vanishCap, "onDrawEnd")
 	registerEvent(vanishCap, "onNPCHarm")
 	registerEvent(vanishCap, "onNPCCollect")
 	registerEvent(vanishCap, "onExit")
@@ -195,9 +196,17 @@ function vanishCap.onNPCCollect(eventObj, v, p)
 	
 end
 
+function vanishCap.onDrawEnd()
+	for i,p in ipairs(Player.get()) do
+		if (p.frame == -50 * p.direction * p.direction) or (p.frame == -50 * p.direction) then p.data.vanishCapVanishPlayer = true else p.data.vanishCapVanishPlayer = false end
+	end
+end
+
 function vanishCap.onDraw()
 	for i,p in ipairs(Player.get()) do
-
+		
+		if p.data.vanishCapVanishPlayer then return end
+		
 		local enabled = 0
 		local speed = 0
 
@@ -224,9 +233,9 @@ function vanishCap.onDraw()
 			
 			if p.data.vanishcapPowerupcapTimer >= 61 and restrictMovement[p.idx] then restrictMovement[p.idx] = false end
 			
-			if p.frame ~= -50 then p.data.vanishcapFrame = p.frame end
+			if p.frame ~= 50 then p.data.vanishcapFrame = p.frame end
 			
-			if enabled == 1 and p.frame ~= -50 * p.direction then
+			if enabled == 1 then
 				p:render{
 					frame = p.data.vanishcapFrame,
 					direction = p.direction,
@@ -245,7 +254,7 @@ function vanishCap.onDraw()
 						enabled = enabled,
 					},
 				}
-				p.frame = -50
+				p.frame = 50 
 			end
 		end
 	end
