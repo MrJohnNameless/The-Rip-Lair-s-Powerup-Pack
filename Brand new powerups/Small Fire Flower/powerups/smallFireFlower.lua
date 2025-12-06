@@ -144,7 +144,7 @@ function smallFireFlower.onTickPowerup(p)
         )
 		v.direction = dir
 		v.ai1 = projectileVariant[p.character]
-		v.speedX = (5 + math.abs(p.speedX)/3.5) * dir
+		v.speedX = (5 * dir) + p.speedX/2.5
 		
 		-- handles shooting as link/snake/samus
 		if linkChars[p.character] then 
@@ -180,7 +180,7 @@ function smallFireFlower.onTickPowerup(p)
 			end
 			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 		end
-		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 		data.projectileTimer = projectileTimerMax[p.character]
 		SFX.play(18)
     end
