@@ -45,8 +45,4 @@ function wallJumpShroom.onDisable(p)
 	aw.disable(p)
 end
 
-function wallJumpShroom.onTickPowerup(p)
-	if cp.getCurrentName(activePlayer) == "Wall Jump Mushroom" then aw.enable(p) end
-end
-
 return wallJumpShroom

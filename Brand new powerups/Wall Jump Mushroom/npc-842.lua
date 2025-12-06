@@ -72,10 +72,6 @@ function sampleNPC.onInitAPI()
 			return true
 		end)
 	})
-	for _,p in ipairs(Player.get()) do
-		p.data.noWallJumpByDefault = true
-		aw.disable(p)
-	end
 end
 
 function sampleNPC.onTickNPC(v)
