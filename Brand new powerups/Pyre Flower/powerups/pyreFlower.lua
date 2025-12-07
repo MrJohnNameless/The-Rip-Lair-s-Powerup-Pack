@@ -167,7 +167,7 @@ function pyre.onTickPowerup(p)
 			end
 			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 		end
-		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 		SFX.play(18)
 
 		if flamethrowerActive then

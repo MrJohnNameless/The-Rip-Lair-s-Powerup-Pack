@@ -269,7 +269,7 @@ function bowsershell.onTickPowerup(p)
 			p.y + p.height/2 + p.speedY, p.section, false, true
         )
 		v.direction = dir
-		v.speedX = NPC.config[v.id].speed * dir
+		v.speedX = (NPC.config[v.id].speed * dir) + p.speedX/2.5
 		if linkChars[p.character] then 
 			if not p:mem(0x12E,FIELD_BOOL) then -- if ducking, have the npc not rise higher
 				v.y = v.y - 12
@@ -279,7 +279,7 @@ function bowsershell.onTickPowerup(p)
 				p:mem(0x162, FIELD_WORD,2)
 			end
 		else
-			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 			if p.mount == 0 then
 				data.shootTimer = 64
 			end

@@ -100,11 +100,11 @@ function leaf.onTickPowerup(p)
 		)
 		
 		local speedYMod = p.speedY * 0.1
-		v.speedX = (3.6 + math.abs(p.speedX)/3.5) * dir
+		v.speedX = (3.6 * dir) + p.speedX/2.5
 		-- handles shooting as link/snake/samus
 		if linkChars[p.character] then 
 			-- shoot less higher when ducking
-			v.speedX = (5 + math.abs(p.speedX)/3.5) * dir
+			v.speedX = (5 * dir) + p.speedX/2.5
 			if p:mem(0x12E,FIELD_BOOL) then
 				v.y = v.y + 4
 			else
@@ -139,7 +139,7 @@ function leaf.onTickPowerup(p)
 				p:mem(0x162, FIELD_WORD,0)
 			end
 		else 
-			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 			SFX.play(18)
 			if flamethrowerActive then
 				p:mem(0x160, FIELD_WORD,30)

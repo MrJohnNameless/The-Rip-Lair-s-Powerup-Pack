@@ -154,7 +154,7 @@ function template.onTickPowerup(p)
 			p.y + p.height/2 + p.speedY, p.section, false, true
         )
 		v.direction = dir
-		v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/3.5
+		v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/2.5
 		
 		-- handles shooting as link/snake/samus
 		if linkChars[p.character] then 
@@ -189,7 +189,7 @@ function template.onTickPowerup(p)
 			end
 			p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 		end
-		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+		p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 		SFX.play(18)
 
 		if flamethrowerActive then

@@ -113,7 +113,7 @@ function bombShroom.onTickPowerup(p)
 			local speedYMod = p.speedY * 0.1
 			local holdingUp = 0
 
-			v.speedX = ((NPC.config[v.id].speed + 4) + p.speedX/3.5) * dir
+			v.speedX = ((NPC.config[v.id].speed + 4) * dir) + p.speedX/2.5
 			
 			-- handles shooting as link/snake/samus
 			if linkChars[p.character] then 
@@ -154,7 +154,7 @@ function bombShroom.onTickPowerup(p)
 				p:mem(0x162, FIELD_WORD,2)
 			end
 		else
-			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 			SFX.play(18)
 			if not p.isSpinJumping then
 				p:mem(0x118, FIELD_FLOAT,110)

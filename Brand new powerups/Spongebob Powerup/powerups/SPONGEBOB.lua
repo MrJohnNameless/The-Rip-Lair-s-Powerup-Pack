@@ -383,7 +383,7 @@ function spunchbop.onTickPowerup(p)
 			)
 			v.data.scale = data.bubbleCharge * 0.0175
 			v.isProjectile = true
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
+			v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/3.5
 			v.direction = dir
 			v:mem(0x156, FIELD_WORD, 32) -- gives the NPC i-frames
 			SFX.play("powerups/nasb2bubble.ogg")

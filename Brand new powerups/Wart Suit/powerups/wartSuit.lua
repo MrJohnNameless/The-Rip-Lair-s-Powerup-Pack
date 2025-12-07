@@ -180,10 +180,8 @@ function frogSuit.onTickPowerup(p)
 			v.speedY = -8 - (math.cos(lunatime.tick() * 0.2) * 2)
 		end
 		
-		-- put your own code here!
-		
 		SFX.play(18)
-        data.projectileTimer = projectileTimerMax[p.character] -- sets the projectileTimer/cooldown upon shooting
+        data.projectileTimer = projectileTimerMax[p.character] or projectileTimerMax[1] -- sets the projectileTimer/cooldown upon shooting
     end
 	
 	if data.shotCount == 4 and not data.coolingdown then
@@ -210,9 +208,6 @@ function frogSuit.onTickEndPowerup(p)
 	
 	local data = p.data.frogSuit
 	
-	-- put your own code here!
-	
-	
     local curFrame = animFrames[projectileTimerMax[p.character] - data.projectileTimer] -- sets the frame depending on how much the projectile timer has
     local canPlay = canPlayShootAnim(p) and not p:mem(0x50,FIELD_BOOL) and not linkChars[p.character]
 
@@ -222,11 +217,6 @@ function frogSuit.onTickEndPowerup(p)
 end
 
 function frogSuit.onDrawPowerup(p)
-	if cp.getCurrentPowerup(p) ~= frogSuit or not p.data.frogSuit then return end -- check if the powerup is currently active
-	local data = p.data.frogSuit
-	
-	-- put your own code here!
-	
 end
 
 return frogSuit

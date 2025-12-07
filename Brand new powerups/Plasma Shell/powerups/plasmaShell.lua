@@ -141,7 +141,7 @@ function plasmaShell.onTickPowerup(p)
 			
 			data.wasGrounded = false
 		end
-		v.speedX = NPC.config[v.id].thrownSpeed * dir + p.speedX/3.5
+		v.speedX = (NPC.config[v.id].thrownSpeed * dir) + p.speedX/3.5
 		v:mem(0x156, FIELD_WORD, 32)	-- I frames
 	
 		if linkChars[p.character] and not p.keys.altRun then
@@ -160,7 +160,7 @@ function plasmaShell.onTickPowerup(p)
 			end
 		else
 			p.speedY = math.min(-3,p.speedY)
-			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 			data.projectileTimer = projectileTimerMax[p.character]
 			SFX.play(18)
 

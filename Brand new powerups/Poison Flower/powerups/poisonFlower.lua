@@ -163,7 +163,7 @@ function poisonFlower.onTickPowerup(p)
 			)
 
 			v.direction = dir
-			v.speedX = ((NPC.config[v.id].speed + 4) + p.speedX/3.5) * dir
+			v.speedX = ((NPC.config[v.id].speed + 4) * dir) + p.speedX/2.5
 			v.data.owner = p
 			table.insert(data.playerBubbles,v)
 
@@ -190,7 +190,7 @@ function poisonFlower.onTickPowerup(p)
 					p:mem(0x118, FIELD_FLOAT,110) -- set the player to do the shooting animation
 					SFX.play(18)
 				end
-				p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+				p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 				SFX.play(18)
 				if flamethrowerActive then
 					p:mem(0x160, FIELD_WORD,30)

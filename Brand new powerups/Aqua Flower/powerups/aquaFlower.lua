@@ -167,7 +167,7 @@ function aquaFlower.onTickPowerup(p)
 			end
 			v.x = v.x + (16 * dir)
 			v.isProjectile = true
-			v.speedX = ((NPC.config[v.id].speed + 1) + p.speedX/3.5) * dir
+			v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/2.5
 			p:mem(0x162, FIELD_WORD,projectileTimerMax[p.character] + 2)
 			SFX.play(82)
 			if flamethrowerActive then
@@ -190,10 +190,10 @@ function aquaFlower.onTickPowerup(p)
 					v.speedY = -4
 				end
 				v.direction = dir
-				v.speedX = ((NPC.config[v.id].speed + 3) + p.speedX/3.5) * dir
+				v.speedX = ((NPC.config[v.id].speed + 1) * dir) + p.speedX/2.5
 				p:mem(0x118, FIELD_FLOAT,110)
 			end
-			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character])
+			p:mem(0x160, FIELD_WORD,projectileTimerMax[p.character] or projectileTimerMax[1])
 			SFX.play(18)
 	
 			if flamethrowerActive then
