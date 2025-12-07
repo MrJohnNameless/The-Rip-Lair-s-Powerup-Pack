@@ -294,12 +294,21 @@ function spunchbop.onTickPowerup(p)
 		data.canUseFishbowl = true
 		data.canUseSpatula = true
 	end
+	
 	local charge = 0
+	
+	data.SpongebobStanding = false
+	
+	for _,n in ipairs(NPC.get()) do
+		if (p.standingNPC ~= nil and p.standingNPC.idx == n.idx) and NPC.config[n.id].grabtop then
+			data.SpongebobStanding = true
+		end
+	end
 	
 	------------ FISHBOWL CHARGING ------------
 	if not data.isHoldingRun and data.actionCooldown <= 0 and data.fishbowlCharge < settings.maxCharge
 	and data.spatulaCharge <= 0 and data.bubbleCharge <= 0 and data.canUseFishbowl
-	and p:mem(0x12E,FIELD_BOOL) and (p.keys.run or p.keys.altRun) and data.state == STATE_NORMAL then
+	and p:mem(0x12E,FIELD_BOOL) and (p.keys.run or p.keys.altRun) and not data.SpongebobStanding and data.state == STATE_NORMAL then
 		if data.fishbowlCharge <= 0 and not data.chargeSFX:isplaying() then
 			data.chargeSFX = SFX.play("powerups/nasb2charge.ogg",1,0)
 		end
