@@ -1,3 +1,13 @@
+--[[
+    Propeller powerup script
+        - by Marioman2007
+
+    Part of The Rip Lair's powerup pack
+
+    reserved variable names are "name", "items", "id", "collectSounds", "basePowerup", "spritesheets" and "iniFiles"
+    everything except "name" and "id" can be safely modified
+]]
+
 local goalTape = require("npcs/AI/goalTape")
 local pm = require("playerManager")
 local propeller = {}
@@ -10,9 +20,6 @@ local STATE = {
     SLOWFALLING = 4,
     DRILLING = 2,
 }
-
--- reserved variable names are "name", "items", "id", "collectSounds", "basePowerup", "spritesheets" and "iniFiles"
--- everything except "name" and "id" can be safely modified
 
 propeller.basePowerup = PLAYER_FIREFLOWER
 propeller.cheats = {"needapropeller", "helicopter"}
@@ -323,7 +330,7 @@ propeller.perCharacterOffsets = {
 			[7] = vector(10, -8),
 			[8] = vector(12, -10),
 			
-			[9] = vector(0, -4),
+			[9]  = vector(0, -4),
 			[10] = {vector(-17, 8), useTilted = true},
 			
 			[11] = vector(4, -4),
@@ -338,13 +345,10 @@ propeller.perCharacterOffsets = {
 -----------------
 
 local playerData = {}
-local starShader = Shader.fromFile(nil, Misc.multiResolveFile("starman.frag", "shaders\\npc\\starman.frag"))
 
-local metalShader = Shader()
-metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
-
-local vanishShader = Shader()
-vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
+local starShader   = Shader.fromFile(nil, Misc.multiResolveFile("starman.frag", "shaders\\npc\\starman.frag"))
+local metalShader  = Shader.fromFile(nil, Misc.resolveFile("metalShader.frag"))
+local vanishShader = Shader.fromFile(nil, Misc.resolveFile("vanishShader.frag"))
 
 local blockBlacklist = {}
 local blockWhitelist = {}
@@ -821,27 +825,30 @@ end
 
 local function drawPlayerStuff(data, p, priority, opacity)
     local animData = propeller.animData[data.state]
+
+    local shader, uniforms
+    local color = Color.white
+
+    if not p.hasStarman then
+        if p.data.metalcapPowerupcapTimer then
+            shader = metalShader
+        elseif p.data.vanishcapPowerupcapTimer then
+            shader = vanishShader
+        end
+
+    elseif p.hasStarman then
+        shader = starShader
+        uniforms = {time = lunatime.tick() * 2}
+
+    elseif Defines.cheat_shadowmario then
+        color = Color.black
+    end
     
     -- player flying sprites
     if data.state ~= STATE.NONE then
         local img = propeller:getAsset(p.character, propeller.flyingImages[p.character])
         local width = img.width/3
         local height = img.height/propeller.frames
-
-		local shader,uniforms
-        local color = Color.white
-		if not p.hasStarman then
-			if p.data.metalcapPowerupcapTimer then
-				shader = metalShader
-			elseif p.data.vanishcapPowerupcapTimer then
-				shader = vanishShader
-			end
-        elseif p.hasStarman then
-            shader = starShader
-            uniforms = {time = lunatime.tick()*2}
-        elseif Defines.cheat_shadowmario then
-            color = Color.black
-        end
 
         Graphics.drawBox{
             texture = img,
@@ -889,21 +896,6 @@ local function drawPlayerStuff(data, p, priority, opacity)
             mountOffset = p:mem(0x10E, FIELD_WORD)
         elseif p.mount == MOUNT_CLOWNCAR then
             mountOffset = (propeller.clownCarOffsets[p.character] or propeller.clownCarOffsets[-1])
-        end
-		
-		local shader,uniforms
-        local color = Color.white
-		if not p.hasStarman then
-			if p.data.metalcapPowerupcapTimer then
-				shader = metalShader
-			elseif p.data.vanishcapPowerupcapTimer then
-				shader = vanishShader
-			end
-        elseif p.hasStarman then
-            shader = starShader
-            uniforms = {time = lunatime.tick()*2}
-        elseif Defines.cheat_shadowmario then
-            color = Color.black
         end
 
         Graphics.drawBox{

@@ -1,3 +1,15 @@
+--[[
+    Drill powerup script
+        - by Marioman2007
+
+    Part of The Rip Lair's powerup pack
+
+    reserved variable names are "name", "items", "id", "collectSounds", "basePowerup", "spritesheets" and "iniFiles"
+    everything except "name" and "id" can be safely modified
+
+    the powerup images should be named as "drill-CHARACTER_NAME-#", where # is the frame index
+]]
+
 local drill = {}
 
 local pm = require("playerManager")
@@ -5,11 +17,6 @@ local easing = require("ext/easing")
 local cp = require("customPowerups")
 
 local gfxTable = {}
-
--- reserved variable names are "name", "items", "id", "collectSounds", "basePowerup", "spritesheets" and "iniFiles"
--- everything except "name" and "id" can be safely modified
-
--- the powerup images should be named as "drill-CHARACTER_NAME-#", where # is the frame index
 
 drill.basePowerup = PLAYER_FIREFLOWER
 
@@ -67,6 +74,9 @@ function drill.onInitPowerupLib()
     end
 end
 
+local starShader   = Shader.fromFile(nil, Misc.multiResolveFile("starman.frag", "shaders\\npc\\starman.frag"))
+local metalShader  = Shader.fromFile(nil, Misc.resolveFile("metalShader.frag"))
+local vanishShader = Shader.fromFile(nil, Misc.resolveFile("vanishShader.frag"))
 
 local playerData = {}
 local blackListedStates = table.map{3, 6, 7, 8, 9, 10, 499, 500}
@@ -601,15 +611,6 @@ function drill.onTickEndPowerup(p)
     data.collider.y = p.y - data.collider.height + 4
 end
 
-local starmanShader = Shader()
-starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
-
-local metalShader = Shader()
-metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
-
-local vanishShader = Shader()
-vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
-
 
 function drill.onDrawPowerup(p)
     local data = playerData[p.idx]
@@ -619,20 +620,23 @@ function drill.onDrawPowerup(p)
     local img = drill:getAsset(p.character, drill.digImages[p.character])
     local frame = math.floor(data.animTimer / drill.digFramespeed) % drill.digFrames
 
-	 local shader,uniforms
-		local color = Color.white
-		if not p.hasStarman then
-			if p.data.metalcapPowerupcapTimer then
-				shader = metalShader
-			elseif p.data.vanishcapPowerupcapTimer then
-				shader = vanishShader
-			end
-		elseif p.hasStarman then
-			shader = starmanShader
-			uniforms = {time = lunatime.tick()*2}
-		elseif Defines.cheat_shadowmario then
-			color = Color.black
+	local shader, uniforms
+	local color = Color.white
+
+	if not p.hasStarman then
+		if p.data.metalcapPowerupcapTimer then
+			shader = metalShader
+		elseif p.data.vanishcapPowerupcapTimer then
+			shader = vanishShader
 		end
+
+	elseif p.hasStarman then
+		shader = starShader
+		uniforms = {time = lunatime.tick()*2}
+
+	elseif Defines.cheat_shadowmario then
+		color = Color.black
+	end
 
     data.digPart.x = p.x + p.width/2
     data.digPart.y = p.y + p.height
@@ -647,11 +651,19 @@ function drill.onDrawPowerup(p)
     if data.isDigging then        
         Graphics.drawBox{
             texture = img,
-            x = p.x + p.width/2, y = p.y + p.height - (img.height/drill.digFrames)/2 + 6,
-            sourceX = 0, sourceY = frame * img.height/drill.digFrames,
-            sourceWidth = img.width, sourceHeight = img.height/drill.digFrames,
-            sceneCoords = true, color = color,shader = shader,uniforms = uniforms, priority = -25,
-            centered = true, rotation = data.angle,
+            x = p.x + p.width/2,
+            y = p.y + p.height - (img.height/drill.digFrames)/2 + 6,
+            sourceX = 0,
+            sourceY = frame * img.height/drill.digFrames,
+            sourceWidth = img.width,
+            sourceHeight = img.height/drill.digFrames,
+            sceneCoords = true,
+            color = color,
+            priority = -25,
+            centered = true,
+            rotation = data.angle,
+            shader = shader,
+            uniforms = uniforms,
         }
     end
 
