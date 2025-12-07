@@ -340,6 +340,12 @@ propeller.perCharacterOffsets = {
 local playerData = {}
 local starShader = Shader.fromFile(nil, Misc.multiResolveFile("starman.frag", "shaders\\npc\\starman.frag"))
 
+local metalShader = Shader()
+metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
+
 local blockBlacklist = {}
 local blockWhitelist = {}
 
@@ -822,6 +828,21 @@ local function drawPlayerStuff(data, p, priority, opacity)
         local width = img.width/3
         local height = img.height/propeller.frames
 
+		local shader,uniforms
+        local color = Color.white
+		if not p.hasStarman then
+			if p.data.metalcapPowerupcapTimer then
+				shader = metalShader
+			elseif p.data.vanishcapPowerupcapTimer then
+				shader = vanishShader
+			end
+        elseif p.hasStarman then
+            shader = starShader
+            uniforms = {time = lunatime.tick()*2}
+        elseif Defines.cheat_shadowmario then
+            color = Color.black
+        end
+
         Graphics.drawBox{
             texture = img,
             x = p.x + p.width/2 + propeller.textureOffset.x * p.direction,
@@ -835,8 +856,8 @@ local function drawPlayerStuff(data, p, priority, opacity)
             priority = priority,
             sceneCoords = true,
             centered = true,
-            shader = (p.hasStarman and starShader) or nil,
-            uniforms = (p.hasStarman and {time = lunatime.tick() * 2}) or nil,
+            shader = shader,
+            uniforms = uniforms,
             color = Color.white .. opacity,
         }
 
@@ -869,6 +890,21 @@ local function drawPlayerStuff(data, p, priority, opacity)
         elseif p.mount == MOUNT_CLOWNCAR then
             mountOffset = (propeller.clownCarOffsets[p.character] or propeller.clownCarOffsets[-1])
         end
+		
+		local shader,uniforms
+        local color = Color.white
+		if not p.hasStarman then
+			if p.data.metalcapPowerupcapTimer then
+				shader = metalShader
+			elseif p.data.vanishcapPowerupcapTimer then
+				shader = vanishShader
+			end
+        elseif p.hasStarman then
+            shader = starShader
+            uniforms = {time = lunatime.tick()*2}
+        elseif Defines.cheat_shadowmario then
+            color = Color.black
+        end
 
         Graphics.drawBox{
             texture = img,
@@ -883,8 +919,8 @@ local function drawPlayerStuff(data, p, priority, opacity)
             priority = priority,
             sceneCoords = true,
             centered = true,
-            shader = (p.hasStarman and starShader) or nil,
-            uniforms = (p.hasStarman and {time = lunatime.tick() * 2}) or nil,
+            shader = shader,
+            uniforms = uniforms,
             color = Color.white .. opacity,
         }
     end

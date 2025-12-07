@@ -26,8 +26,16 @@ local rockMushroom = {
 local GP
 pcall(function() GP = require("GroundPound") end)
 
-local starShader = Shader.fromFile(nil, Misc.multiResolveFile("starman.frag", "shaders\\npc\\starman.frag"))
+local starmanShader = Shader()
+starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
+
 local maskShader = Shader.fromFile(nil, "shaders/effects/mask.frag")
+
+local metalShader = Shader()
+metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
 
 function rockMushroom.onInitPowerupLib()
 	rockMushroom.spritesheets = {
@@ -368,6 +376,21 @@ function rockMushroom.onDrawPowerup(p)
 	if data.isRockRolling and not p:mem(0x142,FIELD_BOOL) then
 		p:setFrame(-50)
 		
+		local shader,uniforms
+        local color = Color.white
+		if not p.hasStarman then
+			if p.data.metalcapPowerupcapTimer then
+				shader = metalShader
+			elseif p.data.vanishcapPowerupcapTimer then
+				shader = vanishShader
+			end
+        elseif p.hasStarman then
+            shader = starmanShader
+            uniforms = {time = lunatime.tick()*2}
+        elseif Defines.cheat_shadowmario then
+            color = Color.black
+        end
+		
 		local spriteWidth = 48
 		local spriteHeight = 44
 		Graphics.drawBox{
@@ -383,10 +406,10 @@ function rockMushroom.onDrawPowerup(p)
 			sourceHeight = spriteHeight,
 			centered     = true,
 			priority     = -25,
-			color        = Color.white .. 1,
+			color        = color,
 			rotation     = data.rotation,
-			shader = (p.hasStarman and starShader) or nil,
-			uniforms = (p.hasStarman and {time = lunatime.tick() * 2}) or nil,
+			shader		 = shader,
+			uniforms 	 = uniforms,
 		}
 		if not p.hasStarman and data.snowOpacity > 0 then	-- draw a snow overlay
 			Graphics.drawBox{

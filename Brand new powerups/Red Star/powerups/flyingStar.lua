@@ -42,6 +42,15 @@ flyingStar.playerColors = {
 
 flyingStar.basePowerup = PLAYER_FIREFLOWER
 
+local starmanShader = Shader()
+starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
+
+local metalShader = Shader()
+metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
+
 local aw
 pcall(function() aw = require("anotherwalljump") end)
 pcall(function() aw = aw or require("aw") end)
@@ -259,6 +268,21 @@ function flyingStar.onDrawPowerup(p)
 	
 	local slideTexture = flyingStar:getAsset(p.character, flyingStar.flyingSprites[p.character])
 
+	local shader,uniforms
+	local color = Color.white
+	if not p.hasStarman then
+		if p.data.metalcapPowerupcapTimer then
+			shader = metalShader
+		elseif p.data.vanishcapPowerupcapTimer then
+			shader = vanishShader
+		end
+	elseif p.hasStarman then
+		shader = starmanShader
+		uniforms = {time = lunatime.tick()*2}
+	elseif Defines.cheat_shadowmario then
+		color = Color.black
+	end
+
 	Graphics.drawBox{
 		texture = slideTexture,
 		x = p.x + p.width/2,
@@ -272,6 +296,7 @@ function flyingStar.onDrawPowerup(p)
 		sceneCoords = true,
 		centered = true,
 		priority = getPriority(p),
+		color = color,shader = shader,uniforms = uniforms,
 		rotation = (p.speedY * 4) * p.direction,
 	}
 

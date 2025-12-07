@@ -596,6 +596,15 @@ function catSuit.onTickEndPowerup(p)
 	end	
 end
 
+local starmanShader = Shader()
+starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
+
+local metalShader = Shader()
+metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
+
 function catSuit.onDrawPowerup(p)
 	if not p.data.catSuit then return end -- check if the powerup is currently active
 	local data = p.data.catSuit
@@ -632,6 +641,22 @@ function catSuit.onDrawPowerup(p)
 			mount = p.mount,
 			sceneCoords = false,
 		}
+		
+		local shader,uniforms
+        local color = Color.white
+		if not p.hasStarman then
+			if p.data.metalcapPowerupcapTimer then
+				shader = metalShader
+			elseif p.data.vanishcapPowerupcapTimer then
+				shader = vanishShader
+			end
+        elseif p.hasStarman then
+            shader = starmanShader
+            uniforms = {time = lunatime.tick()*2}
+        elseif Defines.cheat_shadowmario then
+            color = Color.black
+        end
+		
 		-- redraws the player & rotates them according to the direction of the wall they're climbing on
 		Graphics.drawBox{ 
 			texture = playerBuffer,
@@ -639,7 +664,8 @@ function catSuit.onDrawPowerup(p)
 			y = p.y + p.height/2, -- tweaks needed
 			sceneCoords = true,
 			centered = true,
-			rotation = (90 * -p.direction)
+			rotation = (90 * -p.direction),
+			color = color,shader = shader,uniforms = uniforms,
 		}
 	end
 	--[[

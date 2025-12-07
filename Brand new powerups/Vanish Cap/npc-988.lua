@@ -172,7 +172,9 @@ function vanishCap.onNPCHarm(token,v,harm,c)
 end
 
 function vanishCap.onNPCCollect(eventObj, v, p)
-	if npcID ~= v.id or v.isGenerator then return end
+	if npcID ~= v.id or v.isGenerator or p.forcedState ~= 0 then return end
+	
+	if eventObj.cancelled then return end
 	
 	SFX.play(sm64_star)
 	

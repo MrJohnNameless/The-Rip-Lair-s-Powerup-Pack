@@ -15,6 +15,7 @@ metalCap.settings = {
 		[CHARACTER_LUIGI] = 14,
 		[CHARACTER_PEACH] = 12,
 		[CHARACTER_TOAD] = 10,
+		[CHARACTER_LINK] = 12,
 	},
 
 	playerMaxSpeed = 3,
@@ -335,7 +336,9 @@ function metalCap.onNPCHarm(token,v,harm,c)
 end
 
 function metalCap.onNPCCollect(eventObj, v, p)
-	if npcID ~= v.id or v.isGenerator then return end
+	if npcID ~= v.id or v.isGenerator or p.forcedState ~= 0 then return end
+	
+	if eventObj.cancelled then return end
 	
 	SFX.play(sm64_star)
 	

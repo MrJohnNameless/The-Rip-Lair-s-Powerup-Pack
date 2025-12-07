@@ -601,6 +601,15 @@ function drill.onTickEndPowerup(p)
     data.collider.y = p.y - data.collider.height + 4
 end
 
+local starmanShader = Shader()
+starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
+
+local metalShader = Shader()
+metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
+
 
 function drill.onDrawPowerup(p)
     local data = playerData[p.idx]
@@ -609,6 +618,21 @@ function drill.onDrawPowerup(p)
 
     local img = drill:getAsset(p.character, drill.digImages[p.character])
     local frame = math.floor(data.animTimer / drill.digFramespeed) % drill.digFrames
+
+	 local shader,uniforms
+		local color = Color.white
+		if not p.hasStarman then
+			if p.data.metalcapPowerupcapTimer then
+				shader = metalShader
+			elseif p.data.vanishcapPowerupcapTimer then
+				shader = vanishShader
+			end
+		elseif p.hasStarman then
+			shader = starmanShader
+			uniforms = {time = lunatime.tick()*2}
+		elseif Defines.cheat_shadowmario then
+			color = Color.black
+		end
 
     data.digPart.x = p.x + p.width/2
     data.digPart.y = p.y + p.height
@@ -626,7 +650,7 @@ function drill.onDrawPowerup(p)
             x = p.x + p.width/2, y = p.y + p.height - (img.height/drill.digFrames)/2 + 6,
             sourceX = 0, sourceY = frame * img.height/drill.digFrames,
             sourceWidth = img.width, sourceHeight = img.height/drill.digFrames,
-            sceneCoords = true, priority = -25,
+            sceneCoords = true, color = color,shader = shader,uniforms = uniforms, priority = -25,
             centered = true, rotation = data.angle,
         }
     end

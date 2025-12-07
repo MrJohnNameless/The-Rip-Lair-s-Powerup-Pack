@@ -606,6 +606,16 @@ function penguinSuit.onTickEndPowerup(p)
 	------------ END OF SLIDING HANDLING ------------
 end
 
+local starmanShader = Shader()
+starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
+
+local metalShader = Shader()
+metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
+
+
 function penguinSuit.onDrawPowerup(p)
 	if not p.data.penguinSuit then return end
 	local data = p.data.penguinSuit
@@ -646,6 +656,22 @@ function penguinSuit.onDrawPowerup(p)
 			mount = p.mount,
 			sceneCoords = false,
 		}
+		
+		local shader,uniforms
+        local color = Color.white
+		if not p.hasStarman then
+			if p.data.metalcapPowerupcapTimer then
+				shader = metalShader
+			elseif p.data.vanishcapPowerupcapTimer then
+				shader = vanishShader
+			end
+        elseif p.hasStarman then
+            shader = starmanShader
+            uniforms = {time = lunatime.tick()*2}
+        elseif Defines.cheat_shadowmario then
+            color = Color.black
+        end
+		
 		-- redraws the player & rotates them according to the direction of the slope they're sliding on
 		Graphics.drawBox{ 
 			texture = data.playerBuffer,
@@ -654,7 +680,8 @@ function penguinSuit.onDrawPowerup(p)
 			sceneCoords = true,
 			centered = true,
 			rotation = data.slideRotation,
-			priority = -25
+			priority = -25,
+			color = color,shader = shader,uniforms = uniforms,
 		}
 	else
 		p:setFrame(curFrame) -- sets the frame based on the current value of "curFrame" above

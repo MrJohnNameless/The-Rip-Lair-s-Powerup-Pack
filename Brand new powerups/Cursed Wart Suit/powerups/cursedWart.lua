@@ -71,6 +71,12 @@ local shootSFX = nil
 
 local starShader = Shader.fromFile(nil, Misc.multiResolveFile("starman.frag", "shaders\\npc\\starman.frag"))
 
+local metalShader = Shader()
+metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
+
 local GP
 pcall(function() GP = require("GroundPound") end)
 
@@ -252,6 +258,21 @@ local function drawPlayer(p, priority, opacity)
     local img = cursedWart:getAsset(p.character, cursedWart.playerImages[p.character])
     local size = cursedWart.cellSize
 
+	local shader,uniforms
+	local color = Color.white
+	if not p.hasStarman then
+		if p.data.metalcapPowerupcapTimer then
+			shader = metalShader
+		elseif p.data.vanishcapPowerupcapTimer then
+			shader = vanishShader
+		end
+	elseif p.hasStarman then
+		shader = starShader
+		uniforms = {time = lunatime.tick()*2}
+	elseif Defines.cheat_shadowmario then
+		color = Color.black
+	end
+
     Graphics.drawBox{
         texture = img,
 
@@ -272,8 +293,8 @@ local function drawPlayer(p, priority, opacity)
         centered = true,
         color = Color.white .. opacity,
 
-        shader = (p.hasStarman and starShader) or nil,
-        uniforms = (p.hasStarman and {time = lunatime.tick() * 2}) or nil,
+        shader = shader,
+        uniforms = uniforms,
     }
 end
 

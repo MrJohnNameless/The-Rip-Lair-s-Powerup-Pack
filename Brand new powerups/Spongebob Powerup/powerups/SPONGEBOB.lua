@@ -560,6 +560,15 @@ function spunchbop.onTickEndPowerup(p)
     end
 end
 
+local starmanShader = Shader()
+starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
+
+local metalShader = Shader()
+metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+local vanishShader = Shader()
+vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
+
 function spunchbop.onDrawPowerup(p)
 	if not p.data.spongebob then return end -- check if the powerup is currently active
 	local data = p.data.spongebob
@@ -570,6 +579,21 @@ function spunchbop.onDrawPowerup(p)
 	--]]
 	local frame = 1
 	local timer = 0
+	
+	local shader,uniforms
+	local color = Color.white
+	if not p.hasStarman then
+		if p.data.metalcapPowerupcapTimer then
+			shader = metalShader
+		elseif p.data.vanishcapPowerupcapTimer then
+			shader = vanishShader
+		end
+	elseif p.hasStarman then
+		shader = starmanShader
+		uniforms = {time = lunatime.tick()*2}
+	elseif Defines.cheat_shadowmario then
+		color = Color.black
+	end
 	
 	-- sets the player frame & timer depending on what action is charging
 	if data.fishbowlCharge > 0 then
@@ -589,6 +613,8 @@ function spunchbop.onDrawPowerup(p)
 			frame = spatulaAnim[1 + math.floor(data.spatulaTimer * 0.6) % data.spatulaSprite.frames],
 			sceneCoords = true,
 			priority = -45 + 0.01,
+			color = color,shader = shader,uniforms = uniforms,
+			
 		}
 	end
 	
@@ -601,6 +627,7 @@ function spunchbop.onDrawPowerup(p)
 			data.fishbowlSprite[i]:draw{
 				frame = i,
 				sceneCoords = true,
+				color = color,shader = shader,uniforms = uniforms,
 			}
 			if data.fishbowlTimer > 0 then
 				p:setFrame(-50 * p.direction) 
@@ -612,13 +639,15 @@ function spunchbop.onDrawPowerup(p)
 	p:setFrame(-50*p.direction)
 	p:render{
 		frame = frame,
-		x = p.x + math.sin(timer * (1 * timer))
+		x = p.x + math.sin(timer * (1 * timer)),
+		color = color,shader = shader,uniforms = uniforms,
 	}
 	if data.bubbleCharge > 0 then
 		data.bubbleSprite.scale = vector(data.bubbleCharge*0.0175,data.bubbleCharge*0.0175)
 		data.bubbleSprite:draw{
 			sceneCoords = true,
 			priority = -25 - 0.01,
+			color = color,shader = shader,uniforms = uniforms,
 		}
 	end
 end

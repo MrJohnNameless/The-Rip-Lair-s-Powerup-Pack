@@ -893,6 +893,11 @@ do
     local starmanShader = Shader()
     starmanShader:compileFromFile(nil,Misc.multiResolveFile("starman.frag","shaders/npc/starman.frag"))
 
+	local metalShader = Shader()
+	metalShader:compileFromFile(nil, Misc.resolveFile("metalShader.frag") or nil)
+
+	local vanishShader = Shader()
+	vanishShader:compileFromFile(nil, Misc.resolveFile("vanishShader.frag") or nil)
 
     local function round(value)
         if value%1 < 0.5 then
@@ -987,7 +992,13 @@ do
 
         local shader,uniforms
         local color = Color.white
-        if p.hasStarman then
+		if not p.hasStarman then
+			if p.data.metalcapPowerupcapTimer then
+				shader = metalShader
+			elseif p.data.vanishcapPowerupcapTimer then
+				shader = vanishShader
+			end
+        elseif p.hasStarman then
             shader = starmanShader
             uniforms = {time = lunatime.tick()*2}
         elseif Defines.cheat_shadowmario then
