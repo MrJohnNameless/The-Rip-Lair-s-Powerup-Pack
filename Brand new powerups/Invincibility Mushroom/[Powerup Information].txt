@@ -7,3 +7,9 @@ These are:
 * needainvincibilityshroom
 * needaninvincishroom
 * needainvincishroom
+
+The powerup also has some configs you can apply. Simply open the NPC's lua file", using something like notepad++ or visual studio code. They are as listed:
+
+* enableAssistSpawn - Should the NPC spawn if the player has died multiple times?
+* particleEffects - Should the player have particle effects when using an invincishroom?
+* deathsRequired - How many deaths are needed before the invincishroom starts spawning?
