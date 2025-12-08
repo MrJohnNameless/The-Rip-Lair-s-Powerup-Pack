@@ -10,7 +10,8 @@
 						 - also made the Bubble Flower powerup script which was also used as a base here
 	MrDoubleA - Provided the Uniformed Player Offsets used as a base here (https://www.smbxgame.com/forums/viewtopic.php?t=26127)
 	
-	Sleepy - Created the sprites for the chicken suit for Mario & Luigi, & Link.
+	Sleepy - Created the sprites for the chicken suit for Mario & Luigi, Peach & Link.
+	
 	Sara/DeltomX3 - Created the up/down thrust sprites for Link.
 	
 	Version 1.5.0
@@ -47,7 +48,7 @@ function chickenSuit.onInitPowerupLib()
 		chickenSuit:registerAsset(CHARACTER_MARIO, "mario-chickenSuit.png"),
 		chickenSuit:registerAsset(CHARACTER_LUIGI, "luigi-chickenSuit.png"),
 		chickenSuit:registerAsset(CHARACTER_PEACH, "peach-chickenSuit.png"),
-		false, --chickenSuit:registerAsset(CHARACTER_TOAD,  "toad-chickenSuit.png"),
+		chickenSuit:registerAsset(CHARACTER_TOAD,  "toad-chickenSuit.png"),
 		chickenSuit:registerAsset(CHARACTER_LINK,  "link-chickenSuit.png"),
 	}
 	
@@ -56,7 +57,7 @@ function chickenSuit.onInitPowerupLib()
 		chickenSuit:registerAsset(CHARACTER_MARIO, "mario-chickenSuit.ini"),
 		chickenSuit:registerAsset(CHARACTER_LUIGI, "luigi-chickenSuit.ini"),
 		chickenSuit:registerAsset(CHARACTER_PEACH, "peach-chickenSuit.ini"),
-		false, --chickenSuit:registerAsset(CHARACTER_TOAD,  "toad-chickenSuit.ini"),
+		chickenSuit:registerAsset(CHARACTER_TOAD,  "toad-chickenSuit.ini"),
 		chickenSuit:registerAsset(CHARACTER_LINK,  "link-chickenSuit.ini"),
 	}
 	
@@ -94,7 +95,6 @@ local function canPlayShootAnim(p)
         p.forcedState == 0
         and p.deathTimer == 0 -- not dead
         and not p.climbing
-        and not p.holdingNPC
         and not p.inLaunchBarrel
         and not p.inClearPipe
         and p:mem(0x26,FIELD_WORD) <= 0 -- pulling objects from top
@@ -171,14 +171,22 @@ function chickenSuit.onTickPowerup(p)
 		p.speedY = settings.matildaJumpHeight
 		SFX.play(settings.matildaJumpSFX)
 		data.touchedGround = false
-		local routine = Routine.run(function() Routine.waitFrames(8) p:mem(0x18, FIELD_BOOL, true) end)
 		data.matildaTimer = projectileTimerMax[p.character]
+
+		-- prevents peach's float from interfering with the egg jump (also allows her to have a secondary float as a fun side effect)
+		if p.character ~= CHARACTER_PEACH then return end
+		local routine = Routine.run(function() 
+			p:mem(0x18, FIELD_BOOL, false)
+			Routine.skip()
+			p:mem(0x18, FIELD_BOOL, true) 	
+		end)
 		return
+		
 	elseif isOnGround(p) then
 		data.touchedGround = true
 	end
 	
-	if data.touchedGround then p:mem(0x18, FIELD_BOOL, false) end
+	if p.holdingNPC then return end
 
 	if linkChars[p.character] then
 		p:mem(0x162,FIELD_WORD,math.max(p:mem(0x162,FIELD_WORD),2))
@@ -187,7 +195,6 @@ function chickenSuit.onTickPowerup(p)
 		if p:mem(0x160, FIELD_WORD) > 0 then return end
 	end
 
-	
 	local tryingToShoot = (p.keys.altRun == KEYS_PRESSED or p.keys.run == KEYS_PRESSED or p:mem(0x50, FIELD_BOOL)) 
 	
 	if (p.keys.run == KEYS_DOWN) and flamethrowerActive then 
@@ -256,7 +263,7 @@ end
 function chickenSuit.onTickEndPowerup(p)
 	if not p.data.chickenSuit then return end
 	local data = p.data.chickenSuit
-    if not canPlayShootAnim(p) or p.mount ~= 0 or p:mem(0x50,FIELD_BOOL) or linkChars[p.character] then return end
+    if not canPlayShootAnim(p) or p.holdingNPC or p.mount ~= 0 or p:mem(0x50,FIELD_BOOL) or linkChars[p.character] then return end
 	if p.speedY >= -Defines.player_grav or data.touchedGround or data.matildaTimer <= 0 then return end
 	if p:mem(0x1C, FIELD_WORD) == 0 then p:setFrame(24) end
 end
