@@ -1,6 +1,6 @@
 
 --[[
-				chickenSuit.lua by MrNameless & Sleepy
+				chickenSuit.lua by John Nameless & Sleepy
 				
 		A customPowerups script that revives the scrapped chicken powerup
 		  from NSMBWii that allows shooting & double jumping of eggs.
@@ -14,7 +14,9 @@
 	
 	Sara/DeltomX3 - Created the up/down thrust sprites for Link.
 	
-	Version 1.5.0
+	FutureNyanCat - Created the initial spritework for Chicken Toad.
+	
+	Version 2.0.0
 	
 	NOTE: This requires customPowerups in order to work! Get it from the link above! ^^^
 	

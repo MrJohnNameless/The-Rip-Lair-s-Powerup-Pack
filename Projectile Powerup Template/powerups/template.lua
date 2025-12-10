@@ -1,6 +1,6 @@
 
 --[[
-		Projectile Powerup template by MrNameless & Marioman2007
+		Projectile Powerup template by John Nameless & Marioman2007
 				
 			A customPowerups template script that helps to
 		streamline the process of making projectile throwing powerups
