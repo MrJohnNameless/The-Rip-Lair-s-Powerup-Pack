@@ -222,6 +222,26 @@ function laserShot.onTickNPC(v)
 	end
 
 	if canKill then
+		-- Yoinked from Basegame Wario/WarioRewrite's code lol
+		for i,b in Block.iterateIntersecting(v.x - 2,v.y -4, v.x + v.width + 2, v.y + v.height + 4) do
+			-- If block is visible
+			if b.isHidden == false and b:mem(0x5A, FIELD_BOOL) == false then
+				-- If the block can be broken
+				if Block.MEGA_SMASH_MAP[b.id] then 
+					-- don't break the brittle block if there's somehing inside it
+					if b.contentID > 0 then 
+						b:hitWithoutPlayer(false)
+					else
+					-- otherwise, break it
+						b:remove(true)
+					end
+				-- If the block CAN'T be broken
+				elseif (Block.SOLID_MAP[b.id] or Block.PLAYERSOLID_MAP[b.id] or Block.MEGA_HIT_MAP[b.id]) then 
+					b:hitWithoutPlayer(false)
+				end
+			end
+		end
+
 		v:kill(9)
 		return
 	end
