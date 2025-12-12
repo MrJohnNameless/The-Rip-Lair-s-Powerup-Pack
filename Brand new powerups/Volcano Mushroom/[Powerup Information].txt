@@ -1,0 +1,23 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needavolcanoshroom
+* superspicy
+* lavashroom
+* satanschoice
+
+The powerup also has some configs you can apply. Simple open the file "npc-900.lua", using something like notepad++ or visual studio code.
+
+duration - How long does the powerup's effects last for (5 by default)
+invulnerableWhenUsed - Can the player be harmed while under the effects of the Volcano Mushroom? (true by default)
+harmNPCs - Can the player harm incoming enemies while under the effects of the Volcano Mushroom? (true by default)
+speedAccel - The acceleration of the player's speed when under the powerup's effects (0.4 by default)
+maxSpeed - The maximum speed the player can reach when under the powerup's effects (15 by default)
+trailSpawnID - The NPC to constantly spawn (359 by default)
+trailSpawnInterval - How frequent should the player spawn NPCs? (4 by default)
+trailSpawnIsFriendly - Is the spawned NPC harmless to the player? (true by default)
+
+***The below settings are simply sound files and color variables***
+consumeSFX
+coolDownSFX
+enflamedColour
