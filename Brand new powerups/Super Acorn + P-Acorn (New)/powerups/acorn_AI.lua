@@ -181,6 +181,8 @@ function acornStuffs.onTickAcorn(p, dataTerm, isCheating)
 			local hoverSpeed = Defines.gravity / settings.hoverConstant
 			data.hoverTimer = data.hoverTimer + 1
 
+			if p:mem(0x11C, FIELD_WORD) > 0 then data.hasBoosted = false end
+
 			if data.hoverTimer % 12 == 0 then SFX.play(10) end
 			if not isCheating then spawnSparkles(p) end
 
