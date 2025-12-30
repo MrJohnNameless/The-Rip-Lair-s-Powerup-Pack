@@ -40,7 +40,7 @@ local hammerSettings = {
 	doSparkleTrail = true,-- allows a 1.3 recreation of the sparkle train
 
 	canComboNPCs = true, --does what it says
-	canTearThruBlocks = true, --does what it says
+	canTearThruBlocks = false, --does what it says
 	canTTBAfterHitting = false, --can the hammer Tear Through Blocks after hitting something?
 
 	--weakest is f,f,f

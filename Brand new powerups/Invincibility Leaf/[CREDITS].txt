@@ -1,3 +1,2 @@
-NPC by MegaDood
-Sprites by DeviousQuacks23
-Powerup image by SuperSpriterX
+NPC + Sprites by MegaDood
+Powerup image by AwesomeZack, tweaked by DeviousQuacks23
