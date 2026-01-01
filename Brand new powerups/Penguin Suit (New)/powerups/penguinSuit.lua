@@ -421,6 +421,7 @@ function penguinSuit.onTickEndPowerup(p)
 		local goingDownhill = false
 		p:mem(0x3C,FIELD_BOOL,false) 
 		p:mem(0x168,FIELD_FLOAT,0)
+		if aw then aw.preventWallSlide(p) end
 		if isOnGround(p) and lunatime.tick() % 2 == 0 then
 			Effect.spawn(
 				74, 
