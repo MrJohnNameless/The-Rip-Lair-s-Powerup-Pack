@@ -76,8 +76,7 @@ local windChargeSettings = {
         earthquake = 6,
         burstEffect = 875,
         effectOffset = 48,
-        burstStrength = 6,
-        chargeSpeed = 12,
+        burstStrength = 3,
 }
 
 --Applies NPC settings
