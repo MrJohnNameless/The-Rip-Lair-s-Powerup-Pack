@@ -193,10 +193,10 @@ function windFlower.onTickPowerup(p)
 		p.speedY = p.speedY - (Defines.player_grav - 0.1)
 		if data.scuttleSFX and not data.scuttleSFX:isplaying() then data.scuttleSFX = SFX.play(scuttleSFX) end
 
-		p:mem(0x140, FIELD_WORD, 4)
-		if p.forcedState == 0 and not p:mem(0x142, FIELD_BOOL) then
-			p:mem(0x142, FIELD_BOOL, false)
-		end
+		-- p:mem(0x140, FIELD_WORD, 4)
+		-- if p.forcedState == 0 and not p:mem(0x142, FIELD_BOOL) then
+		--	p:mem(0x142, FIELD_BOOL, false)
+		-- end
 
 		if lunatime.tick() % 8 == 0 then
         		local e = Effect.spawn(10, p.x + p.width * 0.5,p.y)
