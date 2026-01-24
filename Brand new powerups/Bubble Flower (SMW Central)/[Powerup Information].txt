@@ -1,0 +1,15 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needasmwbubbleflower
+
+
+The powerup also has some configs you can apply. Simple open the file "smbw_bubble.lua" in the "AI" folder, using something like notepad++ or visual studio code.
+
+
+In npc-817.lua, there are also some configs.
+
+thrownSpeed - The speed in which the bubble is thrown.
+lifetime - How long until the bubble should be destroyed, in ticks.
+rewardFrames - How many frames for the NPC contained in the bubble?
+rewardFramesOffset - Offset the number of frames by how much, starting from 0.
