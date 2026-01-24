@@ -14,7 +14,7 @@ local STATE_FULL = 1
 bubble.SFX = {
 	npcKill = {id = 9, volume = 1},
 	bubblePop = {id = 91, volume = 1},
-	targetFixed = {id = 13, volume = 1},
+	targetFixed = {id = "powerups/pballoon_collect.wav", volume = 1},
 }
 
 local blacklist = {}
