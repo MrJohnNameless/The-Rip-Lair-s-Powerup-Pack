@@ -42,7 +42,11 @@ function blueShell.onInitPowerupLib()
 		blueShell:registerAsset(3, "peach-blueshell.ini"),
 		blueShell:registerAsset(4, "toad-blueshell.ini"),
 	}
-	
+
+	blueShell.gpImages = {
+		blueShell:registerAsset(CHARACTER_MARIO, "blueShell-groundPound-1.png"),
+		blueShell:registerAsset(CHARACTER_LUIGI, "blueShell-groundPound-2.png"),
+	}
 end
 
 blueShell.basePowerup = PLAYER_FIREFLOWER
