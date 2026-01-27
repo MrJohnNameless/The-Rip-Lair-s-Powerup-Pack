@@ -1,6 +1,6 @@
 
 --[[
-				cloudFlower.lua by MrNameless & SleepyVA
+				cloudFlower.lua by John Nameless & SleepyVA
 				
 				A customPowerups script that brings over
 			the Cloud Flower from Super Mario Galaxy 2 to SMBX
@@ -89,6 +89,7 @@ local function initFollower(p,follower,i)
 	--intiallizes a cloud follower if there isn't one in the current index
 	follower = {
 		canShow = true,
+		canRefresh = true,
 		warpDelay = 0,
 		sprite = Sprite{
 			texture = cloudFlower.settings.followerImage,
@@ -165,8 +166,11 @@ function cloudFlower.onTickPowerup(p)
 
 	for i = #data.clouds,1,-1 do
 		local n = data.clouds[i];
-		-- replenish a cloud when touching on a floor that isn't a cloud platform OR if the replenishOnClouds settings is true
-		if ((isOnGround(p) and (not p.standingNPC or p.standingNPC.id ~= cloudFlower.projectileID)) or cloudFlower.settings.replenishAnywhere) and n.canBeRemoved then 
+		-- allow a cloud to be able to be refreshed when touching on a floor that isn't a cloud platform OR if the replenishOnClouds settings is true
+		if ((isOnGround(p) and (not p.standingNPC or p.standingNPC.id ~= cloudFlower.projectileID)) or cloudFlower.settings.replenishAnywhere) then
+			n.canRefresh = true
+		end
+		if n.canRefresh and n.canBeRemoved then 
 			table.remove(data.clouds, i)
 		end
 	end
@@ -246,10 +250,12 @@ function cloudFlower.onTickEndPowerup(p)
 		if validForcedStates[p.forcedState] and data.limit - i >= #data.clouds and not current.canShow then 
 			Effect.spawn(131,sprite.x - sprite.width*0.5,sprite.y - sprite.height * 0.5)
 			current.canShow = true
+			current.canRefresh = false
 		elseif (data.limit - i < #data.clouds or not validForcedStates[p.forcedState]) and current.canShow then 
 		-- hide the cloud follower if the current cloud's index is currently being ""used"" or if the player's in a forced state
 			Effect.spawn(131,sprite.x - sprite.width*0.5,sprite.y - sprite.height * 0.5)
 			current.canShow = false
+			current.canRefresh = true
 		end
 	end
 	
