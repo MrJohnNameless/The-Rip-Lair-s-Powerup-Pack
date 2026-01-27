@@ -1,0 +1,20 @@
+This Powerup has various cheats you can do!
+These are:
+
+* needadandelion
+* needafogdandelion
+* thefogiscoming
+* iloveeatingfog
+* teleportbread
+* mistme
+* blinkandyoullmissit
+
+
+The powerup also has some configs you can apply. Simple open the file "cloudFlower.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+
+cursorIMG - what's the image used for the cursor for teleporting?
+cursorInvalidSpotIMG - what's the image used for indicating that a teleport spot is invalid?
+cursorDistanceMarkerIMG - what's the image used for marking the line between the player & a teleport spot?
+maxTeleportDistance - what's the max horizontal & vertical distance can a teleport spot be away from the player? (400 by default)
+teleportAcceleration - how fast does the player speed up towards their teleport spot upon teleporting (0.2 by default)
+antiTeleportZoneID - what's the block id for the anti-teleport zone? (949 by default, but automatically changed by the anti-teleport zone block itself)
