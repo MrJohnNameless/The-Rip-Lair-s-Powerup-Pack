@@ -228,7 +228,7 @@ function fog.onEnable(p)
 		teleportCursor = Colliders.Box(p.x,p.y,100,100),
 		teleportTimer = 0,
 		floatTimer = 0,
-		particle = particles.Emitter(0,0, "powerups/fog_dandelion_particle.ini")
+		particle = particles.Emitter(0,0, Misc.resolveFile("powerups/fog_dandelion_particle.ini"))
 	}
 	p.data.fogDandelion.particle:Attach(p)
 	p:mem(0x162, FIELD_WORD,5) -- prevents link from accidentally shooting a base projectile when getting the powerup via a sword
