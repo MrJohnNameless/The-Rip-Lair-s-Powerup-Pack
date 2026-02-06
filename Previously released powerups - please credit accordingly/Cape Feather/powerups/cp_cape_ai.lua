@@ -351,7 +351,9 @@ local function spinAttack(p)
 
 
     for _,block in ipairs(Colliders.getColliding{a = colBox,btype = Colliders.BLOCK}) do
-		block:hit(false,p)
+		if not Block.config[block.id].passthrough then
+			block:hit(false,p)
+		end
     end
     for _,npc in ipairs(Colliders.getColliding{a = colBox,b = NPC.HITTABLE,btype = Colliders.NPC,filter = capeHitNPCFilter}) do
         local oldProjectileFlag = npc:mem(0x136,FIELD_BOOL)
