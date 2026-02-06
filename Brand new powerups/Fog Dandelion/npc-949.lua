@@ -66,7 +66,7 @@ function fog.onInitAPI()
 end
 
 function fog.onStartNPC(v)
-	v.data.particle = particles.Emitter(0,0, "powerups/fog_dandelion_particle.ini")
+	v.data.particle = particles.Emitter(0,0, Misc.resolveFile("powerups/fog_dandelion_particle.ini"))
 	v.data.particle:Attach(v)
 	v.data.particle:setPrewarm(5)
 	v.data.particle:setParam("yOffset",0)

@@ -131,6 +131,7 @@ function springMushroom.onTickPowerup(p)
     	p:mem(0x2C, FIELD_DFLOAT, 0)
     	p:mem(0x40, FIELD_WORD, 0)
         p:mem(0x3C,FIELD_BOOL, false)
+	p:mem(0x50,FIELD_BOOL,false)
 	p:mem(0x154,FIELD_WORD,-2)
 
 	if p.mount ~= 0 then p.keys.altJump = KEYS_DOWN end
