@@ -320,10 +320,16 @@ function karate.onTickPowerup(p)
 
     if not data.knockedBack and data.canHarm then
         for k, v in ipairs(Colliders.getColliding{a = data.collider, b = Block.SOLID, btype = Colliders.BLOCK}) do
+		
+			local b = v
+		
+			if Block.SOLID_MAP[b.id] and not b.isHidden and not b.layerObj.isHidden then
+				b:hit()
+			end
+		
             if v.contentID == 0 and Block.MEGA_SMASH_MAP[v.id] or blockWhitelist[v.id] then
                 v:remove(true)
             else
-                v:hit(true, p)
                 data.knockedBack = true
                 p.speedX = -3 * data.initDirection
 

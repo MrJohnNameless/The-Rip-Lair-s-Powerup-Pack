@@ -313,7 +313,11 @@ function rockMushroom.onTickPowerup(p)
 				if Block.MEGA_SMASH_MAP[n.id] and n.contentID == 0 then
 					n:remove(true)
 				end
-				n:hit(2)
+				
+				if Block.SOLID_MAP[n.id] and not n.isHidden and not n.layerObj.isHidden then
+					n:hit()
+				end
+				
 			end
 			
 			for c, n in ipairs(Colliders.getColliding{a = data.breakCollider, btype = Colliders.NPC, filter = function(o) if not o.isFriendly and not o.isHidden and NPC.HITTABLE_MAP[o.id] then return true end end}) do

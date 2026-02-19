@@ -263,7 +263,7 @@ function builderSuit.onTickEndPowerup(p)
 			for _,block in Block.iterateIntersecting(left, top, right, bottom) do 
 			-- If the block should be broken, destroy it
 				if not data.hittedBlocks[block.idx] and not Block.LAVA_MAP[block.id] and not Block.PLAYER_MAP[block.id] and not Block.SEMISOLID_MAP[block.id] then
-					if Block.MEGA_SMASH_MAP[block.id] or builderSuit.alwaysSmashBlocks[block.id] or block.contentID > 0 then
+					if Block.MEGA_SMASH_MAP[block.id] or builderSuit.alwaysSmashBlocks[block.id] or block.contentID > 0 and not Block.config[block.id].passthrough then
 						if (block.contentID > 0) and not builderSuit.alwaysSmashBlocks[block.id] then
 							block:hit(false, p)
 						else

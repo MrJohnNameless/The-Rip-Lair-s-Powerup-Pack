@@ -262,14 +262,15 @@ function boomerang.onTickNPC(v)
 	end}
 	
 	for _,b in ipairs(list) do
-		if Block.config[b.id].bumpable or b.contentID ~= 0 then
-			b:hit(true)
-		end
-		if Block.config[b.id].smashable ~= nil then
-			if Block.config[b.id].smashable >= 3 and b.contentID == 0 then
-				b:remove(true)
-				data.returnToSender = true
-				data.slowDown = 0
+		if Block.config[b.id].passthrough then return end
+		if Block.SOLID_MAP[b.id] and not b.isHidden and not b.layerObj.isHidden then
+			b:hit()
+			if Block.config[b.id].smashable ~= nil then
+				if Block.config[b.id].smashable >= 3 and b.contentID == 0 then
+					b:remove(true)
+					data.returnToSender = true
+					data.slowDown = 0
+				end
 			end
 		end
 	end

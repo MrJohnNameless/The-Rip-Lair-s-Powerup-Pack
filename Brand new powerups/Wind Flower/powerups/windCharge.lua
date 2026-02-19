@@ -72,7 +72,7 @@ function windChargeAI.onTickEndNPC(v)
         	-- bump nearby blocks
 		for _,b in ipairs(Block.get()) do
                 	if Colliders.collide(data.hitbox,b) and Misc.canCollideWith(v, b) then
-                        	if b.isHidden == false and not b:mem(0x5A, FIELD_BOOL) then
+                        	if b.isHidden == false and not b:mem(0x5A, FIELD_BOOL) and not Block.config[b.id].passthrough then
 	                        	b:hitWithoutPlayer(false)
                         	end
                 	end

@@ -138,17 +138,24 @@ local function explode(v)
 		n:harm(3)
 	end
 	
-	-- hit blocks that can't be broken
-	for k,n in ipairs(Colliders.getColliding{
-		atype = Colliders.BLOCK,
-		b = circ,
-		filter = function(o)
-			if not o.isHidden then
-				return true
+	local tbl = Block.SOLID .. Block.PLAYER
+	local list = Colliders.getColliding{atype = Colliders.BLOCK, b = circ, filter = function(other)
+		if other.isHidden or other:mem(0x5A, FIELD_BOOL) then
+			return false
+		end
+		return true
+	end}
+	
+	for _,b in ipairs(list) do
+		if Block.config[b.id].passthrough then return end
+		if Block.SOLID_MAP[b.id] and not b.isHidden and not b.layerObj.isHidden then
+			b:hit()
+			if Block.config[b.id].smashable ~= nil then
+				if Block.config[b.id].smashable >= 3 and b.contentID == 0 then
+					b:remove(true)
+				end
 			end
 		end
-	}) do
-		n:hit(2)
 	end
 	
 	-- destroy blocks that can be broken (and don't contain something)

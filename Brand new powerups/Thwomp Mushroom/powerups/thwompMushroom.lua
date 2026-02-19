@@ -293,7 +293,9 @@ function thwompMushroom.onTickPowerup(p)
 					-- If the block should be broken, destroy it
 					if Block.MEGA_SMASH_MAP[block.id] then
 						if block.contentID > 0 then
-							block:hit(true, p)
+							if Block.SOLID_MAP[block.id] and not block.isHidden and not block.layerObj.isHidden then
+								block:hit(false, p)
+							end
 							sideSlam(p)
 						else
 							block:remove(true)
@@ -326,7 +328,9 @@ function thwompMushroom.onTickPowerup(p)
 					-- If the block should be broken, destroy it
 					if Block.MEGA_SMASH_MAP[block.id] then
 						if block.contentID > 0 then
-							block:hit(true, p)
+							if Block.SOLID_MAP[block.id] and not block.isHidden and not block.layerObj.isHidden then
+								block:hit(false, p)
+							end
 							upSlam(p)
 						else
 							block:remove(true)
@@ -359,7 +363,11 @@ function thwompMushroom.onTickPowerup(p)
 					-- If the block should be broken, destroy it
 					if Block.MEGA_SMASH_MAP[block.id] then
 						if block.contentID > 0 then
-							block:hit(true, p)
+							if block.contentID >= 1000 then
+								block:hit(true, p)
+							else
+								block:hit(false, p)
+							end
 						else
 							block:remove(true)
 						end
