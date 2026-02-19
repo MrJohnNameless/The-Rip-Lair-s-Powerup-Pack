@@ -316,6 +316,7 @@ function froggy.onTickPowerup(p)
 				end
 				
 				p.speedX = math.clamp(p.speedX, -5, 5)
+				p:mem(0x0A,FIELD_BOOL,false)
 			else
 				data.hopTimer = 4
 				data.isInAir = true
