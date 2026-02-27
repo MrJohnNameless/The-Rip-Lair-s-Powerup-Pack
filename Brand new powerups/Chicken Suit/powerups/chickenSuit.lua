@@ -128,6 +128,7 @@ function chickenSuit.onEnable(p)
 		matildaTimer = 0, -- projectileTimer again but for the egg double jump
 		touchedGround = true,
 	}
+	p:mem(0x162,FIELD_WORD,2)
 end
 
 -- runs once when the powerup gets deactivated, passes the player
@@ -174,6 +175,9 @@ function chickenSuit.onTickPowerup(p)
 		SFX.play(settings.matildaJumpSFX)
 		data.touchedGround = false
 		data.matildaTimer = projectileTimerMax[p.character]
+		if not linkChars[p.character] then
+			p:mem(0x160,FIELD_WORD,math.max(p:mem(0x160,FIELD_WORD),2))
+		end
 
 		-- prevents peach's float from interfering with the egg jump (also allows her to have a secondary float as a fun side effect)
 		if p.character ~= CHARACTER_PEACH then return end
