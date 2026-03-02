@@ -437,7 +437,7 @@ function cp.addPowerup(name, lib, items, doConversion, id)
     items = items or {}
 
     lib.name = name
-    lib.id = id or (#powerNames + 7) -- for the default powerups
+    lib.id = id or (#powerNames + 8) -- for the default powerups
     
     lib.items = lib.items or {}
     lib.basePowerup = lib.basePowerup or PLAYER_FIREFLOWER
