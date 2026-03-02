@@ -1,0 +1,3 @@
+In recent updates, many powerups here have gotten revamped or rewritten with better code, graphics and functionality.
+You can find the new versions in the brand new powerups section, these are outdated.
+They are only kept for the sake of archival, really.
