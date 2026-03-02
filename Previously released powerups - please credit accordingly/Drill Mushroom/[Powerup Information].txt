@@ -4,7 +4,7 @@ These are:
 * needadrill
 * onewiththeearth
 
-The powerup also has some configs you can apply. Simple open the file "drill.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
+The powerup also has some configs you can apply. Simply open the file "drill.lua" in the "powerups" folder, using something like notepad++ or visual studio code.
 
 You can change frame related and effects
 You can also change the block hit interval and the amount of i frames you get from being a drill.

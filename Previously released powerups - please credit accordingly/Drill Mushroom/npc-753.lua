@@ -1,37 +1,40 @@
 local npcManager = require("npcManager")
-local powerup = require("powerups/drill")
+
 local sampleNPC = {}
 local npcID = NPC_ID
 
 local cp = require("customPowerups")
+cp.transformWhenSmall(npcID, 9)
+
 local drill = cp.addPowerup("Drill", "powerups/drill", npcID)
 drill.applyDefaultSettings()
-cp.transformWhenSmall(npcID, 9)
+
 
 local sampleNPCSettings = {
 	id = npcID,
-	gfxheight = 32,
 	gfxwidth = 32,
+	gfxheight = 36,
 	gfxoffsety = 2,
 	width = 32,
 	height = 32,
 	frames = 3,
 	framestyle = 0,
 	framespeed = 6,
-	luahandlesspeed = true,
+	--luahandlesspeed = true,
 	score = SCORE_1000,
+	speed = 1.8,
 	
 	npcblock = false,
 	npcblocktop = false,
 	playerblock = false,
 	playerblocktop = false,
 	powerup = true,
-	nohurt=true,
+	nohurt = true,
 	nogravity = false,
 	noblockcollision = false,
 	nofireball = true,
 	noiceball = true,
-	noyoshi= false,
+	noyoshi = false,
 	nowaterphysics = false,
 
 	jumphurt = true,
@@ -42,6 +45,7 @@ local sampleNPCSettings = {
 	isinteractable = true,
 	ignorethrownnpcs = true,
 	notcointransformable = true,
+	iswalker = true,
 }
 
 npcManager.setNpcSettings(sampleNPCSettings)
@@ -59,40 +63,19 @@ npcManager.registerHarmTypes(npcID,
 );
 
 function sampleNPC.onInitAPI()
-	npcManager.registerEvent(npcID, sampleNPC, "onTickEndNPC")
 	registerEvent(sampleNPC, "onNPCHarm")
-	Cheats.register("needadrill",{
-		isCheat = true,
-		activateSFX = 12,
-		aliases = powerup.aliases,
-		onActivate = (function() 
-			for i,p in ipairs(Player.get()) do
-				p.reservePowerup = npcID
-			end
-			
-			return true
-		end)
-	})
 end
 
-function sampleNPC.onTickEndNPC(v)
-	if Defines.levelFreeze then return end
-
-	if v.heldIndex ~= 0 
-	or v.isProjectile   
-	or v.forcedState > 0
-	then return end
+function sampleNPC.onNPCHarm(e, v, r, c)
+	if v.id ~= npcID then
+		return
+	end
 	
-	v.speedX = 1.8 * v.direction
-end
-
-function sampleNPC.onNPCHarm(token,v,harm,c)
-	if v.id ~= npcID then return end
-	
-	if harm ~= HARM_TYPE_TAIL and harm ~= HARM_TYPE_FROMBELOW then return end
-	v.speedY = -6
-	SFX.play(2)
-	token.cancelled = true
+	if r == HARM_TYPE_TAIL or r == HARM_TYPE_FROMBELOW then
+		SFX.play(2)
+		v.speedY = -6
+		e.cancelled = true
+	end
 end
 
 return sampleNPC

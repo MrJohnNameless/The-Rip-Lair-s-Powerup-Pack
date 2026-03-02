@@ -1,6 +1,16 @@
 local blockManager = require("blockManager")
 local blockutils = require("blocks/blockutils")
+
 local drillSpot = {}
+
+drillSpot.idList = {}
+drillSpot.idMap = {}
+
+drillSpot.collectSFX = {
+    id = 73,
+    volume = 1,
+}
+
 
 SaveData.drillSpot = SaveData.drillSpot or {}
 SaveData.drillSpot.count = SaveData.drillSpot.count or 0
@@ -9,17 +19,15 @@ SaveData.drillSpot.levelData = SaveData.drillSpot.levelData or {} -- level filen
 
 SaveData.drillSpot.levelData[Level.filename()] = SaveData.drillSpot.levelData[Level.filename()] or {count = 0, collectedCount = 0, collectedMap = {}}
 
-drillSpot.idList = {}
-drillSpot.idMap = {}
-
-drillSpot.collectSFX = {id = 73, volume = 1}
 
 local savedata = SaveData.drillSpot
 local levelData = savedata.levelData[Level.filename()]
 
-local fieldList = {"id", "count", "speedX", "speedY", "direction", "ai1", "ai2", "ai3", "ai4", "ai5",
-"layerName", "attachedLayerName", "activateEventName", "deathEventName", "talkEventName", "noMoreObjInLayer",
-"legacyBoss", "friendly", "dontMove", "msg", "noblockcollision"}
+local fieldList = {
+    "id", "count", "speedX", "speedY", "direction", "ai1", "ai2", "ai3", "ai4", "ai5",
+    "layerName", "attachedLayerName", "activateEventName", "deathEventName", "talkEventName", "noMoreObjInLayer",
+    "legacyBoss", "friendly", "dontMove", "msg", "noblockcollision",
+}
 
 function drillSpot.collect(v, offset, silent)
     offset = offset or vector(0, 0)
@@ -28,9 +36,9 @@ function drillSpot.collect(v, offset, silent)
     local settings = data._settings
     local spawnedNPCs = {}
 
-    if v.isHidden then return end
-
-    --v.isHidden = true
+    if v.isHidden then
+        return
+    end
 
     if Block.config[v.id].useSaveData and not levelData.collectedMap[settings.idx] then
         levelData.collectedMap[settings.idx] = true
@@ -80,7 +88,9 @@ function drillSpot.reset(v)
 end
 
 function drillSpot.register(id)
-    if drillSpot.idMap[id] then return end
+    if drillSpot.idMap[id] then
+        return
+    end
     
     blockManager.registerEvent(id, drillSpot, "onStartBlock")
     blockManager.registerEvent(id, drillSpot, "onCameraDrawBlock")
@@ -117,7 +127,6 @@ function drillSpot.onStartBlock(v)
     if levelData.collectedMap[settings.idx] and Block.config[v.id].useSaveData then
         levelData.collectedCount = levelData.collectedCount + 1
         savedata.collectedCount = savedata.collectedCount + 1
-        --v.isHidden = true
         v:remove(false)
     end
 end
